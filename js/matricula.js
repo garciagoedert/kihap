@@ -4,9 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const unitCards = document.querySelectorAll('.unit-card');
     const selectedUnitInput = document.getElementById('selected-unit-input');
     const cityFilterBtns = document.querySelectorAll('.city-filter-btn');
-    const unitCityHint = document.getElementById('unitCityHint') || document.getElementById('unit-city-hint');
+    const unitCityHint = document.getElementById('unit-city-hint');
     
-    const programCards = document.querySelectorAll('.program-card');
+    const programPills = document.querySelectorAll('.program-pill');
     const selectedProgramInput = document.getElementById('selected-program-input');
 
     const enrollmentTypeRadios = document.querySelectorAll('input[name="enrollment_type"]');
@@ -23,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryStudent = document.getElementById('summary-student');
     const summaryProgram = document.getElementById('summary-program');
     const summaryPrice = document.getElementById('summary-price');
-    const installmentText = document.getElementById('installment-text');
 
     const submitBtn = document.getElementById('submit-matricula-btn');
     const formErrorMsg = document.getElementById('form-error-msg');
@@ -66,13 +65,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             const city = btn.dataset.city;
             
-            // Estilo do botão ativo
+            // Estilo do botão ativo (Light Mode)
             cityFilterBtns.forEach(b => {
-                b.classList.remove('bg-yellow-500', 'text-black');
-                b.classList.add('bg-white/5', 'text-gray-300');
+                b.classList.remove('bg-yellow-400', 'text-gray-950');
+                b.classList.add('bg-gray-100', 'text-gray-700');
             });
-            btn.classList.add('bg-yellow-500', 'text-black');
-            btn.classList.remove('bg-white/5', 'text-gray-300');
+            btn.classList.add('bg-yellow-400', 'text-gray-950');
+            btn.classList.remove('bg-gray-100', 'text-gray-700');
 
             // Filtra os cards
             unitCards.forEach(card => {
@@ -98,13 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ? 'Brasília (DF)' 
             : (card.dataset.city === 'florianopolis' ? 'Florianópolis (SC)' : 'Dourados (MS)');
 
-        summaryUnit.innerHTML = `<span class="text-white">${selectedUnitName}</span> <span class="text-[10px] text-gray-400 block">${cityLabel}</span>`;
+        summaryUnit.innerHTML = `<span class="text-gray-900 font-bold">${selectedUnitName}</span> <span class="text-[11px] text-gray-500 block font-normal">${cityLabel}</span>`;
         
         const formattedPrice = (currentPriceCents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         summaryPrice.textContent = formattedPrice;
 
         if (unitCityHint) {
-            unitCityHint.textContent = `✓ ${selectedUnitName} Selecionada`;
+            unitCityHint.textContent = `${selectedUnitName} selecionada`;
         }
 
         formErrorMsg?.classList.add('hidden');
@@ -120,9 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SELEÇÃO DE PROGRAMA ---
-    programCards.forEach(card => {
+    programPills.forEach(card => {
         card.addEventListener('click', () => {
-            programCards.forEach(c => c.classList.remove('active'));
+            programPills.forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             const prog = card.dataset.program;
             selectedProgramInput.value = prog;
@@ -136,22 +135,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (radio.value === 'child') {
                 parentNameGroup.classList.remove('hidden');
                 responsavelNomeInput.setAttribute('required', 'true');
-                typeChildLabel.classList.add('border-yellow-500/50', 'bg-yellow-500/10');
-                typeChildLabel.classList.remove('border-[#2a2a2a]', 'bg-[#1a1a1a]');
-                typeSelfLabel.classList.remove('border-yellow-500/50', 'bg-yellow-500/10');
-                typeSelfLabel.classList.add('border-[#2a2a2a]', 'bg-[#1a1a1a]');
+                typeChildLabel.classList.add('border-amber-400', 'bg-amber-50');
+                typeChildLabel.classList.remove('border-gray-200', 'bg-gray-50');
+                typeSelfLabel.classList.remove('border-amber-400', 'bg-amber-50');
+                typeSelfLabel.classList.add('border-gray-200', 'bg-gray-50');
             } else {
                 parentNameGroup.classList.add('hidden');
                 responsavelNomeInput.removeAttribute('required');
-                typeSelfLabel.classList.add('border-yellow-500/50', 'bg-yellow-500/10');
-                typeSelfLabel.classList.remove('border-[#2a2a2a]', 'bg-[#1a1a1a]');
-                typeChildLabel.classList.remove('border-yellow-500/50', 'bg-yellow-500/10');
-                typeChildLabel.classList.add('border-[#2a2a2a]', 'bg-[#1a1a1a]');
+                typeSelfLabel.classList.add('border-amber-400', 'bg-amber-50');
+                typeSelfLabel.classList.remove('border-gray-200', 'bg-gray-50');
+                typeChildLabel.classList.remove('border-amber-400', 'bg-amber-50');
+                typeChildLabel.classList.add('border-gray-200', 'bg-gray-50');
             }
         });
     });
 
-    // --- SELEÇÃO DE MÉTODO DE PAGAMENTO (STYLE TOGGLE) ---
+    // --- SELEÇÃO DE MÉTODO DE PAGAMENTO (LIGHT MODE TOGGLE) ---
     const methodAllLabel = document.getElementById('method-all-label');
     const methodPixLabel = document.getElementById('method-pix-label');
     const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');
@@ -159,15 +158,15 @@ document.addEventListener('DOMContentLoaded', () => {
     paymentRadios.forEach(radio => {
         radio.addEventListener('change', () => {
             if (radio.value === 'all') {
-                methodAllLabel.classList.add('border-yellow-500', 'bg-yellow-500/10', 'text-white');
-                methodAllLabel.classList.remove('border-[#2a2a2a]', 'bg-[#1a1a1a]', 'text-gray-300');
-                methodPixLabel.classList.remove('border-yellow-500', 'bg-yellow-500/10', 'text-white');
-                methodPixLabel.classList.add('border-[#2a2a2a]', 'bg-[#1a1a1a]', 'text-gray-300');
+                methodAllLabel.classList.add('border-amber-400', 'bg-amber-50', 'text-gray-900');
+                methodAllLabel.classList.remove('border-gray-200', 'bg-gray-50', 'text-gray-600');
+                methodPixLabel.classList.remove('border-amber-400', 'bg-amber-50', 'text-gray-900');
+                methodPixLabel.classList.add('border-gray-200', 'bg-gray-50', 'text-gray-600');
             } else {
-                methodPixLabel.classList.add('border-yellow-500', 'bg-yellow-500/10', 'text-white');
-                methodPixLabel.classList.remove('border-[#2a2a2a]', 'bg-[#1a1a1a]', 'text-gray-300');
-                methodAllLabel.classList.remove('border-yellow-500', 'bg-yellow-500/10', 'text-white');
-                methodAllLabel.classList.add('border-[#2a2a2a]', 'bg-[#1a1a1a]', 'text-gray-300');
+                methodPixLabel.classList.add('border-amber-400', 'bg-amber-50', 'text-gray-900');
+                methodPixLabel.classList.remove('border-gray-200', 'bg-gray-50', 'text-gray-600');
+                methodAllLabel.classList.remove('border-amber-400', 'bg-amber-50', 'text-gray-900');
+                methodAllLabel.classList.add('border-gray-200', 'bg-gray-50', 'text-gray-600');
             }
         });
     });
@@ -182,7 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!selectedUnitInput.value) {
             formErrorMsg.textContent = 'Por favor, selecione sua unidade de preferência no Passo 1.';
             formErrorMsg.classList.remove('hidden');
-            window.scrollTo({ top: 250, behavior: 'smooth' });
+            const targetEl = document.getElementById('unidades');
+            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth' });
             return;
         }
 
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'all';
 
         if (!alunoNome || !responsavelEmail || !responsavelTelefone || !responsavelCpf) {
-            formErrorMsg.textContent = 'Preencha todos os campos obrigatórios (*).';
+            formErrorMsg.textContent = 'Preencha todos os campos obrigatórios marcados com (*).';
             formErrorMsg.classList.remove('hidden');
             return;
         }
@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Estado de Carregamento
         const originalBtnHtml = submitBtn.innerHTML;
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Gerando matrícula e checkout seguro...</span>';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> <span>Processando matrícula segura...</span>';
 
         try {
             const payload = {

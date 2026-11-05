@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
@@ -9,43 +9,53 @@
     <title>Matrículas Abertas - Kihap Martial Arts</title>
     <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
 
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
                         primary: '#FFC107',
                         'primary-hover': '#e0a800',
-                        dark: '#0c0c0c',
-                        'card-dark': '#141414',
-                        'border-dark': '#262626'
+                        brand: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            200: '#fde68a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            900: '#78350f'
+                        }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif']
+                        sans: ['Inter', 'sans-serif'],
+                        title: ['Inter', 'sans-serif']
                     }
                 }
             }
         }
     </script>
 
-    <!-- Google Fonts & Icons -->
+    <!-- Google Fonts & Font Awesome (Zero Emojis) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0c0c0c;
-            color: #f3f4f6;
+            background-color: #F8F9FA;
+            color: #1F2937;
+            scroll-behavior: smooth;
         }
 
         .unit-card.active {
-            border-color: #FFC107;
-            background: linear-gradient(145deg, rgba(255, 193, 7, 0.08), rgba(20, 20, 20, 0.95));
-            box-shadow: 0 0 25px rgba(255, 193, 7, 0.25);
+            border-color: #EAB308;
+            background-color: #FEFCE8;
+            box-shadow: 0 4px 14px rgba(234, 179, 8, 0.15);
         }
 
         .unit-card.active .unit-check {
@@ -53,558 +63,762 @@
             transform: scale(1);
         }
 
-        .program-card.active {
-            border-color: #FFC107;
-            background-color: rgba(255, 193, 7, 0.1);
-        }
-
-        /* Pulse glow */
-        @keyframes subtle-pulse {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 1; filter: drop-shadow(0 0 12px rgba(255, 193, 7, 0.4)); }
-        }
-        .pulse-badge {
-            animation: subtle-pulse 3s infinite ease-in-out;
+        .program-pill.active {
+            border-color: #EAB308;
+            background-color: #FEFCE8;
+            color: #854D0E;
+            font-weight: 700;
         }
     </style>
 </head>
 
-<body class="min-h-screen flex flex-col antialiased selection:bg-yellow-500 selection:text-black">
+<body class="min-h-screen flex flex-col antialiased selection:bg-yellow-400 selection:text-black">
 
-    <!-- Top Header -->
-    <header class="sticky top-0 z-40 bg-[#0c0c0c]/90 backdrop-blur-md border-b border-white/10">
+    <!-- Top Announcement Bar -->
+    <div class="bg-gray-900 text-white text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2">
+        <i class="fas fa-bullhorn text-yellow-400"></i>
+        <span>Vagas oficiais abertas para novas turmas • Unidades Brasília, Florianópolis e Dourados</span>
+    </div>
+
+    <!-- Header / Navbar Principal -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-            <a href="/" class="flex items-center gap-3 group">
-                <img src="/assets/favicon.jpg" alt="Logo Kihap" class="w-9 h-9 rounded-xl border border-yellow-500/30 group-hover:scale-105 transition-transform">
-                <div class="flex flex-col">
-                    <span class="font-black text-sm md:text-base tracking-wider text-white uppercase font-title leading-tight">KIHAP</span>
-                    <span class="text-[10px] text-yellow-400 font-semibold uppercase tracking-widest leading-none">Martial Arts</span>
-                </div>
+            <a href="/" class="flex items-center gap-3">
+                <img src="/imgs/logo.png" alt="Kihap Martial Arts" class="h-8 object-contain">
             </a>
 
+            <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-600">
+                <a href="#diferenciais" class="hover:text-yellow-600 transition">Diferenciais</a>
+                <a href="#programas" class="hover:text-yellow-600 transition">Programas</a>
+                <a href="#unidades" class="hover:text-yellow-600 transition">Unidades</a>
+                <a href="#depoimentos" class="hover:text-yellow-600 transition">Depoimentos</a>
+                <a href="#faq" class="hover:text-yellow-600 transition">Dúvidas</a>
+            </nav>
+
             <div class="flex items-center gap-3">
-                <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 pulse-badge">
-                    <i class="fas fa-fire-flame-curved text-[10px]"></i> Matrículas 2026
-                </span>
-                <a href="https://wa.me/554892182423?text=Ol%C3%A1!%20Tenho%20d%C3%BAvidas%20sobre%20a%20matr%C3%ADcula%20online%20da%20Kihap." target="_blank" rel="noopener" class="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white transition flex items-center gap-1.5">
-                    <i class="fab fa-whatsapp text-emerald-400"></i>
-                    <span class="hidden md:inline">Tirar Dúvidas</span>
+                <a href="https://wa.me/554892182423?text=Ol%C3%A1!%20Gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20matr%C3%ADcula%20Kihap." target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+                    <i class="fab fa-whatsapp text-emerald-600"></i>
+                    <span>Tirar Dúvidas</span>
+                </a>
+                <a href="#inscricao" class="px-5 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-extrabold text-xs uppercase tracking-wider transition shadow-sm active:scale-95 flex items-center gap-1.5">
+                    <span>Matricular Agora</span>
+                    <i class="fas fa-arrow-right text-[11px]"></i>
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Content -->
     <main class="flex-grow">
-        
-        <!-- Hero Section -->
-        <section class="relative pt-10 pb-8 px-4 text-center overflow-hidden">
-            <!-- Background Glow -->
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] bg-yellow-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-            <div class="max-w-3xl mx-auto relative z-10">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-gray-300 mb-4">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span>Vagas Oficiais Abertas</span>
-                    <span class="text-white/30">•</span>
-                    <span class="text-yellow-400">Garantia de 7 dias</span>
+        <!-- HERO SECTION -->
+        <section class="relative pt-12 pb-16 md:pt-16 md:pb-24 bg-gradient-to-b from-white via-amber-50/30 to-[#F8F9FA] border-b border-gray-200 overflow-hidden">
+            <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                
+                <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold">
+                        <i class="fas fa-shield-alt text-amber-600"></i>
+                        <span>Rede com mais de 1.000 alunos formados</span>
+                    </div>
+
+                    <h1 class="text-3xl md:text-5xl lg:text-6xl font-black text-gray-950 uppercase tracking-tight leading-tight">
+                        Formação que vai <br>
+                        <span class="text-amber-500">além do tatame</span>
+                    </h1>
+
+                    <p class="text-base md:text-lg text-gray-600 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                        Desenvolva foco, disciplina inabalável, autoconfiança e capacidade de defesa pessoal com a metodologia exclusiva da maior escola de artes marciais do Brasil.
+                    </p>
+
+                    <!-- Benefícios em tópicos curtos -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-left max-w-lg mx-auto lg:mx-0">
+                        <div class="flex items-center gap-2.5 text-sm text-gray-700 font-medium">
+                            <i class="fas fa-check-circle text-amber-500"></i>
+                            <span>Turmas exclusivas por faixa etária</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm text-gray-700 font-medium">
+                            <i class="fas fa-check-circle text-amber-500"></i>
+                            <span>Acompanhamento com o Kihap App</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm text-gray-700 font-medium">
+                            <i class="fas fa-check-circle text-amber-500"></i>
+                            <span>Professores certificados e formados</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm text-gray-700 font-medium">
+                            <i class="fas fa-check-circle text-amber-500"></i>
+                            <span>Ambiente acolhedor e familiar</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
+                        <a href="#inscricao" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-black text-sm uppercase tracking-wider shadow-lg shadow-yellow-500/20 transition-all flex items-center justify-center gap-2">
+                            <span>Garantir Matrícula na Minha Unidade</span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </a>
+                        <a href="#programas" class="w-full sm:w-auto px-6 py-4 rounded-xl bg-white border border-gray-200 hover:border-gray-300 text-gray-700 font-bold text-sm transition text-center">
+                            Conhecer os Programas
+                        </a>
+                    </div>
                 </div>
 
-                <h1 class="text-3xl md:text-5xl font-black text-white uppercase tracking-tight leading-tight">
-                    Matrícula Oficial <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500">Kihap Martial Arts</span>
-                </h1>
+                <div class="lg:col-span-5 relative">
+                    <div class="relative mx-auto max-w-md rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-gray-100">
+                        <img src="/imgs/mestres.jpg" alt="Mestres e Alunos Kihap" class="w-full h-80 md:h-96 object-cover object-center" onerror="this.src='/imgs/familia.png'">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-6 text-white">
+                            <span class="text-xs uppercase tracking-widest font-bold text-yellow-400">Tradição e Excelência</span>
+                            <h3 class="text-lg font-bold">Liderança, respeito e saúde em família</h3>
+                        </div>
+                    </div>
+                    
+                    <!-- Floating Pill Card -->
+                    <div class="hidden sm:flex absolute -bottom-4 -left-6 bg-white p-4 rounded-2xl shadow-xl border border-gray-100 items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-black">
+                            <i class="fas fa-medal"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-gray-900">10 Unidades Integradas</div>
+                            <div class="text-[11px] text-gray-500">Brasília, Florianópolis e Dourados</div>
+                        </div>
+                    </div>
+                </div>
 
-                <p class="mt-3 text-sm md:text-base text-gray-400 max-w-xl mx-auto leading-relaxed">
-                    Escolha sua unidade de preferência, preencha os dados do aluno e conclua sua matrícula com segurança em menos de 2 minutos.
-                </p>
             </div>
         </section>
 
-        <!-- Formulário de Matrícula Interativo -->
-        <section class="max-w-6xl mx-auto px-4 pb-20">
-            <form id="matricula-form" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                <!-- Coluna Principal (Passos 1 e 2) -->
-                <div class="lg:col-span-7 space-y-8">
-                    
-                    <!-- PASSO 1: ESCOLHA DA UNIDADE -->
-                    <div class="bg-[#141414] border border-[#262626] rounded-2xl p-5 md:p-6 shadow-xl">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-2.5">
-                                <span class="w-7 h-7 rounded-lg bg-yellow-500 text-black font-black text-xs flex items-center justify-center">1</span>
-                                <h2 class="text-lg md:text-xl font-bold text-white uppercase tracking-wide">Escolha sua Unidade</h2>
-                            </div>
-                            <span class="text-xs text-yellow-400 font-bold" id="unit-city-hint">Selecione uma opção</span>
-                        </div>
-
-                        <!-- Filtro de Região -->
-                        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
-                            <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-yellow-500 text-black transition" data-city="all">Todas as Cidades</button>
-                            <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition" data-city="brasilia">🏛️ Brasília (DF)</button>
-                            <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition" data-city="florianopolis">🏝️ Florianópolis (SC)</button>
-                            <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white/5 hover:bg-white/10 text-gray-300 transition" data-city="dourados">📍 Dourados (MS)</button>
-                        </div>
-
-                        <!-- Grid de Unidades -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="units-grid">
-                            
-                            <!-- Brasília: R$ 677 -->
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Jardim Botânico" data-city="brasilia" data-price="67700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Jardim Botânico</h3>
-                                        <p class="text-[11px] text-gray-400">Brasília • DF</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 677,00</span>
-                                </div>
-                            </div>
-
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Asa Sul" data-city="brasilia" data-price="67700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Asa Sul</h3>
-                                        <p class="text-[11px] text-gray-400">Brasília • DF</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 677,00</span>
-                                </div>
-                            </div>
-
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Sudoeste" data-city="brasilia" data-price="67700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Sudoeste</h3>
-                                        <p class="text-[11px] text-gray-400">Brasília • DF</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 677,00</span>
-                                </div>
-                            </div>
-
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Noroeste" data-city="brasilia" data-price="67700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Noroeste</h3>
-                                        <p class="text-[11px] text-gray-400">Brasília • DF</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 677,00</span>
-                                </div>
-                            </div>
-
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Lago Sul" data-city="brasilia" data-price="67700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Lago Sul</h3>
-                                        <p class="text-[11px] text-gray-400">Brasília • DF</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 677,00</span>
-                                </div>
-                            </div>
-
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Pontos de Ensino" data-city="brasilia" data-price="67700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Pontos de Ensino</h3>
-                                        <p class="text-[11px] text-gray-400">Brasília • DF</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 677,00</span>
-                                </div>
-                            </div>
-
-                            <!-- Florianópolis: R$ 507 -->
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Santa Mônica" data-city="florianopolis" data-price="50700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Santa Mônica</h3>
-                                        <p class="text-[11px] text-gray-400">Florianópolis • SC</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 507,00</span>
-                                </div>
-                            </div>
-
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Centro" data-city="florianopolis" data-price="50700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Centro</h3>
-                                        <p class="text-[11px] text-gray-400">Florianópolis • SC</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 507,00</span>
-                                </div>
-                            </div>
-
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Coqueiros" data-city="florianopolis" data-price="50700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Coqueiros</h3>
-                                        <p class="text-[11px] text-gray-400">Florianópolis • SC</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 507,00</span>
-                                </div>
-                            </div>
-
-                            <!-- Dourados: R$ 507 -->
-                            <div class="unit-card cursor-pointer border border-[#2a2a2a] bg-[#1a1a1a] p-4 rounded-xl transition-all duration-200 relative group hover:border-yellow-500/50" data-unit="Dourados" data-city="dourados" data-price="50700">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-sm group-hover:text-yellow-400 transition-colors">Dourados</h3>
-                                        <p class="text-[11px] text-gray-400">Dourados • MS</p>
-                                    </div>
-                                    <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] flex items-center justify-center font-black">
-                                        <i class="fas fa-check"></i>
-                                    </span>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs border-t border-white/5 pt-2">
-                                    <span class="text-gray-400 text-[11px]">Matrícula</span>
-                                    <span class="font-extrabold text-yellow-400">R$ 507,00</span>
-                                </div>
-                            </div>
-
-                        </div>
-                        <input type="hidden" id="selected-unit-input" name="unidade" value="" required>
+        <!-- NÚMEROS DE AUTORIDADE -->
+        <section class="py-10 bg-white border-b border-gray-200">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                    <div>
+                        <div class="text-2xl md:text-4xl font-black text-gray-900">+1.000</div>
+                        <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mt-1">Alunos Formados</div>
                     </div>
-
-                    <!-- PASSO 2: DADOS DO ALUNO E RESPONSÁVEL -->
-                    <div class="bg-[#141414] border border-[#262626] rounded-2xl p-5 md:p-6 shadow-xl space-y-5">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-7 h-7 rounded-lg bg-yellow-500 text-black font-black text-xs flex items-center justify-center">2</span>
-                            <h2 class="text-lg md:text-xl font-bold text-white uppercase tracking-wide">Dados da Inscrição</h2>
-                        </div>
-
-                        <!-- Quem vai treinar? -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Quem será o aluno?</label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <label class="flex items-center gap-2.5 p-3 rounded-xl border border-yellow-500/50 bg-yellow-500/10 cursor-pointer transition" id="type-child-label">
-                                    <input type="radio" name="enrollment_type" value="child" checked class="text-yellow-500 focus:ring-yellow-500">
-                                    <div>
-                                        <div class="text-xs font-bold text-white">Meu Filho(a) / Menor</div>
-                                        <div class="text-[10px] text-gray-400">Sou o responsável legal</div>
-                                    </div>
-                                </label>
-                                <label class="flex items-center gap-2.5 p-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] cursor-pointer transition hover:border-gray-600" id="type-self-label">
-                                    <input type="radio" name="enrollment_type" value="self" class="text-yellow-500 focus:ring-yellow-500">
-                                    <div>
-                                        <div class="text-xs font-bold text-white">Eu Mesmo</div>
-                                        <div class="text-[10px] text-gray-400">Adulto (18+ anos)</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Nome do Aluno -->
-                        <div>
-                            <label for="aluno-nome" class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">Nome Completo do Aluno *</label>
-                            <input type="text" id="aluno-nome" name="alunoNome" required placeholder="Ex: Arthur Garcia" class="w-full bg-[#1a1a1a] border border-[#2f2f2f] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition">
-                        </div>
-
-                        <!-- Programa / Faixa Etária -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">Programa / Idade do Aluno *</label>
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                <div class="program-card cursor-pointer p-2.5 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] text-center transition hover:border-yellow-500/40" data-program="Baby Littles (3-4 anos)">
-                                    <span class="block text-xs font-bold text-white">Baby</span>
-                                    <span class="text-[10px] text-gray-400">3 a 4 anos</span>
-                                </div>
-                                <div class="program-card active cursor-pointer p-2.5 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] text-center transition hover:border-yellow-500/40" data-program="Littles (5-6 anos)">
-                                    <span class="block text-xs font-bold text-white">Littles</span>
-                                    <span class="text-[10px] text-gray-400">5 a 6 anos</span>
-                                </div>
-                                <div class="program-card cursor-pointer p-2.5 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] text-center transition hover:border-yellow-500/40" data-program="Kids (7-12 anos)">
-                                    <span class="block text-xs font-bold text-white">Kids</span>
-                                    <span class="text-[10px] text-gray-400">7 a 12 anos</span>
-                                </div>
-                                <div class="program-card cursor-pointer p-2.5 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] text-center transition hover:border-yellow-500/40" data-program="Teens & Adultos">
-                                    <span class="block text-xs font-bold text-white">Teens & Adultos</span>
-                                    <span class="text-[10px] text-gray-400">13+ anos</span>
-                                </div>
-                            </div>
-                            <input type="hidden" id="selected-program-input" name="alunoPrograma" value="Littles (5-6 anos)">
-                        </div>
-
-                        <!-- Nome do Responsável (se for menor) -->
-                        <div id="parent-name-group">
-                            <label for="responsavel-nome" class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">Nome do Responsável Legal *</label>
-                            <input type="text" id="responsavel-nome" name="responsavelNome" placeholder="Ex: Roberto Goedert" class="w-full bg-[#1a1a1a] border border-[#2f2f2f] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition">
-                        </div>
-
-                        <!-- Contato: WhatsApp e E-mail -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label for="responsavel-telefone" class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">WhatsApp / Celular *</label>
-                                <input type="tel" id="responsavel-telefone" name="responsavelTelefone" required placeholder="(61) 99999-9999" class="w-full bg-[#1a1a1a] border border-[#2f2f2f] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition">
-                            </div>
-                            <div>
-                                <label for="responsavel-email" class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">E-mail Principal *</label>
-                                <input type="email" id="responsavel-email" name="responsavelEmail" required placeholder="seu@email.com" class="w-full bg-[#1a1a1a] border border-[#2f2f2f] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition">
-                            </div>
-                        </div>
-
-                        <!-- CPF -->
-                        <div>
-                            <label for="responsavel-cpf" class="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">CPF do Pagador / Titular *</label>
-                            <input type="text" id="responsavel-cpf" name="responsavelCpf" required placeholder="000.000.000-00" class="w-full bg-[#1a1a1a] border border-[#2f2f2f] rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition">
-                            <span class="text-[10px] text-gray-500 block mt-1">Necessário para emissão do recibo e liberação no Mercado Pago</span>
-                        </div>
-
+                    <div>
+                        <div class="text-2xl md:text-4xl font-black text-gray-900">10</div>
+                        <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mt-1">Unidades Próprias</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl md:text-4xl font-black text-gray-900">3</div>
+                        <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mt-1">Estados Brasileiros</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl md:text-4xl font-black text-amber-600">100%</div>
+                        <div class="text-xs text-gray-500 font-semibold uppercase tracking-wider mt-1">Metodologia Exclusiva</div>
                     </div>
                 </div>
-
-                <!-- Coluna Lateral (Passo 3: Resumo & Pagamento) -->
-                <div class="lg:col-span-5">
-                    <div class="sticky top-24 bg-[#141414] border border-[#262626] rounded-2xl p-6 shadow-2xl space-y-6">
-                        
-                        <div class="flex items-center justify-between border-b border-[#262626] pb-4">
-                            <div class="flex items-center gap-2.5">
-                                <span class="w-7 h-7 rounded-lg bg-yellow-500 text-black font-black text-xs flex items-center justify-center">3</span>
-                                <h2 class="text-lg font-bold text-white uppercase tracking-wide">Resumo da Matrícula</h2>
-                            </div>
-                            <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                Oficial
-                            </span>
-                        </div>
-
-                        <!-- Detalhes do Pedido -->
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between items-center py-1 border-b border-white/5">
-                                <span class="text-gray-400">Unidade:</span>
-                                <span class="font-bold text-white text-right" id="summary-unit">Selecione no Passo 1</span>
-                            </div>
-                            <div class="flex justify-between items-center py-1 border-b border-white/5">
-                                <span class="text-gray-400">Aluno:</span>
-                                <span class="font-bold text-white text-right" id="summary-student">Preencha os dados</span>
-                            </div>
-                            <div class="flex justify-between items-center py-1 border-b border-white/5">
-                                <span class="text-gray-400">Programa:</span>
-                                <span class="font-bold text-yellow-400 text-right" id="summary-program">Littles (5-6 anos)</span>
-                            </div>
-                        </div>
-
-                        <!-- O que está incluso -->
-                        <div class="bg-black/40 rounded-xl p-4 border border-white/5 space-y-2 text-xs">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 block mb-1">O que está incluso:</span>
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-check-circle text-emerald-400 text-xs"></i>
-                                <span>Matrícula oficial e vaga garantida</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-check-circle text-emerald-400 text-xs"></i>
-                                <span>Acesso total ao <strong>Kihap App</strong></span>
-                            </div>
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-check-circle text-emerald-400 text-xs"></i>
-                                <span>Acompanhamento e evolução de faixa</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-check-circle text-emerald-400 text-xs"></i>
-                                <span>Seguro de acidentes esportivos da escola</span>
-                            </div>
-                        </div>
-
-                        <!-- Valor Total -->
-                        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex items-center justify-between">
-                            <div>
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-yellow-400/80 block">Valor da Matrícula</span>
-                                <span class="text-xs text-gray-400" id="installment-text">Até 12x no Cartão ou à vista no Pix</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-2xl md:text-3xl font-black text-yellow-400" id="summary-price">R$ 677,00</span>
-                            </div>
-                        </div>
-
-                        <!-- Seleção do Método -->
-                        <div class="space-y-2">
-                            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Forma de Pagamento</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-yellow-500 bg-yellow-500/10 cursor-pointer text-xs font-bold text-white transition payment-method-btn" id="method-all-label">
-                                    <input type="radio" name="paymentMethod" value="all" checked class="hidden">
-                                    <i class="fas fa-credit-card text-yellow-400"></i> Cartão / Pix
-                                </label>
-                                <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] cursor-pointer text-xs font-bold text-gray-300 transition hover:border-gray-600 payment-method-btn" id="method-pix-label">
-                                    <input type="radio" name="paymentMethod" value="pix" class="hidden">
-                                    <i class="fab fa-pix text-emerald-400"></i> Pix Direto
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Botão de Ação -->
-                        <button type="submit" id="submit-matricula-btn" class="w-full py-4 px-6 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase tracking-wider text-sm shadow-lg shadow-yellow-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                            <i class="fas fa-lock"></i>
-                            <span>Concluir Matrícula</span>
-                        </button>
-
-                        <div id="form-error-msg" class="hidden p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-medium text-center"></div>
-
-                        <!-- Selos de Segurança -->
-                        <div class="pt-2 border-t border-[#262626] flex items-center justify-center gap-4 text-gray-500 text-[11px]">
-                            <div class="flex items-center gap-1.5">
-                                <i class="fas fa-shield-halved text-emerald-400"></i> Ambiente Criptografado
-                            </div>
-                            <span>•</span>
-                            <div class="flex items-center gap-1.5">
-                                <i class="fas fa-check-double text-yellow-400"></i> Mercado Pago Oficial
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-            </form>
+            </div>
         </section>
 
-        <!-- Seção: Por que treinar na Kihap? -->
-        <section class="py-16 bg-[#111111] border-y border-white/5 px-4">
-            <div class="max-w-6xl mx-auto">
+        <!-- OS 4 PILARES DA METODOLOGIA -->
+        <section id="diferenciais" class="py-16 md:py-24 bg-[#F8F9FA]">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center max-w-2xl mx-auto mb-14">
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-2">Desenvolvimento Integral</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-gray-900 uppercase">O que seu filho e você aprendem na Kihap</h2>
+                    <p class="text-sm md:text-base text-gray-600 mt-2">Nossa estrutura pedagógica foi desenvolvida para construir habilidades essenciais para a escola, profissão e vida pessoal.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg mb-4">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 mb-2">Foco e Disciplina</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Rotina clara que desenvolve atenção sustentada, respeito a regras e superação de distrações do dia a dia.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg mb-4">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 mb-2">Autoconfiança e Defesa</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Técnicas seguras que ensinam a lidar com situações de conflito e intimidação, sem necessidade de agressividade.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg mb-4">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 mb-2">Saúde e Coordenação</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Equilíbrio, flexibilidade, condicionamento cardiovascular e desenvolvimento motor adaptado à idade.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition">
+                        <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg mb-4">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-gray-900 mb-2">Kihap App Exclusivo</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Acompanhe evolução de faixas, presenças, notas e desafios através do aplicativo oficial no celular.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROGRAMAS POR FAIXA ETÁRIA -->
+        <section id="programas" class="py-16 md:py-24 bg-white border-y border-gray-200">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center max-w-2xl mx-auto mb-14">
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-2">Turmas Estruturadas</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-gray-900 uppercase">Programas por Faixa Etária</h2>
+                    <p class="text-sm text-gray-600 mt-2">Cada fase do crescimento possui objetivos pedagógicos e motores específicos.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <div class="border border-gray-200 rounded-2xl p-5 bg-[#FAFAFA] flex flex-col justify-between">
+                        <div>
+                            <span class="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800 mb-3">1,5 a 4 anos</span>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Baby Littles</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-4">Estímulos psicomotores básicos, coordenação corporal e vínculo de confiança com instrutores e pais.</p>
+                        </div>
+                        <a href="#inscricao" class="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1">
+                            <span>Inscrever neste programa</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <div class="border border-amber-300 rounded-2xl p-5 bg-amber-50/50 flex flex-col justify-between relative shadow-sm">
+                        <span class="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-gray-950">Mais Procurado</span>
+                        <div>
+                            <span class="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-200 text-amber-900 mb-3">5 a 6 anos</span>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Littles</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-4">Desenvolvimento de escuta ativa, postura corporal, primeiros passos das técnicas marciais e trabalho em equipe.</p>
+                        </div>
+                        <a href="#inscricao" class="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1">
+                            <span>Inscrever neste programa</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <div class="border border-gray-200 rounded-2xl p-5 bg-[#FAFAFA] flex flex-col justify-between">
+                        <div>
+                            <span class="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800 mb-3">7 a 12 anos</span>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Kids</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-4">Técnicas de autodefesa, construção de resiliência, liderança e fortalecimento da autoestima contra bullying.</p>
+                        </div>
+                        <a href="#inscricao" class="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1">
+                            <span>Inscrever neste programa</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <div class="border border-gray-200 rounded-2xl p-5 bg-[#FAFAFA] flex flex-col justify-between">
+                        <div>
+                            <span class="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800 mb-3">13+ anos e Adultos</span>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Teens e Adultos</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-4">Alto gasto calórico, redução do estresse diário, flexibilidade, técnicas apuradas e evolução contínua.</p>
+                        </div>
+                        <a href="#inscricao" class="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1">
+                            <span>Inscrever neste programa</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO OFICIAL DE MATRÍCULA E CHECKOUT (LIGHT MODE / ZERO EMOJIS) -->
+        <section id="inscricao" class="py-16 md:py-24 bg-[#F8F9FA] scroll-mt-16">
+            <div class="max-w-6xl mx-auto px-4">
+                
                 <div class="text-center max-w-2xl mx-auto mb-12">
-                    <span class="text-xs font-bold uppercase tracking-widest text-yellow-400 block mb-2">Metodologia Exclusiva</span>
-                    <h2 class="text-2xl md:text-3xl font-black text-white uppercase">Muito mais que uma arte marcial</h2>
-                    <p class="text-sm text-gray-400 mt-2">Um sistema completo de desenvolvimento pessoal, autoconfiança e valores para a vida inteira.</p>
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-2">Inscrição Oficial 2026</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-gray-900 uppercase">Garanta sua Vaga na Turma</h2>
+                    <p class="text-sm text-gray-600 mt-2">Escolha sua unidade de preferência, preencha os dados e finalize sua matrícula com facilidade.</p>
+                </div>
+
+                <form id="matricula-form" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    
+                    <!-- Coluna Principal (Passos 1 e 2) -->
+                    <div class="lg:col-span-7 space-y-8">
+                        
+                        <!-- PASSO 1: ESCOLHA DA UNIDADE -->
+                        <div id="unidades" class="bg-white border border-gray-250 rounded-2xl p-6 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-lg bg-yellow-400 text-gray-950 font-black text-xs flex items-center justify-center">1</span>
+                                    <h3 class="text-lg font-bold text-gray-900 uppercase tracking-wide">Escolha sua Unidade</h3>
+                                </div>
+                                <span class="text-xs text-amber-600 font-bold" id="unit-city-hint">Selecione uma escola</span>
+                            </div>
+
+                            <!-- Filtro de Cidades -->
+                            <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+                                <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-yellow-400 text-gray-950 transition" data-city="all">Todas as Cidades</button>
+                                <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition" data-city="brasilia">Brasília (DF)</button>
+                                <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition" data-city="florianopolis">Florianópolis (SC)</button>
+                                <button type="button" class="city-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition" data-city="dourados">Dourados (MS)</button>
+                            </div>
+
+                            <!-- Grade de Unidades -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="units-grid">
+                                
+                                <!-- Brasília (R$ 677,00) -->
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Jardim Botânico" data-city="brasilia" data-price="67700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Jardim Botânico</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Brasília • DF</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 677,00</span>
+                                    </div>
+                                </div>
+
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Asa Sul" data-city="brasilia" data-price="67700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Asa Sul</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Brasília • DF</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 677,00</span>
+                                    </div>
+                                </div>
+
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Sudoeste" data-city="brasilia" data-price="67700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Sudoeste</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Brasília • DF</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 677,00</span>
+                                    </div>
+                                </div>
+
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Noroeste" data-city="brasilia" data-price="67700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Noroeste</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Brasília • DF</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 677,00</span>
+                                    </div>
+                                </div>
+
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Lago Sul" data-city="brasilia" data-price="67700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Lago Sul</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Brasília • DF</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 677,00</span>
+                                    </div>
+                                </div>
+
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Pontos de Ensino" data-city="brasilia" data-price="67700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Pontos de Ensino</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Brasília • DF</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 677,00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Florianópolis (R$ 507,00) -->
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Santa Mônica" data-city="florianopolis" data-price="50700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Santa Mônica</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Florianópolis • SC</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 507,00</span>
+                                    </div>
+                                </div>
+
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Centro" data-city="florianopolis" data-price="50700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Centro</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Florianópolis • SC</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 507,00</span>
+                                    </div>
+                                </div>
+
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Coqueiros" data-city="florianopolis" data-price="50700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Coqueiros</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Florianópolis • SC</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 507,00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Dourados (R$ 507,00) -->
+                                <div class="unit-card cursor-pointer border border-gray-200 bg-white p-4 rounded-xl transition-all duration-200 relative group hover:border-amber-400" data-unit="Dourados" data-city="dourados" data-price="50700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <h4 class="font-bold text-gray-900 text-sm group-hover:text-amber-600 transition-colors">Dourados</h4>
+                                            <p class="text-[11px] text-gray-500 font-medium">Dourados • MS</p>
+                                        </div>
+                                        <span class="unit-check opacity-0 transition-all w-5 h-5 rounded-full bg-yellow-400 text-gray-950 text-[10px] flex items-center justify-center font-black">
+                                            <i class="fas fa-check"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between text-xs border-t border-gray-100 pt-2">
+                                        <span class="text-gray-500 text-[11px]">Matrícula</span>
+                                        <span class="font-black text-gray-900">R$ 507,00</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <input type="hidden" id="selected-unit-input" name="unidade" value="" required>
+                        </div>
+
+                        <!-- PASSO 2: DADOS DO ALUNO E RESPONSÁVEL -->
+                        <div class="bg-white border border-gray-250 rounded-2xl p-6 shadow-sm space-y-5">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-7 h-7 rounded-lg bg-yellow-400 text-gray-950 font-black text-xs flex items-center justify-center">2</span>
+                                <h3 class="text-lg font-bold text-gray-900 uppercase tracking-wide">Dados da Inscrição</h3>
+                            </div>
+
+                            <!-- Quem vai treinar? -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Quem será o aluno?</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="flex items-center gap-2.5 p-3.5 rounded-xl border border-amber-400 bg-amber-50 cursor-pointer transition" id="type-child-label">
+                                        <input type="radio" name="enrollment_type" value="child" checked class="text-amber-500 focus:ring-amber-500">
+                                        <div>
+                                            <div class="text-xs font-bold text-gray-900">Meu Filho(a) / Menor</div>
+                                            <div class="text-[10px] text-gray-500">Sou o responsável legal</div>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-center gap-2.5 p-3.5 rounded-xl border border-gray-200 bg-gray-50 cursor-pointer transition hover:border-gray-300" id="type-self-label">
+                                        <input type="radio" name="enrollment_type" value="self" class="text-amber-500 focus:ring-amber-500">
+                                        <div>
+                                            <div class="text-xs font-bold text-gray-900">Eu Mesmo</div>
+                                            <div class="text-[10px] text-gray-500">Adulto (18+ anos)</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Nome do Aluno -->
+                            <div>
+                                <label for="aluno-nome" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Nome Completo do Aluno *</label>
+                                <input type="text" id="aluno-nome" name="alunoNome" required placeholder="Ex: Arthur Garcia" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-sm">
+                            </div>
+
+                            <!-- Programa / Faixa Etária -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Programa Desejado *</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div class="program-pill cursor-pointer p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-center transition hover:border-amber-400" data-program="Baby Littles (1,5 a 4 anos)">
+                                        <span class="block text-xs font-bold text-gray-800">Baby</span>
+                                        <span class="text-[10px] text-gray-500">1,5 a 4 anos</span>
+                                    </div>
+                                    <div class="program-pill active cursor-pointer p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-center transition hover:border-amber-400" data-program="Littles (5 a 6 anos)">
+                                        <span class="block text-xs font-bold text-gray-800">Littles</span>
+                                        <span class="text-[10px] text-gray-500">5 a 6 anos</span>
+                                    </div>
+                                    <div class="program-pill cursor-pointer p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-center transition hover:border-amber-400" data-program="Kids (7 a 12 anos)">
+                                        <span class="block text-xs font-bold text-gray-800">Kids</span>
+                                        <span class="text-[10px] text-gray-500">7 a 12 anos</span>
+                                    </div>
+                                    <div class="program-pill cursor-pointer p-2.5 rounded-xl border border-gray-200 bg-gray-50 text-center transition hover:border-amber-400" data-program="Teens & Adultos">
+                                        <span class="block text-xs font-bold text-gray-800">Teens e Adultos</span>
+                                        <span class="text-[10px] text-gray-500">13+ anos</span>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="selected-program-input" name="alunoPrograma" value="Littles (5 a 6 anos)">
+                            </div>
+
+                            <!-- Nome do Responsável (se menor) -->
+                            <div id="parent-name-group">
+                                <label for="responsavel-nome" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Nome do Responsável Legal *</label>
+                                <input type="text" id="responsavel-nome" name="responsavelNome" placeholder="Ex: Roberto Goedert" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-sm">
+                            </div>
+
+                            <!-- Contato: WhatsApp e E-mail -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label for="responsavel-telefone" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">WhatsApp com DDD *</label>
+                                    <input type="tel" id="responsavel-telefone" name="responsavelTelefone" required placeholder="(61) 99999-9999" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-sm">
+                                </div>
+                                <div>
+                                    <label for="responsavel-email" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">E-mail Principal *</label>
+                                    <input type="email" id="responsavel-email" name="responsavelEmail" required placeholder="seu@email.com" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-sm">
+                                </div>
+                            </div>
+
+                            <!-- CPF -->
+                            <div>
+                                <label for="responsavel-cpf" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">CPF do Pagador / Titular *</label>
+                                <input type="text" id="responsavel-cpf" name="responsavelCpf" required placeholder="000.000.000-00" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-sm">
+                                <span class="text-[11px] text-gray-500 block mt-1">Utilizado para validação e emissão do recibo no checkout.</span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Coluna Lateral (Passo 3: Resumo & Pagamento) -->
+                    <div class="lg:col-span-5">
+                        <div class="sticky top-24 bg-white border border-gray-250 rounded-2xl p-6 shadow-lg space-y-6">
+                            
+                            <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-lg bg-yellow-400 text-gray-950 font-black text-xs flex items-center justify-center">3</span>
+                                    <h3 class="text-lg font-bold text-gray-900 uppercase tracking-wide">Resumo da Matrícula</h3>
+                                </div>
+                                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    Oficial
+                                </span>
+                            </div>
+
+                            <!-- Detalhes do Pedido -->
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                                    <span class="text-gray-500 font-medium">Unidade:</span>
+                                    <span class="font-bold text-gray-900 text-right" id="summary-unit">Jardim Botânico</span>
+                                </div>
+                                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                                    <span class="text-gray-500 font-medium">Aluno:</span>
+                                    <span class="font-bold text-gray-900 text-right" id="summary-student">Preencha os dados</span>
+                                </div>
+                                <div class="flex justify-between items-center py-1.5 border-b border-gray-100">
+                                    <span class="text-gray-500 font-medium">Programa:</span>
+                                    <span class="font-bold text-amber-700 text-right" id="summary-program">Littles (5 a 6 anos)</span>
+                                </div>
+                            </div>
+
+                            <!-- O que está incluso (Sem menção a seguro) -->
+                            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 space-y-2.5 text-xs">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500 block mb-1">O que está incluso:</span>
+                                <div class="flex items-center gap-2 text-gray-700">
+                                    <i class="fas fa-check text-emerald-600 text-xs"></i>
+                                    <span>Matrícula oficial e vaga garantida na turma</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-gray-700">
+                                    <i class="fas fa-check text-emerald-600 text-xs"></i>
+                                    <span>Acesso total ao <strong>Kihap App</strong> oficial</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-gray-700">
+                                    <i class="fas fa-check text-emerald-600 text-xs"></i>
+                                    <span>Acompanhamento pedagógico e evolução de faixa</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-gray-700">
+                                    <i class="fas fa-check text-emerald-600 text-xs"></i>
+                                    <span>Acolhimento da coordenação da unidade</span>
+                                </div>
+                            </div>
+
+                            <!-- Valor da Matrícula -->
+                            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-amber-800 block">Valor da Matrícula</span>
+                                    <span class="text-xs text-gray-600" id="installment-text">Até 12x no cartão ou à vista no Pix</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-2xl md:text-3xl font-black text-gray-950" id="summary-price">R$ 677,00</span>
+                                </div>
+                            </div>
+
+                            <!-- Método de Pagamento -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider">Forma de Pagamento</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-amber-400 bg-amber-50 cursor-pointer text-xs font-bold text-gray-900 transition payment-method-btn" id="method-all-label">
+                                        <input type="radio" name="paymentMethod" value="all" checked class="hidden">
+                                        <i class="fas fa-credit-card text-amber-600"></i> Cartão / Pix
+                                    </label>
+                                    <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-gray-200 bg-gray-50 cursor-pointer text-xs font-bold text-gray-600 transition hover:border-gray-300 payment-method-btn" id="method-pix-label">
+                                        <input type="radio" name="paymentMethod" value="pix" class="hidden">
+                                        <i class="fab fa-pix text-emerald-600"></i> Pix Direto
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Botão de Ação -->
+                            <button type="submit" id="submit-matricula-btn" class="w-full py-4 px-6 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-950 font-black uppercase tracking-wider text-sm shadow-lg shadow-yellow-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fas fa-lock"></i>
+                                <span>Concluir Matrícula</span>
+                            </button>
+
+                            <div id="form-error-msg" class="hidden p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-medium text-center"></div>
+
+                            <!-- Selos de Segurança -->
+                            <div class="pt-2 border-t border-gray-100 flex items-center justify-center gap-4 text-gray-500 text-[11px]">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fas fa-lock text-emerald-600"></i> Pagamento Seguro
+                                </div>
+                                <span>•</span>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fas fa-shield-alt text-amber-600"></i> Mercado Pago Oficial
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </form>
+
+            </div>
+        </section>
+
+        <!-- PROVA SOCIAL / DEPOIMENTOS -->
+        <section id="depoimentos" class="py-16 md:py-24 bg-white border-t border-gray-200">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="text-center max-w-2xl mx-auto mb-14">
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-2">Comunidade Kihap</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-gray-900 uppercase">A opinião de quem vive a transformação</h2>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="p-6 rounded-2xl bg-[#161616] border border-[#262626]">
-                        <div class="w-12 h-12 rounded-xl bg-yellow-500/10 text-yellow-400 flex items-center justify-center text-xl mb-4">
-                            <i class="fas fa-brain"></i>
+                    <div class="p-6 rounded-2xl bg-[#FAFAFA] border border-gray-200">
+                        <div class="flex items-center gap-1 text-amber-400 text-xs mb-3">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white mb-2">Foco e Disciplina</h3>
-                        <p class="text-xs text-gray-400 leading-relaxed">Aulas estruturadas com metas claras que ensinam paciência, atenção e respeito aos pais, professores e colegas.</p>
+                        <p class="text-xs text-gray-600 leading-relaxed mb-4">"A mudança no foco e na disciplina do meu filho na escola foi notável já nos primeiros meses de treino. O acolhimento dos instrutores é impecável."</p>
+                        <div class="font-bold text-gray-900 text-xs">Mariana Silveira</div>
+                        <div class="text-[10px] text-gray-500">Mãe de aluno • Unidade Jardim Botânico</div>
                     </div>
 
-                    <div class="p-6 rounded-2xl bg-[#161616] border border-[#262626]">
-                        <div class="w-12 h-12 rounded-xl bg-yellow-500/10 text-yellow-400 flex items-center justify-center text-xl mb-4">
-                            <i class="fas fa-shield-heart"></i>
+                    <div class="p-6 rounded-2xl bg-[#FAFAFA] border border-gray-200">
+                        <div class="flex items-center gap-1 text-amber-400 text-xs mb-3">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white mb-2">Autoconfiança e Defesa</h3>
-                        <p class="text-xs text-gray-400 leading-relaxed">Técnicas reais de defesa pessoal que desenvolvem segurança interior e postura para saber lidar com desafios e bullying.</p>
+                        <p class="text-xs text-gray-600 leading-relaxed mb-4">"Treino há 2 anos na Kihap. O aplicativo facilita muito acompanhar a evolução das faixas e a estrutura da escola é sem dúvidas a melhor de Florianópolis."</p>
+                        <div class="font-bold text-gray-900 text-xs">Carlos Eduardo Mendes</div>
+                        <div class="text-[10px] text-gray-500">Aluno Adulto • Unidade Santa Mônica</div>
                     </div>
 
-                    <div class="p-6 rounded-2xl bg-[#161616] border border-[#262626]">
-                        <div class="w-12 h-12 rounded-xl bg-yellow-500/10 text-yellow-400 flex items-center justify-center text-xl mb-4">
-                            <i class="fas fa-mobile-screen-button"></i>
+                    <div class="p-6 rounded-2xl bg-[#FAFAFA] border border-gray-200">
+                        <div class="flex items-center gap-1 text-amber-400 text-xs mb-3">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white mb-2">App Kihap Integrado</h3>
-                        <p class="text-xs text-gray-400 leading-relaxed">Você e seu filho acompanham cada conquista de faixa, medalha, treinos realizados e comunicados na palma da mão.</p>
+                        <p class="text-xs text-gray-600 leading-relaxed mb-4">"Ambiente muito familiar e respeitoso. Meu filho mais novo começou no Baby e agora a família inteira treina junta. Recomendo de olhos fechados."</p>
+                        <div class="font-bold text-gray-900 text-xs">Patrícia Rangel</div>
+                        <div class="text-[10px] text-gray-500">Família Kihap • Unidade Asa Sul</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Perguntas Frequentes (FAQ) -->
-        <section class="py-16 px-4 max-w-4xl mx-auto">
-            <div class="text-center mb-10">
-                <span class="text-xs font-bold uppercase tracking-widest text-yellow-400 block mb-1">Dúvidas Frequentes</span>
-                <h2 class="text-2xl md:text-3xl font-black text-white uppercase">Tudo o que você precisa saber</h2>
-            </div>
+        <!-- DÚVIDAS FREQUENTES (FAQ) -->
+        <section id="faq" class="py-16 md:py-24 bg-[#F8F9FA] border-t border-gray-200">
+            <div class="max-w-4xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <span class="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-2">Dúvidas Frequentes</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-gray-900 uppercase">Perguntas e Respostas</h2>
+                </div>
 
-            <div class="space-y-3">
-                <details class="bg-[#141414] border border-[#262626] rounded-xl p-4 text-sm group cursor-pointer">
-                    <summary class="font-bold text-white flex justify-between items-center list-none">
-                        <span>Como funciona o primeiro dia de treino após a matrícula?</span>
-                        <i class="fas fa-chevron-down text-yellow-400 text-xs transition group-open:rotate-180"></i>
-                    </summary>
-                    <p class="mt-3 text-xs text-gray-400 leading-relaxed">
-                        Assim que a matrícula for concluída, você receberá a confirmação por e-mail e nossa coordenação da unidade entrará em contato pelo WhatsApp para alinhar o melhor horário da turma e te dar as boas-vindas. No primeiro dia, o aluno já treina e é acolhido pelos instrutores!
-                    </p>
-                </details>
+                <div class="space-y-3">
+                    <details class="bg-white border border-gray-200 rounded-xl p-4 text-sm group cursor-pointer shadow-sm">
+                        <summary class="font-bold text-gray-900 flex justify-between items-center list-none">
+                            <span>Como funciona o primeiro dia de treino após a matrícula?</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition group-open:rotate-180"></i>
+                        </summary>
+                        <p class="mt-3 text-xs text-gray-600 leading-relaxed">
+                            Após a confirmação da matrícula, a coordenação da sua unidade entrará em contato via WhatsApp para alinhar os melhores dias e horários da turma do aluno. No primeiro dia, o aluno é acolhido com carinho pelos professores e já participa da aula prática.
+                        </p>
+                    </details>
 
-                <details class="bg-[#141414] border border-[#262626] rounded-xl p-4 text-sm group cursor-pointer">
-                    <summary class="font-bold text-white flex justify-between items-center list-none">
-                        <span>Precisa de uniforme (dobok) no primeiro dia?</span>
-                        <i class="fas fa-chevron-down text-yellow-400 text-xs transition group-open:rotate-180"></i>
-                    </summary>
-                    <p class="mt-3 text-xs text-gray-400 leading-relaxed">
-                        Não! Nos primeiros dias o aluno pode ir com roupa confortável (calça de moletom/legging e camiseta). O uniforme oficial pode ser adquirido diretamente na nossa loja ou na recepção da sua unidade.
-                    </p>
-                </details>
+                    <details class="bg-white border border-gray-200 rounded-xl p-4 text-sm group cursor-pointer shadow-sm">
+                        <summary class="font-bold text-gray-900 flex justify-between items-center list-none">
+                            <span>É necessário uniforme oficial no primeiro dia?</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition group-open:rotate-180"></i>
+                        </summary>
+                        <p class="mt-3 text-xs text-gray-600 leading-relaxed">
+                            Não é obrigatório no início. Nas primeiras aulas o aluno pode treinar com roupa esportiva leve e confortável (camiseta e calça de moletom ou legging). O uniforme oficial (dobok) pode ser adquirido na loja física da escola ou pelo app.
+                        </p>
+                    </details>
 
-                <details class="bg-[#141414] border border-[#262626] rounded-xl p-4 text-sm group cursor-pointer">
-                    <summary class="font-bold text-white flex justify-between items-center list-none">
-                        <span>Posso parcelar o valor da matrícula?</span>
-                        <i class="fas fa-chevron-down text-yellow-400 text-xs transition group-open:rotate-180"></i>
-                    </summary>
-                    <p class="mt-3 text-xs text-gray-400 leading-relaxed">
-                        Sim! No checkout do Mercado Pago você pode pagar à vista com Pix ou parcelar em até 12x no cartão de crédito de sua preferência.
-                    </p>
-                </details>
+                    <details class="bg-white border border-gray-200 rounded-xl p-4 text-sm group cursor-pointer shadow-sm">
+                        <summary class="font-bold text-gray-900 flex justify-between items-center list-none">
+                            <span>Quais são as formas de pagamento disponíveis?</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition group-open:rotate-180"></i>
+                        </summary>
+                        <p class="mt-3 text-xs text-gray-600 leading-relaxed">
+                            O pagamento da matrícula é processado através do Mercado Pago. Você pode optar pelo Pix com confirmação instantânea ou parcelar no cartão de crédito em até 12 vezes.
+                        </p>
+                    </details>
 
-                <details class="bg-[#141414] border border-[#262626] rounded-xl p-4 text-sm group cursor-pointer">
-                    <summary class="font-bold text-white flex justify-between items-center list-none">
-                        <span>Se eu precisar mudar de unidade ou horário mais tarde, é possível?</span>
-                        <i class="fas fa-chevron-down text-yellow-400 text-xs transition group-open:rotate-180"></i>
-                    </summary>
-                    <p class="mt-3 text-xs text-gray-400 leading-relaxed">
-                        Com certeza. A Kihap possui rede integrada. Caso sua rotina mude ou você precise trocar de escola parceira ou horário, nossa equipe realiza a transferência sem custos adicionais de matrícula.
-                    </p>
-                </details>
+                    <details class="bg-white border border-gray-200 rounded-xl p-4 text-sm group cursor-pointer shadow-sm">
+                        <summary class="font-bold text-gray-900 flex justify-between items-center list-none">
+                            <span>Como acesso o aplicativo da Kihap?</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition group-open:rotate-180"></i>
+                        </summary>
+                        <p class="mt-3 text-xs text-gray-600 leading-relaxed">
+                            O Kihap App está disponível na App Store e Google Play. Com o e-mail cadastrado na matrícula, você cria sua senha e tem acesso imediato à sua área do aluno.
+                        </p>
+                    </details>
+                </div>
             </div>
         </section>
 
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-black border-t border-white/10 py-8 px-4 text-center text-xs text-gray-500">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-2">
-                <img src="/assets/favicon.jpg" alt="Logo" class="w-6 h-6 rounded-lg opacity-70">
-                <span class="font-bold text-gray-400">© 2026 Kihap Martial Arts. Todos os direitos reservados.</span>
+    <!-- Footer Oficial -->
+    <footer class="bg-gray-950 text-white border-t border-gray-800 py-10 px-4 text-xs">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <img src="/assets/favicon.jpg" alt="Logo Kihap" class="w-8 h-8 rounded-lg opacity-80">
+                <div class="text-left">
+                    <div class="font-bold text-white">Kihap Martial Arts</div>
+                    <div class="text-gray-400 text-[11px]">© 2026 Todos os direitos reservados.</div>
+                </div>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="/privacidade" class="hover:text-yellow-400 transition">Política de Privacidade</a>
-                <span>•</span>
-                <a href="/sobre" class="hover:text-yellow-400 transition">Sobre a Kihap</a>
-                <span>•</span>
-                <a href="https://wa.me/554892182423" target="_blank" rel="noopener" class="text-emerald-400 font-bold hover:underline flex items-center gap-1">
+
+            <div class="flex items-center gap-6 text-gray-400 font-medium">
+                <a href="/privacidade" class="hover:text-yellow-400 transition">Privacidade</a>
+                <a href="/sobre" class="hover:text-yellow-400 transition">Sobre</a>
+                <a href="https://wa.me/554892182423" target="_blank" rel="noopener" class="text-emerald-400 font-bold hover:underline flex items-center gap-1.5">
                     <i class="fab fa-whatsapp"></i> Fale Conosco
                 </a>
             </div>
@@ -612,7 +826,7 @@
     </footer>
 
     <!-- Script de Interação e Checkout -->
-    <script src="/js/matricula.js?v=1.0" type="module"></script>
+    <script src="/js/matricula.js?v=2.0" type="module"></script>
 </body>
 
 </html>
