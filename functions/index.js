@@ -721,6 +721,21 @@ async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paym
     await docRef.update(updateData);
     console.log(`[updateSaleToPaid] Status atualizado para 'paid' para a venda ${saleId}`);
 
+    // Se for venda de matrícula online, move o Lead no CRM para 'Matrícula'
+    if (saleData.isMatricula || saleData.productId === 'matricula-online') {
+        try {
+            if (saleData.leadId) {
+                await db.collection('leads').doc(saleData.leadId).update({
+                    status: 'Matrícula',
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+                console.log(`[updateSaleToPaid] Lead ${saleData.leadId} atualizado para status 'Matrícula' no CRM!`);
+            }
+        } catch (leadUpdateErr) {
+            console.warn('[updateSaleToPaid] Erro ao atualizar lead para Matrícula:', leadUpdateErr.message);
+        }
+    }
+
     // Confirmação de assentos do evento (se houver)
     try {
         if (saleData.productId && (saleData.seatId || (saleData.selectedSeats && saleData.selectedSeats.length > 0))) {
@@ -5120,6 +5135,32 @@ exports.metaLeadWebhook = functions.https.onRequest(async (req, res) => {
 
     return res.status(405).send('Method Not Allowed');
 });
+
+// --- MATRÍCULA ONLINE ---
+const { processMatriculaCheckout } = require('./matricula.js');
+
+exports.createMatriculaCheckoutSession = functions.https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(204).send('');
+    }
+
+    try {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Método não permitido.' });
+        }
+
+        const result = await processMatriculaCheckout(req.body);
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error('[createMatriculaCheckoutSession] Erro:', error);
+        return res.status(400).json({ error: error.message || 'Erro ao processar matrícula.' });
+    }
+});
+
 
 
 

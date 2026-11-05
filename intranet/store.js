@@ -925,6 +925,13 @@ export async function setupStorePage() {
             }
 
             let productDisplay = `<span class="font-bold text-gray-900 dark:text-white">${sale.productName || 'N/A'}</span>`;
+            if (sale.isMatricula || sale.productId === 'matricula-online') {
+                productDisplay += `<div class="mt-1 flex items-center gap-1.5">
+                    <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 dark:text-yellow-400 dark:bg-yellow-500/20 rounded-md border border-amber-300 dark:border-yellow-500/30">
+                        <i class="fas fa-graduation-cap mr-1"></i> Matrícula • ${sale.userUnit || 'Geral'}
+                    </span>
+                </div>`;
+            }
             if (sale.seatId) {
                 productDisplay += `<div class="mt-1 flex flex-wrap items-center gap-1">
                     ${sale.sessionLabel ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded">${sale.sessionLabel}</span>` : ''}
@@ -4164,6 +4171,11 @@ Requisitos:
 
         // Populate products
         productFilter.innerHTML = '<option value="">Todos os Produtos</option>';
+        const matriculaOpt = document.createElement('option');
+        matriculaOpt.value = 'matricula-online';
+        matriculaOpt.textContent = '🎓 Matrículas Online';
+        productFilter.appendChild(matriculaOpt);
+
         allProducts.forEach(product => {
             const option = document.createElement('option');
             option.value = product.id;
