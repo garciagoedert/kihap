@@ -74,35 +74,24 @@
 
 <body class="min-h-screen flex flex-col antialiased selection:bg-yellow-400 selection:text-black">
 
-    <!-- Top Announcement Bar -->
-    <div class="bg-gray-900 text-white text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2">
-        <i class="fas fa-bullhorn text-yellow-400"></i>
-        <span>Vagas oficiais abertas para novas turmas • Unidades Brasília, Florianópolis e Dourados</span>
-    </div>
-
-    <!-- Header / Navbar Principal -->
+    <!-- Header -->
     <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200">
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-            <a href="/" class="flex items-center gap-3">
-                <img src="/imgs/logo.png" alt="Kihap Martial Arts" class="h-8 object-contain">
+            <a href="/" class="flex items-center gap-3 group">
+                <img src="/assets/favicon.jpg" alt="Logo Kihap" class="w-9 h-9 rounded-xl border border-yellow-500/30 group-hover:scale-105 transition-transform">
+                <div class="flex flex-col">
+                    <span class="font-black text-sm md:text-base tracking-wider text-gray-900 uppercase font-title leading-tight">KIHAP</span>
+                    <span class="text-[10px] text-amber-600 font-semibold uppercase tracking-widest leading-none">Martial Arts</span>
+                </div>
             </a>
 
-            <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-600">
-                <a href="#diferenciais" class="hover:text-yellow-600 transition">Diferenciais</a>
-                <a href="#programas" class="hover:text-yellow-600 transition">Programas</a>
-                <a href="#unidades" class="hover:text-yellow-600 transition">Unidades</a>
-                <a href="#depoimentos" class="hover:text-yellow-600 transition">Depoimentos</a>
-                <a href="#faq" class="hover:text-yellow-600 transition">Dúvidas</a>
-            </nav>
-
             <div class="flex items-center gap-3">
-                <a href="https://wa.me/554892182423?text=Ol%C3%A1!%20Gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20a%20matr%C3%ADcula%20Kihap." target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                    <i class="fas fa-certificate text-[10px] text-amber-600"></i> Matrículas 2026
+                </span>
+                <a href="https://wa.me/554892182423?text=Ol%C3%A1!%20Tenho%20d%C3%BAvidas%20sobre%20a%20matr%C3%ADcula%20online%20da%20Kihap." target="_blank" rel="noopener" class="px-3.5 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-200 text-xs font-semibold text-gray-700 hover:text-gray-900 transition flex items-center gap-1.5">
                     <i class="fab fa-whatsapp text-emerald-600"></i>
                     <span>Tirar Dúvidas</span>
-                </a>
-                <a href="#inscricao" class="px-5 py-2.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-extrabold text-xs uppercase tracking-wider transition shadow-sm active:scale-95 flex items-center gap-1.5">
-                    <span>Matricular Agora</span>
-                    <i class="fas fa-arrow-right text-[11px]"></i>
                 </a>
             </div>
         </div>
@@ -711,40 +700,76 @@
             </div>
         </section>
 
-        <!-- PROVA SOCIAL / DEPOIMENTOS -->
+        <!-- DEPOIMENTOS EM VÍDEO (HISTÓRIAS DE TRANSFORMAÇÃO) -->
         <section id="depoimentos" class="py-16 md:py-24 bg-white border-t border-gray-200">
-            <div class="max-w-6xl mx-auto px-4">
-                <div class="text-center max-w-2xl mx-auto mb-14">
-                    <span class="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-2">Comunidade Kihap</span>
-                    <h2 class="text-3xl md:text-4xl font-black text-gray-900 uppercase">A opinião de quem vive a transformação</h2>
-                </div>
+            <div class="max-w-5xl mx-auto px-4 text-center">
+                <span class="text-xs font-bold uppercase tracking-widest text-amber-600 block mb-2">Comunidade Kihap</span>
+                <h2 class="text-3xl md:text-5xl uppercase font-title text-gray-900">Histórias de <span class="text-amber-500">Transformação</span></h2>
+                <p class="mt-3 max-w-2xl mx-auto text-gray-600 text-sm md:text-base">Veja como a metodologia da Kihap impacta a rotina, o foco e a união familiar.</p>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="p-6 rounded-2xl bg-[#FAFAFA] border border-gray-200">
-                        <div class="flex items-center gap-1 text-amber-400 text-xs mb-3">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p class="text-xs text-gray-600 leading-relaxed mb-4">"A mudança no foco e na disciplina do meu filho na escola foi notável já nos primeiros meses de treino. O acolhimento dos instrutores é impecável."</p>
-                        <div class="font-bold text-gray-900 text-xs">Mariana Silveira</div>
-                        <div class="text-[10px] text-gray-500">Mãe de aluno • Unidade Jardim Botânico</div>
-                    </div>
+                <!-- Spotlight Card: Sr. Lopacinski & Família com Vídeo Oficial -->
+                <div class="mt-12 bg-white rounded-3xl p-6 sm:p-10 md:p-12 shadow-xl border border-amber-500/20 text-left relative overflow-hidden">
+                    <!-- Subtle background decorative glow -->
+                    <div class="absolute -top-24 -right-24 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
 
-                    <div class="p-6 rounded-2xl bg-[#FAFAFA] border border-gray-200">
-                        <div class="flex items-center gap-1 text-amber-400 text-xs mb-3">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-center relative z-10">
+                        <!-- Left Column: Video Embed (Vertical 9/16) -->
+                        <div class="lg:col-span-5 flex justify-center">
+                            <div class="w-full max-w-[300px] sm:max-w-[320px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl bg-black border-2 border-amber-400/40 relative">
+                                <iframe src="https://www.youtube.com/embed/aPXzQiWleX8" 
+                                    title="Depoimento Família Lopacinski - Kihap Martial Arts" 
+                                    frameborder="0" 
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowfullscreen 
+                                    class="w-full h-full border-0">
+                                </iframe>
+                            </div>
                         </div>
-                        <p class="text-xs text-gray-600 leading-relaxed mb-4">"Treino há 2 anos na Kihap. O aplicativo facilita muito acompanhar a evolução das faixas e a estrutura da escola é sem dúvidas a melhor de Florianópolis."</p>
-                        <div class="font-bold text-gray-900 text-xs">Carlos Eduardo Mendes</div>
-                        <div class="text-[10px] text-gray-500">Aluno Adulto • Unidade Santa Mônica</div>
-                    </div>
 
-                    <div class="p-6 rounded-2xl bg-[#FAFAFA] border border-gray-200">
-                        <div class="flex items-center gap-1 text-amber-400 text-xs mb-3">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        <!-- Right Column: Story Narrative, Quotes & CTA -->
+                        <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                            <div>
+                                <div class="flex items-center gap-1 text-amber-400 text-sm mb-3">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                </div>
+
+                                <blockquote class="text-xl sm:text-2xl font-bold text-gray-900 leading-snug font-title mb-4">
+                                    "A arte marcial fortaleceu nossa família, trouxe disciplina para o dia a dia e um propósito compartilhado no tatame."
+                                </blockquote>
+
+                                <p class="text-gray-600 text-sm sm:text-base leading-relaxed mb-6">
+                                    Conheça a história do <strong>Sr. Lopacinski</strong>, que encontrou na Kihap o ambiente ideal para evoluir fisicamente e mentalmente ao lado de sua família, vivenciando os valores de respeito, foco e superação.
+                                </p>
+
+                                <!-- Value Badges -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
+                                        <p class="text-xs font-black uppercase text-gray-900 font-title">Aula em Família</p>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">Conexão além do tatame</p>
+                                    </div>
+                                    <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
+                                        <p class="text-xs font-black uppercase text-gray-900 font-title">Foco e Disciplina</p>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">Evolução constante</p>
+                                    </div>
+                                    <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
+                                        <p class="text-xs font-black uppercase text-gray-900 font-title">Faixa Preta</p>
+                                        <p class="text-[11px] text-gray-500 mt-0.5">Estilo de vida</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CTA do Card -->
+                            <div class="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-start gap-4">
+                                <a href="#inscricao" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-black text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2">
+                                    <span>Garantir Vaga na Família Kihap</span>
+                                    <i class="fas fa-arrow-right text-[11px]"></i>
+                                </a>
+                            </div>
                         </div>
-                        <p class="text-xs text-gray-600 leading-relaxed mb-4">"Ambiente muito familiar e respeitoso. Meu filho mais novo começou no Baby e agora a família inteira treina junta. Recomendo de olhos fechados."</p>
-                        <div class="font-bold text-gray-900 text-xs">Patrícia Rangel</div>
-                        <div class="text-[10px] text-gray-500">Família Kihap • Unidade Asa Sul</div>
                     </div>
                 </div>
             </div>
