@@ -435,6 +435,8 @@ export async function setupStorePage() {
     const activeLocationNameInput = document.getElementById('active-location-name');
     const activeLocationVenueInput = document.getElementById('active-location-venue');
     const activeLocationAddressInput = document.getElementById('active-location-address');
+    const activeLocationPriceInput = document.getElementById('active-location-price');
+    const activeLocationExtraTicketPriceInput = document.getElementById('active-location-extra-ticket-price');
     let currentLocationsList = [];
     let activeLocationIndex = 0;
 
@@ -443,6 +445,16 @@ export async function setupStorePage() {
     const extraTicketPriceContainer = document.getElementById('extra-ticket-price-container');
     const productExtraTicketPriceInput = document.getElementById('product-extra-ticket-price');
     const productIncludedTicketsCountInput = document.getElementById('product-included-tickets-count');
+
+    // Meia-Entrada elements (Ingressos & Espetáculos)
+    const productHasHalfPriceInput = document.getElementById('product-has-half-price');
+    const halfPriceContainer = document.getElementById('half-price-container');
+    const productHalfPriceInput = document.getElementById('product-half-price');
+    const productHalfPricePixInput = document.getElementById('product-half-price-pix');
+    const productExtraTicketHalfPriceInput = document.getElementById('product-extra-ticket-half-price');
+    const extraTicketHalfPriceBox = document.getElementById('extra-ticket-half-price-box');
+    const btnCalcHalfPrice = document.getElementById('btn-calc-half-price');
+    const btnCalcExtraHalfPrice = document.getElementById('btn-calc-extra-half-price');
 
     // Banner Management elements
     const bannerForm = document.getElementById('banner-form');
@@ -1433,6 +1445,14 @@ export async function setupStorePage() {
         if (activeLocationNameInput) loc.name = activeLocationNameInput.value.trim() || `Local ${activeLocationIndex + 1}`;
         if (activeLocationVenueInput) loc.venue = activeLocationVenueInput.value.trim();
         if (activeLocationAddressInput) loc.address = activeLocationAddressInput.value.trim();
+        if (activeLocationPriceInput) {
+            const parsed = parseInt(activeLocationPriceInput.value, 10);
+            loc.price = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+        }
+        if (activeLocationExtraTicketPriceInput) {
+            const parsed = parseInt(activeLocationExtraTicketPriceInput.value, 10);
+            loc.extraTicketPrice = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+        }
         loc.seatMapConfig = {
             layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
             rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
@@ -1455,15 +1475,29 @@ export async function setupStorePage() {
         if (activeLocationNameInput) activeLocationNameInput.value = loc.name || '';
         if (activeLocationVenueInput) activeLocationVenueInput.value = loc.venue || '';
         if (activeLocationAddressInput) activeLocationAddressInput.value = loc.address || '';
+        if (activeLocationPriceInput) activeLocationPriceInput.value = (loc.price !== undefined && loc.price !== null) ? loc.price : '';
+        if (activeLocationExtraTicketPriceInput) activeLocationExtraTicketPriceInput.value = (loc.extraTicketPrice !== undefined && loc.extraTicketPrice !== null) ? loc.extraTicketPrice : '';
 
         const smConfig = loc.seatMapConfig || {};
         if (seatMapLayoutTypeInput) {
-            seatMapLayoutTypeInput.value = smConfig.layoutType || 'theater';
-            if (arena360Settings) arena360Settings.classList.toggle('hidden', smConfig.layoutType !== 'arena_4_sides');
+            const locLayout = smConfig.layoutType || 'theater';
+            seatMapLayoutTypeInput.value = locLayout;
+            if (arena360Settings) arena360Settings.classList.toggle('hidden', locLayout !== 'arena_4_sides' && locLayout !== 'arena_u_shape');
+            const topRowsLabel = document.getElementById('arena-top-rows-label');
+            const topRowsHint = document.getElementById('arena-top-rows-hint');
+            if (locLayout === 'arena_u_shape') {
+                if (topRowsLabel) topRowsLabel.textContent = 'Fileiras Setor Sul (Inferior)';
+                if (topRowsHint) topRowsHint.textContent = 'Fileiras no bloco inferior (Sul)';
+            } else {
+                if (topRowsLabel) topRowsLabel.textContent = 'Fileiras Norte & Sul';
+                if (topRowsHint) topRowsHint.textContent = 'Fileiras nos blocos superior e inferior';
+            }
             if (seatMapLayoutHint) {
-                if (smConfig.layoutType === 'gym_sides') {
+                if (locLayout === 'gym_sides') {
                     seatMapLayoutHint.textContent = 'Tatame no centro da quadra, com assentos divididos nas Alas Esquerda e Direita.';
-                } else if (smConfig.layoutType === 'arena_4_sides') {
+                } else if (locLayout === 'arena_u_shape') {
+                    seatMapLayoutHint.textContent = 'Formato em U: tatame central circundado por 3 setores (Oeste, Sul e Leste, aberto ao Norte).';
+                } else if (locLayout === 'arena_4_sides') {
                     seatMapLayoutHint.textContent = 'Tatame central circundado por 4 setores (Norte, Sul, Leste e Oeste).';
                 } else {
                     seatMapLayoutHint.textContent = 'Tatame no topo com público à frente em fileiras contínuas.';
@@ -1504,9 +1538,15 @@ export async function setupStorePage() {
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
             }`;
 
+            const hasCustomPrices = Boolean(loc.price || loc.extraTicketPrice);
+            const priceTagIndicator = hasCustomPrices
+                ? `<span class="px-1.5 py-0.2 rounded-md ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-500'} text-[10px]" title="Possui preço personalizado">R$</span>`
+                : '';
+
             tabBtn.innerHTML = `
                 <i class="fas fa-map-marker-alt text-[10px]"></i>
                 <span>${loc.name || `Local ${idx + 1}`}</span>
+                ${priceTagIndicator}
                 ${currentLocationsList.length > 1 ? `
                 <button type="button" class="btn-remove-location ml-1.5 text-gray-400 hover:text-red-500 transition-colors" title="Remover Local">
                     &times;
@@ -1545,6 +1585,8 @@ export async function setupStorePage() {
             name: `Local ${nextNum}`,
             venue: '',
             address: '',
+            price: null,
+            extraTicketPrice: null,
             seatMapConfig: {
                 layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
                 rows: 8,
@@ -1577,6 +1619,26 @@ export async function setupStorePage() {
         });
     }
 
+    if (activeLocationPriceInput) {
+        activeLocationPriceInput.addEventListener('input', () => {
+            if (currentLocationsList[activeLocationIndex]) {
+                const parsed = parseInt(activeLocationPriceInput.value, 10);
+                currentLocationsList[activeLocationIndex].price = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+                renderLocationTabs();
+            }
+        });
+    }
+
+    if (activeLocationExtraTicketPriceInput) {
+        activeLocationExtraTicketPriceInput.addEventListener('input', () => {
+            if (currentLocationsList[activeLocationIndex]) {
+                const parsed = parseInt(activeLocationExtraTicketPriceInput.value, 10);
+                currentLocationsList[activeLocationIndex].extraTicketPrice = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+                renderLocationTabs();
+            }
+        });
+    }
+
     if (productHasLocationsInput) {
         productHasLocationsInput.addEventListener('change', () => {
             if (productHasLocationsInput.checked) {
@@ -1587,6 +1649,8 @@ export async function setupStorePage() {
                         name: 'Brasília - DF',
                         venue: '',
                         address: '',
+                        price: null,
+                        extraTicketPrice: null,
                         seatMapConfig: {
                             layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
                             rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
@@ -1803,10 +1867,7 @@ export async function setupStorePage() {
             const centerTatameDiv = document.createElement('div');
             centerTatameDiv.className = 'flex flex-col items-center justify-center my-2 md:my-0 px-8 py-14 bg-gradient-to-b from-amber-500/15 via-amber-500/25 to-amber-500/15 border-2 border-dashed border-amber-500/50 rounded-3xl min-w-[170px] shadow-sm select-none text-center';
             centerTatameDiv.innerHTML = `
-                <span class="text-3xl mb-1.5">🥋</span>
                 <span class="text-xs font-black text-amber-700 dark:text-amber-300 uppercase tracking-widest">${stageLabel || 'TATAME CENTRAL'}</span>
-                <span class="text-[9px] text-gray-500 dark:text-gray-400 mt-1 uppercase font-bold tracking-wider">Área Central de Lutas</span>
-                <div class="w-12 h-0.5 bg-amber-500/40 rounded-full mt-2"></div>
             `;
 
             // 3. Ala Direita
@@ -1843,62 +1904,65 @@ export async function setupStorePage() {
             gymWrapper.appendChild(rightWingDiv);
 
             intranetSeatGridContainer.appendChild(gymWrapper);
-        } else if (layoutType === 'arena_4_sides') {
-            // Layout 3: Arena 360° (Tatame Central, 4 Lados)
+        } else if (layoutType === 'arena_4_sides' || layoutType === 'arena_u_shape') {
+            // Layout 3 & 4: Arena 360° (4 Lados) e Formato em U (Sem Setor Norte)
             if (previewStageLabel) previewStageLabel.classList.add('hidden');
 
-            const topRows = Math.min(Math.max(1, parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
-            const bottomRows = Math.min(Math.max(1, parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
+            const isUShape = (layoutType === 'arena_u_shape');
+            const topRows = isUShape ? 0 : Math.min(Math.max(1, parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2), Math.max(1, Math.floor((numRows - 1) / 2)));
+            const bottomRows = Math.min(Math.max(1, parseInt(seatMapTopRowsInput ? seatMapTopRowsInput.value : 2, 10) || 2), Math.max(1, isUShape ? numRows - 1 : Math.floor((numRows - 1) / 2)));
             const sideCols = Math.min(Math.max(1, parseInt(seatMapSideColsInput ? seatMapSideColsInput.value : 4, 10) || 4), Math.max(1, Math.floor((numCols - 2) / 2)));
 
             const arenaWrapper = document.createElement('div');
             arenaWrapper.className = 'flex flex-col items-center gap-5 p-2 w-full';
 
-            // 1. Setor Superior (Norte)
-            const topSectorDiv = document.createElement('div');
-            topSectorDiv.className = 'flex flex-col items-center';
-            topSectorDiv.innerHTML = `
-                <div class="px-3 py-1 mb-2 bg-indigo-500/10 border border-indigo-500/30 rounded-lg text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <i class="fas fa-arrow-up text-[10px]"></i> Setor Superior / Norte
-                </div>
-            `;
-            const topRowsDiv = document.createElement('div');
-            topRowsDiv.className = 'space-y-1.5';
-            for (let r = 0; r < topRows; r++) {
-                const rowLetter = alphabet[r];
-                const rDiv = document.createElement('div');
-                rDiv.className = 'flex items-center gap-1.5 justify-center';
+            // 1. Setor Superior (Norte) - Somente na Arena 4 Lados
+            if (!isUShape && topRows > 0) {
+                const topSectorDiv = document.createElement('div');
+                topSectorDiv.className = 'flex flex-col items-center';
+                topSectorDiv.innerHTML = `
+                    <div class="px-3 py-1 mb-2 bg-indigo-500/10 border border-indigo-500/30 rounded-lg text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-arrow-up text-[10px]"></i> Setor Superior / Norte
+                    </div>
+                `;
+                const topRowsDiv = document.createElement('div');
+                topRowsDiv.className = 'space-y-1.5';
+                for (let r = 0; r < topRows; r++) {
+                    const rowLetter = alphabet[r];
+                    const rDiv = document.createElement('div');
+                    rDiv.className = 'flex items-center gap-1.5 justify-center';
 
-                const lblLeft = document.createElement('span');
-                lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
-                lblLeft.textContent = rowLetter;
-                rDiv.appendChild(lblLeft);
+                    const lblLeft = document.createElement('span');
+                    lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                    lblLeft.textContent = rowLetter;
+                    rDiv.appendChild(lblLeft);
 
-                for (let c = 1; c <= numCols; c++) {
-                    const seatId = `${rowLetter}-${c}`;
-                    rDiv.appendChild(createSeatBtn(seatId, c, 'Setor Superior'));
+                    for (let c = 1; c <= numCols; c++) {
+                        const seatId = `${rowLetter}-${c}`;
+                        rDiv.appendChild(createSeatBtn(seatId, c, 'Setor Superior'));
+                    }
+
+                    const lblRight = document.createElement('span');
+                    lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                    lblRight.textContent = rowLetter;
+                    rDiv.appendChild(lblRight);
+
+                    topRowsDiv.appendChild(rDiv);
                 }
-
-                const lblRight = document.createElement('span');
-                lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
-                lblRight.textContent = rowLetter;
-                rDiv.appendChild(lblRight);
-
-                topRowsDiv.appendChild(rDiv);
+                topSectorDiv.appendChild(topRowsDiv);
+                arenaWrapper.appendChild(topSectorDiv);
             }
-            topSectorDiv.appendChild(topRowsDiv);
-            arenaWrapper.appendChild(topSectorDiv);
 
             // 2. Meio: Setor Oeste + Tatame Central + Setor Leste
             const midRowDiv = document.createElement('div');
-            midRowDiv.className = 'flex flex-row items-center justify-center gap-4 sm:gap-6 w-full';
+            midRowDiv.className = 'flex flex-row items-stretch justify-center gap-3 sm:gap-6 w-full';
 
             // 2a. Setor Oeste (Esquerda)
             const leftSectorDiv = document.createElement('div');
             leftSectorDiv.className = 'flex flex-col items-center';
             leftSectorDiv.innerHTML = `
-                <div class="px-2.5 py-1 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                    <i class="fas fa-arrow-left text-[9px]"></i> Setor Oeste (Esq)
+                <div class="px-2.5 py-1 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[11px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-arrow-left text-[9px]"></i> Setor Oeste (Lateral)
                 </div>
             `;
             const leftRowsDiv = document.createElement('div');
@@ -1922,16 +1986,13 @@ export async function setupStorePage() {
             leftSectorDiv.appendChild(leftRowsDiv);
             midRowDiv.appendChild(leftSectorDiv);
 
-            // 2b. Tatame Central 360°
+            // 2b. Tatame Central (Acompanha toda a extensão das fileiras laterais para visão frontal contínua)
             const arenaCenterTatame = document.createElement('div');
-            arenaCenterTatame.className = 'flex-1 max-w-sm flex flex-col items-center justify-center py-10 px-6 bg-gradient-to-br from-amber-500/20 via-yellow-500/15 to-amber-600/20 border-2 border-dashed border-amber-500/60 rounded-3xl shadow-inner text-center select-none';
+            arenaCenterTatame.className = 'flex-1 self-stretch min-w-[160px] sm:min-w-[240px] max-w-md flex flex-col items-center justify-center p-4 bg-gradient-to-b from-amber-500/15 via-yellow-500/10 to-amber-500/15 border-2 border-dashed border-amber-500/60 rounded-3xl shadow-sm text-center select-none relative';
             arenaCenterTatame.innerHTML = `
-                <span class="text-3xl mb-1">🥋</span>
                 <span class="font-black text-xs sm:text-sm text-amber-700 dark:text-amber-300 tracking-widest uppercase">
-                    ${stageLabel || 'TATAME CENTRAL'}
+                    ${stageLabel || 'TATAME'}
                 </span>
-                <span class="text-[9px] text-gray-500 font-bold mt-1 tracking-tight">ARENA 360° • KIHAP</span>
-                <div class="w-16 h-0.5 bg-amber-500/40 rounded-full mt-2"></div>
             `;
             midRowDiv.appendChild(arenaCenterTatame);
 
@@ -1939,8 +2000,8 @@ export async function setupStorePage() {
             const rightSectorDiv = document.createElement('div');
             rightSectorDiv.className = 'flex flex-col items-center';
             rightSectorDiv.innerHTML = `
-                <div class="px-2.5 py-1 mb-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1">
-                    Setor Leste (Dir) <i class="fas fa-arrow-right text-[9px]"></i>
+                <div class="px-2.5 py-1 mb-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    Setor Leste (Lateral) <i class="fas fa-arrow-right text-[9px]"></i>
                 </div>
             `;
             const rightRowsDiv = document.createElement('div');
@@ -1971,8 +2032,8 @@ export async function setupStorePage() {
             const bottomSectorDiv = document.createElement('div');
             bottomSectorDiv.className = 'flex flex-col items-center';
             bottomSectorDiv.innerHTML = `
-                <div class="px-3 py-1 mb-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <i class="fas fa-arrow-down text-[10px]"></i> Setor Inferior / Sul
+                <div class="px-3 py-1 mb-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                    <i class="fas fa-arrow-down text-[10px]"></i> Setor Sul (Frontal)
                 </div>
             `;
             const bottomRowsDiv = document.createElement('div');
@@ -2041,6 +2102,43 @@ export async function setupStorePage() {
     if (productHasExtraTicketPriceInput && extraTicketPriceContainer) {
         productHasExtraTicketPriceInput.addEventListener('change', () => {
             extraTicketPriceContainer.classList.toggle('hidden', !productHasExtraTicketPriceInput.checked);
+            if (extraTicketHalfPriceBox) {
+                extraTicketHalfPriceBox.classList.toggle('hidden', !(productHasExtraTicketPriceInput.checked && productHasHalfPriceInput && productHasHalfPriceInput.checked));
+            }
+        });
+    }
+
+    if (productHasHalfPriceInput && halfPriceContainer) {
+        productHasHalfPriceInput.addEventListener('change', () => {
+            const isChecked = productHasHalfPriceInput.checked;
+            halfPriceContainer.classList.toggle('hidden', !isChecked);
+            if (extraTicketHalfPriceBox) {
+                extraTicketHalfPriceBox.classList.toggle('hidden', !(isChecked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked));
+            }
+            if (isChecked && (!productHalfPriceInput.value || productHalfPriceInput.value === '0')) {
+                const baseP = parseInt(productPriceInput ? productPriceInput.value : 0, 10) || 0;
+                if (baseP > 0) {
+                    productHalfPriceInput.value = Math.round(baseP / 2);
+                }
+            }
+        });
+    }
+
+    if (btnCalcHalfPrice && productHalfPriceInput && productPriceInput) {
+        btnCalcHalfPrice.addEventListener('click', () => {
+            const baseP = parseInt(productPriceInput.value, 10) || 0;
+            if (baseP > 0) {
+                productHalfPriceInput.value = Math.round(baseP / 2);
+            }
+        });
+    }
+
+    if (btnCalcExtraHalfPrice && productExtraTicketHalfPriceInput && productExtraTicketPriceInput) {
+        btnCalcExtraHalfPrice.addEventListener('click', () => {
+            const extraP = parseInt(productExtraTicketPriceInput.value, 10) || 0;
+            if (extraP > 0) {
+                productExtraTicketHalfPriceInput.value = Math.round(extraP / 2);
+            }
         });
     }
 
@@ -2054,10 +2152,24 @@ export async function setupStorePage() {
     if (seatMapLayoutTypeInput) {
         seatMapLayoutTypeInput.addEventListener('change', () => {
             const val = seatMapLayoutTypeInput.value;
-            if (arena360Settings) arena360Settings.classList.toggle('hidden', val !== 'arena_4_sides');
+            const isArenaOrU = (val === 'arena_4_sides' || val === 'arena_u_shape');
+            if (arena360Settings) arena360Settings.classList.toggle('hidden', !isArenaOrU);
+
+            const topRowsLabel = document.getElementById('arena-top-rows-label');
+            const topRowsHint = document.getElementById('arena-top-rows-hint');
+            if (val === 'arena_u_shape') {
+                if (topRowsLabel) topRowsLabel.textContent = 'Fileiras Setor Sul (Inferior)';
+                if (topRowsHint) topRowsHint.textContent = 'Fileiras no bloco inferior (Sul)';
+            } else {
+                if (topRowsLabel) topRowsLabel.textContent = 'Fileiras Norte & Sul';
+                if (topRowsHint) topRowsHint.textContent = 'Fileiras nos blocos superior e inferior';
+            }
+
             if (seatMapLayoutHint) {
                 if (val === 'gym_sides') {
                     seatMapLayoutHint.textContent = 'Tatame no centro da quadra, com assentos divididos nas Alas Esquerda e Direita.';
+                } else if (val === 'arena_u_shape') {
+                    seatMapLayoutHint.textContent = 'Formato em U: tatame central circundado por 3 setores (Oeste, Sul e Leste, aberto ao Norte).';
                 } else if (val === 'arena_4_sides') {
                     seatMapLayoutHint.textContent = 'Tatame central circundado por 4 setores (Norte, Sul, Leste e Oeste).';
                 } else {
@@ -2074,6 +2186,7 @@ export async function setupStorePage() {
     if (seatMapColsInput) seatMapColsInput.addEventListener('change', renderIntranetSeatGrid);
     if (seatMapStageLabelInput) seatMapStageLabelInput.addEventListener('input', () => {
         if (previewStageLabel) previewStageLabel.textContent = seatMapStageLabelInput.value || 'PALCO / TATAME';
+        renderIntranetSeatGrid();
     });
     if (intranetSeatMapSessionSelect) intranetSeatMapSessionSelect.addEventListener('change', renderIntranetSeatGrid);
     if (btnRenderSeatGrid) btnRenderSeatGrid.addEventListener('click', renderIntranetSeatGrid);
@@ -2123,11 +2236,21 @@ export async function setupStorePage() {
         if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
         if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
         if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '1';
+        if (activeLocationPriceInput) activeLocationPriceInput.value = '';
+        if (activeLocationExtraTicketPriceInput) activeLocationExtraTicketPriceInput.value = '';
         currentLocationsList = [];
         if (seatMapConfigContainer) seatMapConfigContainer.classList.add('hidden');
         if (eventSessionsContainer) eventSessionsContainer.innerHTML = '';
         if (intranetSeatGridContainer) intranetSeatGridContainer.innerHTML = '';
         currentDisabledSeats.clear();
+
+        // Reset meia-entrada fields
+        if (productHasHalfPriceInput) productHasHalfPriceInput.checked = false;
+        if (halfPriceContainer) halfPriceContainer.classList.add('hidden');
+        if (productHalfPriceInput) productHalfPriceInput.value = '';
+        if (productHalfPricePixInput) productHalfPricePixInput.value = '';
+        if (productExtraTicketHalfPriceInput) productExtraTicketHalfPriceInput.value = '';
+        if (extraTicketHalfPriceBox) extraTicketHalfPriceBox.classList.add('hidden');
     };
 
     // Alias old modal functions for full backwards compatibility
@@ -2149,6 +2272,14 @@ export async function setupStorePage() {
             if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
             if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
             if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '1';
+
+            // Reset meia-entrada fields
+            if (productHasHalfPriceInput) productHasHalfPriceInput.checked = false;
+            if (halfPriceContainer) halfPriceContainer.classList.add('hidden');
+            if (productHalfPriceInput) productHalfPriceInput.value = '';
+            if (productHalfPricePixInput) productHalfPricePixInput.value = '';
+            if (productExtraTicketHalfPriceInput) productExtraTicketHalfPriceInput.value = '';
+            if (extraTicketHalfPriceBox) extraTicketHalfPriceBox.classList.add('hidden');
             if (seatMapLayoutTypeInput) seatMapLayoutTypeInput.value = 'theater';
             if (arena360Settings) arena360Settings.classList.add('hidden');
             if (seatMapLayoutHint) seatMapLayoutHint.textContent = 'Tatame no topo com público à frente em fileiras contínuas.';
@@ -2367,6 +2498,16 @@ Requisitos:
                     eventAddress: eventConfigData.eventAddress,
                     eventConfig: eventConfigData.eventConfig,
                     hasSeatMap: productHasSeatMapInput ? productHasSeatMapInput.checked : false,
+                    hasHalfPrice: Boolean(productHasHalfPriceInput && productHasHalfPriceInput.checked),
+                    halfPrice: (productHasHalfPriceInput && productHasHalfPriceInput.checked && productHalfPriceInput.value)
+                        ? (parseInt(productHalfPriceInput.value, 10) || null)
+                        : null,
+                    halfPricePix: (productHasHalfPriceInput && productHasHalfPriceInput.checked && productHalfPricePixInput && productHalfPricePixInput.value)
+                        ? (parseInt(productHalfPricePixInput.value, 10) || null)
+                        : null,
+                    extraTicketHalfPrice: (productExtraTicketHalfPriceInput && productExtraTicketHalfPriceInput.value.trim() !== '')
+                        ? (parseInt(productExtraTicketHalfPriceInput.value, 10) || null)
+                        : null,
                     hasLocations: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasLocationsInput && productHasLocationsInput.checked),
                     hasExtraTicketPrice: Boolean(productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked),
                     extraTicketPrice: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked)
@@ -2840,12 +2981,24 @@ Requisitos:
 
                         if (product.seatMapConfig) {
                             if (seatMapLayoutTypeInput) {
-                                seatMapLayoutTypeInput.value = product.seatMapConfig.layoutType || 'theater';
-                                if (arena360Settings) arena360Settings.classList.toggle('hidden', product.seatMapConfig.layoutType !== 'arena_4_sides');
+                                const prodLayout = product.seatMapConfig.layoutType || 'theater';
+                                seatMapLayoutTypeInput.value = prodLayout;
+                                if (arena360Settings) arena360Settings.classList.toggle('hidden', prodLayout !== 'arena_4_sides' && prodLayout !== 'arena_u_shape');
+                                const topRowsLabel = document.getElementById('arena-top-rows-label');
+                                const topRowsHint = document.getElementById('arena-top-rows-hint');
+                                if (prodLayout === 'arena_u_shape') {
+                                    if (topRowsLabel) topRowsLabel.textContent = 'Fileiras Setor Sul (Inferior)';
+                                    if (topRowsHint) topRowsHint.textContent = 'Fileiras no bloco inferior (Sul)';
+                                } else {
+                                    if (topRowsLabel) topRowsLabel.textContent = 'Fileiras Norte & Sul';
+                                    if (topRowsHint) topRowsHint.textContent = 'Fileiras nos blocos superior e inferior';
+                                }
                                 if (seatMapLayoutHint) {
-                                    if (product.seatMapConfig.layoutType === 'gym_sides') {
+                                    if (prodLayout === 'gym_sides') {
                                         seatMapLayoutHint.textContent = 'Tatame no centro da quadra, com assentos divididos nas Alas Esquerda e Direita.';
-                                    } else if (product.seatMapConfig.layoutType === 'arena_4_sides') {
+                                    } else if (prodLayout === 'arena_u_shape') {
+                                        seatMapLayoutHint.textContent = 'Formato em U: tatame central circundado por 3 setores (Oeste, Sul e Leste, aberto ao Norte).';
+                                    } else if (prodLayout === 'arena_4_sides') {
                                         seatMapLayoutHint.textContent = 'Tatame central circundado por 4 setores (Norte, Sul, Leste e Oeste).';
                                     } else {
                                         seatMapLayoutHint.textContent = 'Tatame no topo com público à frente em fileiras contínuas.';
@@ -2885,8 +3038,29 @@ Requisitos:
                     if (productExtraTicketPriceInput) {
                         productExtraTicketPriceInput.value = product.extraTicketPrice || '';
                     }
+                    if (productExtraTicketHalfPriceInput) {
+                        productExtraTicketHalfPriceInput.value = (product.extraTicketHalfPrice !== undefined && product.extraTicketHalfPrice !== null) ? product.extraTicketHalfPrice : '';
+                    }
                     if (productIncludedTicketsCountInput) {
                         productIncludedTicketsCountInput.value = (product.includedTicketsCount !== undefined) ? product.includedTicketsCount : 1;
+                    }
+
+                    // Meia-Entrada loading
+                    const hasHalfPrice = Boolean(product.hasHalfPrice);
+                    if (productHasHalfPriceInput) {
+                        productHasHalfPriceInput.checked = hasHalfPrice;
+                    }
+                    if (halfPriceContainer) {
+                        halfPriceContainer.classList.toggle('hidden', !hasHalfPrice);
+                    }
+                    if (productHalfPriceInput) {
+                        productHalfPriceInput.value = product.halfPrice || '';
+                    }
+                    if (productHalfPricePixInput) {
+                        productHalfPricePixInput.value = product.halfPricePix || '';
+                    }
+                    if (extraTicketHalfPriceBox) {
+                        extraTicketHalfPriceBox.classList.toggle('hidden', !(hasHalfPrice && hasExtraTicket));
                     }
                 }
 
