@@ -929,8 +929,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const ticketTypeContainer = formInstance.querySelector('.ticket-type-container');
             if (ticketTypeContainer) {
                 const hasHalfForThis = isExtraTicket
-                    ? Boolean(productData.hasHalfPrice || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
-                    : Boolean(productData.hasHalfPrice);
+                    ? Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice) || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
+                    : Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice));
 
                 if (hasHalfForThis) {
                     ticketTypeContainer.classList.remove('hidden');
@@ -947,10 +947,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     radioInteira.id = `ticket-type-inteira-${i}`;
                     radioMeia.id = `ticket-type-meia-${i}`;
 
-                    let fInteira = isExtraTicket ? (productData.extraTicketPrice || 0) : (productData.price || 0);
+                    let fInteira = isExtraTicket
+                        ? ((productData.hasLocations && selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+                            ? selectedLocation.extraTicketPrice
+                            : (productData.extraTicketPrice || 0))
+                        : ((productData.hasLocations && selectedLocation && selectedLocation.price && selectedLocation.price > 0)
+                            ? selectedLocation.price
+                            : (productData.price || 0));
+
                     let fMeia = isExtraTicket
-                        ? (productData.extraTicketHalfPrice || Math.round((productData.extraTicketPrice || 0) / 2))
-                        : (productData.halfPrice || Math.round((productData.price || 0) / 2));
+                        ? ((selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
+                            ? selectedLocation.halfPrice
+                            : (productData.extraTicketHalfPrice || productData.halfPrice || Math.round(fInteira / 2)))
+                        : ((selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
+                            ? selectedLocation.halfPrice
+                            : (productData.halfPrice || Math.round(fInteira / 2)));
 
                     if (priceInteiraEl) priceInteiraEl.textContent = formatCurrency(fInteira);
                     if (priceMeiaEl) priceMeiaEl.textContent = formatCurrency(fMeia);
@@ -1170,6 +1181,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ? selectedLocation.price
             : ((productData && productData.price) || 0);
 
+        const effectiveExtraHalfPrice = (selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
+            ? selectedLocation.halfPrice
+            : ((productData && productData.extraTicketHalfPrice) || (productData && productData.halfPrice) || Math.round(effectiveExtraPrice / 2));
+        const effectiveBaseHalfPrice = (selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
+            ? selectedLocation.halfPrice
+            : ((productData && productData.halfPrice) || Math.round(effectiveBasePrice / 2));
+
         const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
         const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
 
@@ -1218,20 +1236,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Aplicar Meia-Entrada se selecionada
             const hasHalfForThis = isExtraTicket
-                ? Boolean(productData.hasHalfPrice || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
-                : Boolean(productData.hasHalfPrice);
+                ? Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice) || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
+                : Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice));
 
             if (hasHalfForThis) {
                 const isMeia = Boolean(form.querySelector(`input[name="ticket-type-${idx + 1}"][value="meia"]:checked`));
                 if (isMeia) {
                     if (isExtraTicket) {
-                        instancePrice = (productData.extraTicketHalfPrice !== undefined && productData.extraTicketHalfPrice !== null && productData.extraTicketHalfPrice > 0)
-                            ? productData.extraTicketHalfPrice
-                            : Math.round(effectiveExtraPrice / 2);
+                        instancePrice = effectiveExtraHalfPrice;
                     } else {
-                        instancePrice = (productData.halfPrice !== undefined && productData.halfPrice !== null && productData.halfPrice > 0)
-                            ? productData.halfPrice
-                            : Math.round(instancePrice / 2);
+                        instancePrice = effectiveBaseHalfPrice;
                     }
                 }
             }
@@ -1489,12 +1503,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (isMeia) {
                 if (isExtraTicket) {
-                    priceData.amount = (productData.extraTicketHalfPrice !== undefined && productData.extraTicketHalfPrice !== null && productData.extraTicketHalfPrice > 0)
-                        ? productData.extraTicketHalfPrice
-                        : Math.round(effectiveExtraPrice / 2);
+                    priceData.amount = effectiveExtraHalfPrice;
                     priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Ingresso Acompanhante (Meia)' : 'Ingresso Adicional (Meia)';
                 } else {
-                    priceData.amount = productData.halfPrice || Math.round((priceData.amount || effectiveBasePrice || 0) / 2);
+                    priceData.amount = effectiveBaseHalfPrice;
                     priceData.variantName = priceData.variantName ? `${priceData.variantName} (Meia)` : 'Meia-Entrada';
                 }
                 if (productData.halfPricePix) {
@@ -1575,9 +1587,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 })(),
                 hasExtraTicketPrice: Boolean(productData.hasExtraTicketPrice || effectiveExtraPrice > 0),
                 extraTicketPrice: effectiveExtraPrice || 0,
-                hasHalfPrice: Boolean(productData.hasHalfPrice),
-                halfPrice: productData.halfPrice || null,
-                extraTicketHalfPrice: productData.extraTicketHalfPrice || null,
+                hasHalfPrice: Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice)),
+                halfPrice: effectiveBaseHalfPrice || null,
+                extraTicketHalfPrice: effectiveExtraHalfPrice || null,
                 includedTicketsCount: (productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1,
                 lockExpiresAt: productData.hasSeatMap ? (Date.now() + 15 * 60 * 1000) : null,
                 addedAt: new Date().toISOString()
