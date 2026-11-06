@@ -234,11 +234,12 @@ export const initFeedPage = () => {
 
     if (picker && trigger) {
         picker.on('emoji', selection => {
+            const emojiText = (selection && selection.emoji) ? selection.emoji : selection;
             const range = quill.getSelection();
             if (range) {
-                quill.insertText(range.index, selection);
+                quill.insertText(range.index, emojiText);
             } else {
-                quill.insertText(quill.getLength(), selection);
+                quill.insertText(quill.getLength(), emojiText);
             }
         });
 

@@ -740,7 +740,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     };
-    };
 
     const toggleSeat = (seatId) => {
         if (!selectedSession) return;
