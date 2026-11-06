@@ -63,11 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const roleBadge = isExtra
                     ? `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded text-xs font-bold ml-1.5"><i class="fas fa-ticket-alt mr-1"></i> Acompanhante</span>`
                     : (item.hasExtraTicketPrice ? `<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded text-xs font-bold ml-1.5"><i class="fas fa-user-graduate mr-1"></i> Graduando</span>` : '');
+                const ticketTypeBadge = (form.ticketType === 'meia')
+                    ? `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded text-xs font-semibold ml-1.5"><i class="fas fa-graduation-cap mr-1"></i> Meia-Entrada</span>`
+                    : (form.ticketType === 'inteira' ? `<span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded text-xs font-semibold ml-1.5">Inteira</span>` : '');
 
                 detailsHtml += `
                     <div class="mt-2 text-sm bg-gray-700/50 p-2.5 rounded-lg text-gray-300 border border-gray-600/50">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Item ${idx + 1} ${roleBadge}</span>
+                            <span class="text-xs text-gray-400 uppercase font-bold tracking-wider">Item ${idx + 1} ${roleBadge} ${ticketTypeBadge}</span>
                         </div>
                         ${seatText}
                         ${form.userSize ? `<br>Tamanho: <span class="text-yellow-500 font-bold">${form.userSize}</span>` : ''}

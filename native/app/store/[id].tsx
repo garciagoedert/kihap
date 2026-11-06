@@ -300,33 +300,36 @@ export default function ProductDetailScreen() {
 
   const calculateTotal = () => {
     if (!product) return 0;
-    const hasExtraTicket = product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0);
+    const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+      ? selectedLocation.extraTicketPrice
+      : (product.extraTicketPrice || 0);
+    const effectiveBasePrice = (product.hasLocations && selectedLocation?.price && selectedLocation.price > 0)
+      ? selectedLocation.price
+      : getEffectiveProductPrice(product, userData).price;
+
+    const hasExtraTicket = product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0);
     const includedCount = product.includedTicketsCount !== undefined ? product.includedTicketsCount : 1;
 
-    if (hasExtraTicket) {
-      if (purchaseMode === 'extra_only') {
-        return allSelectedSeats.length * (product.extraTicketPrice || 0);
+    let total = 0;
+    participants.forEach((p, idx) => {
+      const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
+      const isMeia = Boolean((product.hasHalfPrice || (isExtra && product.extraTicketHalfPrice)) && p.ticketType === 'meia');
+
+      if (isExtra) {
+        const extraBase = effectiveExtraPrice;
+        const extraHalf = product.extraTicketHalfPrice || product.halfPrice || Math.round(extraBase / 2);
+        total += isMeia ? extraHalf : extraBase;
+      } else {
+        const pVariant = p?.selectedVariant || product.priceVariants?.[0];
+        const basePrice = (product.priceType === 'variable' && pVariant)
+          ? getEffectiveVariantPrice(pVariant, userData, product).price
+          : effectiveBasePrice;
+        const half = product.halfPrice || Math.round(basePrice / 2);
+        total += isMeia ? half : basePrice;
       }
+    });
 
-      const pVariant = participants[0]?.selectedVariant || product.priceVariants?.[0];
-      const basePrice = (product.priceType === 'variable' && pVariant)
-        ? getEffectiveVariantPrice(pVariant, userData, product).price
-        : getEffectiveProductPrice(product, userData).price;
-
-      const extraCount = Math.max(0, allSelectedSeats.length - includedCount);
-      const extraPrice = extraCount * (product.extraTicketPrice || 0);
-      return basePrice + extraPrice;
-    }
-
-    if (product.priceType === 'variable') {
-      return participants.reduce((sum, p) => {
-        const pVariant = p.selectedVariant || product.priceVariants?.[0];
-        const pPrice = pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : 0;
-        return sum + pPrice;
-      }, 0);
-    }
-    const effective = getEffectiveProductPrice(product, userData);
-    return effective.price * quantity;
+    return total;
   };
 
   const handleAddToCart = async () => {
@@ -337,7 +340,14 @@ export default function ProductDetailScreen() {
       }
     }
 
-    const hasExtraTicket = product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0);
+    const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+      ? selectedLocation.extraTicketPrice
+      : (product.extraTicketPrice || 0);
+    const effectiveBasePrice = (product.hasLocations && selectedLocation?.price && selectedLocation.price > 0)
+      ? selectedLocation.price
+      : getEffectiveProductPrice(product, userData).price;
+
+    const hasExtraTicket = product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0);
     const includedCount = product.includedTicketsCount !== undefined ? product.includedTicketsCount : 1;
 
     // Basic validation
@@ -394,20 +404,32 @@ export default function ProductDetailScreen() {
       }
     }
 
-    const effective = getEffectiveProductPrice(product, userData);
+    const effective = (product.hasLocations && selectedLocation?.price && selectedLocation.price > 0)
+      ? { price: selectedLocation.price, isPromo: false }
+      : getEffectiveProductPrice(product, userData);
 
     const formDataList = participants.map((p, idx) => {
       const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
+      const isMeia = Boolean(product.hasHalfPrice && p.ticketType === 'meia');
       const pVariant = p.selectedVariant || (product.priceType === 'variable' ? product.priceVariants?.[0] : null);
-      const selectedAmount = isExtra
-        ? (product.extraTicketPrice || 0)
+
+      let selectedAmount = isExtra
+        ? effectiveExtraPrice
         : (pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : effective.price);
+
+      if (isMeia) {
+        selectedAmount = isExtra
+          ? (product.extraTicketHalfPrice || product.halfPrice || Math.round(effectiveExtraPrice / 2))
+          : (product.halfPrice || Math.round(selectedAmount / 2));
+      }
+
       const selectedVariantName = isExtra
-        ? (purchaseMode === 'extra_only' ? 'Ingresso Acompanhante' : 'Ingresso Adicional (Acompanhante)')
-        : (pVariant ? pVariant.name : undefined);
-      const pixAmount = isExtra
-        ? undefined
-        : (pVariant?.pixPrice || product.pixPrice || undefined);
+        ? (purchaseMode === 'extra_only' ? (isMeia ? 'Ingresso Acompanhante (Meia)' : 'Ingresso Acompanhante') : (isMeia ? 'Ingresso Adicional (Meia)' : 'Ingresso Adicional (Acompanhante)'))
+        : (pVariant ? (isMeia ? `${pVariant.name} (Meia)` : pVariant.name) : (isMeia ? 'Meia-Entrada' : undefined));
+
+      const pixAmount = isMeia
+        ? (product.halfPricePix || undefined)
+        : (isExtra ? undefined : (pVariant?.pixPrice || product.pixPrice || undefined));
       
       const priceData: any = {
         amount: selectedAmount,
@@ -419,6 +441,8 @@ export default function ProductDetailScreen() {
       const seatInfo = allSelectedSeats[idx];
       return {
         ...rest,
+        ticketType: isMeia ? 'meia' : 'inteira',
+        ticketTypeName: isMeia ? 'Meia-Entrada' : 'Inteira',
         isExtraTicket: isExtra,
         isMainParticipant: !isExtra,
         seatId: seatInfo ? seatInfo.seatId : (p.seatId || null),
@@ -454,13 +478,13 @@ export default function ProductDetailScreen() {
       productName: purchaseMode === 'extra_only' ? `${product.name} (Ingressos Acompanhante)` : product.name,
       imageUrl: product.imageUrl,
       priceType: product.priceType || 'fixed',
-      price: purchaseMode === 'extra_only' ? (product.extraTicketPrice || 0) : firstVariantPrice,
+      price: purchaseMode === 'extra_only' ? effectiveExtraPrice : firstVariantPrice,
       totalAmount,
       purchaseMode,
       isExtraTicketOnly: purchaseMode === 'extra_only',
       hasSeatMap: Boolean(product.hasSeatMap),
-      hasExtraTicketPrice: Boolean(product.hasExtraTicketPrice || product.extraTicketPrice > 0),
-      extraTicketPrice: product.extraTicketPrice || 0,
+      hasExtraTicketPrice: Boolean(product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0),
+      extraTicketPrice: effectiveExtraPrice,
       includedTicketsCount: purchaseMode === 'extra_only' ? 0 : includedCount,
       selectedSeats: summarySeats,
       sessionId: allSelectedSeats[0]?.sessionId || selectedSession?.id || 'default',
@@ -935,6 +959,62 @@ export default function ProductDetailScreen() {
                 </View>
                 
                 <View className="space-y-4">
+                  {/* Seletor de Tipo de Ingresso (Inteira vs Meia-Entrada) */}
+                  {(product.hasHalfPrice || (isExtra && product.extraTicketHalfPrice)) && (
+                    <View style={{ marginBottom: 12 }}>
+                      <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
+                        Tipo de Ingresso
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity
+                          onPress={() => updateParticipant(index, { ticketType: 'inteira' })}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 10,
+                            paddingHorizontal: 12,
+                            borderRadius: 14,
+                            borderWidth: 1.5,
+                            backgroundColor: (participant.ticketType !== 'meia') ? (isDark ? 'rgba(234, 179, 8, 0.15)' : '#fef3c7') : (isDark ? '#1a1a1a' : '#ffffff'),
+                            borderColor: (participant.ticketType !== 'meia') ? '#eab308' : (isDark ? '#333333' : '#e5e7eb'),
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: (participant.ticketType !== 'meia') ? (isDark ? '#facc15' : '#b45309') : (isDark ? '#9ca3af' : '#4b5563') }}>
+                            Inteira
+                          </Text>
+                          <Text style={{ fontSize: 11, fontWeight: '900', color: (participant.ticketType !== 'meia') ? (isDark ? '#facc15' : '#b45309') : '#9ca3af' }}>
+                            {formatCentsToCurrency(isExtra ? ((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) : ((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)))}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() => updateParticipant(index, { ticketType: 'meia' })}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 10,
+                            paddingHorizontal: 12,
+                            borderRadius: 14,
+                            borderWidth: 1.5,
+                            backgroundColor: (participant.ticketType === 'meia') ? (isDark ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff') : (isDark ? '#1a1a1a' : '#ffffff'),
+                            borderColor: (participant.ticketType === 'meia') ? '#a855f7' : (isDark ? '#333333' : '#e5e7eb'),
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: (participant.ticketType === 'meia') ? '#a855f7' : (isDark ? '#9ca3af' : '#4b5563') }}>
+                            Meia-Entrada
+                          </Text>
+                          <Text style={{ fontSize: 11, fontWeight: '900', color: (participant.ticketType === 'meia') ? '#a855f7' : '#9ca3af' }}>
+                            {formatCentsToCurrency(isExtra ? (product.extraTicketHalfPrice || product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) / 2)) : (product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)) / 2)))}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+
                   <View>
                     <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">
                       {isExtra ? 'Nome do Acompanhante / Convidado' : 'Nome do Aluno'}

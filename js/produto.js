@@ -296,6 +296,17 @@ document.addEventListener('DOMContentLoaded', () => {
             payButton.innerHTML = '<i class="fas fa-lock mr-2"></i> Assinar Agora';
         }
 
+        const productHalfPriceDisplay = document.getElementById('product-half-price-display');
+        if (productHalfPriceDisplay) {
+            if (product.hasHalfPrice && product.halfPrice) {
+                const halfFormatted = (product.halfPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                productHalfPriceDisplay.innerHTML = `<i class="fas fa-graduation-cap mr-1"></i> Opção Meia-Entrada: <strong>${halfFormatted}</strong>`;
+                productHalfPriceDisplay.classList.remove('hidden');
+            } else {
+                productHalfPriceDisplay.classList.add('hidden');
+            }
+        }
+
         initSeatMap(product);
         await renderForms(getAllSelectedSeats().length > 0 ? getAllSelectedSeats().length : 1);
         productLoading.classList.add('hidden');
@@ -315,18 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (seatMapNotice) seatMapNotice.classList.remove('hidden');
         if (quantitySelectorContainer) quantitySelectorContainer.classList.add('hidden');
 
-        if (webPurchaseModeContainer) {
-            if (product.hasExtraTicketPrice || product.extraTicketPrice > 0) {
-                webPurchaseModeContainer.classList.remove('hidden');
-                if (product.extraTicketPrice && descModeExtra) {
-                    const priceFormatted = (product.extraTicketPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    descModeExtra.textContent = `${priceFormatted} cada (para familiares e amigos assistirem)`;
-                }
-            } else {
-                webPurchaseModeContainer.classList.add('hidden');
-            }
-        }
-
         // Location handling
         if (product.hasLocations && product.locations && product.locations.length > 0) {
             if (webLocationsContainer) webLocationsContainer.classList.remove('hidden');
@@ -336,6 +335,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (webLocationsContainer) webLocationsContainer.classList.add('hidden');
             selectedLocation = null;
             setupSessionsForCurrentLocation(product);
+        }
+
+        const effectiveExtraTicketPrice = (product.hasLocations && selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+            ? selectedLocation.extraTicketPrice
+            : (product.extraTicketPrice || 0);
+
+        if (webPurchaseModeContainer) {
+            if (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraTicketPrice > 0) {
+                webPurchaseModeContainer.classList.remove('hidden');
+                if (descModeExtra && effectiveExtraTicketPrice > 0) {
+                    const priceFormatted = (effectiveExtraTicketPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    descModeExtra.textContent = `${priceFormatted} cada (para familiares e amigos assistirem)`;
+                }
+            } else {
+                webPurchaseModeContainer.classList.add('hidden');
+            }
         }
     };
 
@@ -360,6 +375,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             webLocationsList.appendChild(btn);
         });
+
+        // Update extra ticket description according to active location pricing
+        if (webPurchaseModeContainer && descModeExtra) {
+            const effectiveExtra = (selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+                ? selectedLocation.extraTicketPrice
+                : (product.extraTicketPrice || 0);
+            if (effectiveExtra > 0) {
+                const priceFormatted = (effectiveExtra / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                descModeExtra.textContent = `${priceFormatted} cada (para familiares e amigos assistirem)`;
+            }
+        }
 
         // Venue Info Card
         if (webSelectedLocationInfo && webLocationVenueText) {
@@ -466,8 +492,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeConfig = (productData.hasLocations && selectedLocation && selectedLocation.seatMapConfig)
             ? selectedLocation.seatMapConfig
             : (productData.seatMapConfig || {});
-        const rows = activeConfig.rows || 8;
-        const cols = activeConfig.cols || 10;
+        const layoutType = activeConfig.layoutType || 'theater';
+        const rows = Math.min(26, Math.max(1, activeConfig.rows || 8));
+        const cols = Math.min(50, Math.max(1, activeConfig.seatsPerRow || activeConfig.cols || 16));
+        const stageLabel = activeConfig.stageLabel || (layoutType === 'theater' ? 'PALCO / TATAME' : 'TATAME');
         const now = Date.now();
         const myId = getUserIdentifier();
 
@@ -475,80 +503,243 @@ document.addEventListener('DOMContentLoaded', () => {
 
         webSeatGridContainer.innerHTML = '';
 
-        for (let r = 0; r < rows; r++) {
-            const rowLetter = String.fromCharCode(65 + r);
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'flex items-center gap-1.5 sm:gap-2 justify-center';
-
-            const labelLeft = document.createElement('span');
-            labelLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
-            labelLeft.textContent = rowLetter;
-            rowDiv.appendChild(labelLeft);
-
-            for (let c = 1; c <= cols; c++) {
-                const seatId = `${rowLetter}-${c}`;
-                const reservation = reservedSeatsMap[seatId];
-
-                let status = 'available';
-                if (currentSessionSeats.includes(seatId)) {
-                    status = 'selected';
-                } else if (reservation) {
-                    if (reservation.status === 'booked') {
-                        status = 'booked';
-                    } else if (reservation.status === 'disabled') {
-                        status = 'disabled';
-                    } else if (reservation.status === 'locked') {
-                        if (reservation.lockedUntil && reservation.lockedUntil > now) {
-                            status = (reservation.lockedBy === myId) ? 'locked_by_me' : 'locked';
-                        } else {
-                            status = 'available';
-                        }
+        const createWebSeatBtn = (seatId, c, sector = '') => {
+            const reservation = reservedSeatsMap[seatId];
+            let status = 'available';
+            if (currentSessionSeats.includes(seatId)) {
+                status = 'selected';
+            } else if (reservation) {
+                if (reservation.status === 'booked') {
+                    status = 'booked';
+                } else if (reservation.status === 'disabled') {
+                    status = 'disabled';
+                } else if (reservation.status === 'locked') {
+                    if (reservation.lockedUntil && reservation.lockedUntil > now) {
+                        status = (reservation.lockedBy === myId) ? 'locked_by_me' : 'locked';
+                    } else {
+                        status = 'available';
                     }
                 }
-
-                const seatBtn = document.createElement('button');
-                seatBtn.type = 'button';
-                seatBtn.dataset.seatId = seatId;
-                seatBtn.title = `Cadeira ${seatId}`;
-
-                let btnClass = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
-
-                if (status === 'selected') {
-                    btnClass += 'bg-amber-500 text-black border-2 border-amber-300 font-black shadow-lg shadow-amber-500/30 scale-105';
-                } else if (status === 'locked_by_me') {
-                    btnClass += 'bg-purple-600 text-white border border-purple-400 font-bold';
-                } else if (status === 'locked') {
-                    btnClass += 'bg-purple-950/60 text-purple-400 border border-purple-800/80 cursor-not-allowed opacity-60';
-                    seatBtn.disabled = true;
-                } else if (status === 'booked') {
-                    btnClass += 'bg-red-950/60 text-red-500 border border-red-900 cursor-not-allowed opacity-50';
-                    seatBtn.disabled = true;
-                } else if (status === 'disabled') {
-                    btnClass += 'bg-gray-900 text-gray-700 border border-dashed border-gray-800 cursor-not-allowed opacity-30';
-                    seatBtn.disabled = true;
-                } else {
-                    btnClass += 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-amber-400 hover:bg-gray-700 hover:text-white cursor-pointer';
-                }
-
-                seatBtn.className = btnClass;
-                seatBtn.innerHTML = `<span>${c}</span>`;
-
-                if (status === 'available' || status === 'selected' || status === 'locked_by_me') {
-                    seatBtn.addEventListener('click', () => {
-                        toggleSeat(seatId);
-                    });
-                }
-
-                rowDiv.appendChild(seatBtn);
             }
 
-            const labelRight = document.createElement('span');
-            labelRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
-            labelRight.textContent = rowLetter;
-            rowDiv.appendChild(labelRight);
+            const seatBtn = document.createElement('button');
+            seatBtn.type = 'button';
+            seatBtn.dataset.seatId = seatId;
+            seatBtn.title = `Cadeira ${seatId}${sector ? ` (${sector})` : ''}`;
 
-            webSeatGridContainer.appendChild(rowDiv);
+            let btnClass = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
+
+            if (status === 'selected') {
+                btnClass += 'bg-amber-500 text-black border-2 border-amber-300 font-black shadow-lg shadow-amber-500/30 scale-105';
+            } else if (status === 'locked_by_me') {
+                btnClass += 'bg-purple-600 text-white border border-purple-400 font-bold';
+            } else if (status === 'locked') {
+                btnClass += 'bg-purple-950/60 text-purple-400 border border-purple-800/80 cursor-not-allowed opacity-60';
+                seatBtn.disabled = true;
+            } else if (status === 'booked') {
+                btnClass += 'bg-red-950/60 text-red-500 border border-red-900 cursor-not-allowed opacity-50';
+                seatBtn.disabled = true;
+            } else if (status === 'disabled') {
+                btnClass += 'bg-gray-900 text-gray-700 border border-dashed border-gray-800 cursor-not-allowed opacity-30';
+                seatBtn.disabled = true;
+            } else {
+                btnClass += 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-amber-400 hover:bg-gray-700 hover:text-white cursor-pointer';
+            }
+
+            seatBtn.className = btnClass;
+            seatBtn.innerHTML = `<span>${c}</span>`;
+
+            if (status === 'available' || status === 'selected' || status === 'locked_by_me') {
+                seatBtn.addEventListener('click', () => {
+                    toggleSeat(seatId);
+                });
+            }
+            return seatBtn;
+        };
+
+        if (layoutType === 'arena_4_sides' || layoutType === 'arena_u_shape') {
+            const isUShape = (layoutType === 'arena_u_shape');
+            const topRows = isUShape ? 0 : Math.min(Math.max(1, parseInt(activeConfig.topRows || 2, 10) || 2), Math.max(1, Math.floor((rows - 1) / 2)));
+            const bottomRows = Math.min(Math.max(1, parseInt(activeConfig.bottomRows || activeConfig.topRows || 2, 10) || 2), Math.max(1, isUShape ? rows - 1 : Math.floor((rows - 1) / 2)));
+            const sideCols = Math.min(Math.max(1, parseInt(activeConfig.sideCols || 4, 10) || 4), Math.max(1, Math.floor((cols - 2) / 2)));
+
+            const arenaWrapper = document.createElement('div');
+            arenaWrapper.className = 'flex flex-col items-center gap-4 p-2 w-full';
+
+            // 1. Setor Superior (Norte) - Se não for em U
+            if (!isUShape && topRows > 0) {
+                const topSectorDiv = document.createElement('div');
+                topSectorDiv.className = 'flex flex-col items-center';
+                topSectorDiv.innerHTML = `
+                    <div class="px-2.5 py-0.5 mb-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-lg text-[10px] font-black text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fas fa-arrow-up text-[8px]"></i> Setor Superior / Norte
+                    </div>
+                `;
+                const topRowsDiv = document.createElement('div');
+                topRowsDiv.className = 'space-y-1';
+                for (let r = 0; r < topRows; r++) {
+                    const rowLetter = String.fromCharCode(65 + r);
+                    const rDiv = document.createElement('div');
+                    rDiv.className = 'flex items-center gap-1 justify-center';
+
+                    const lblLeft = document.createElement('span');
+                    lblLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                    lblLeft.textContent = rowLetter;
+                    rDiv.appendChild(lblLeft);
+
+                    for (let c = 1; c <= cols; c++) {
+                        const seatId = `${rowLetter}-${c}`;
+                        rDiv.appendChild(createWebSeatBtn(seatId, c, 'Setor Superior'));
+                    }
+
+                    const lblRight = document.createElement('span');
+                    lblRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                    lblRight.textContent = rowLetter;
+                    rDiv.appendChild(lblRight);
+
+                    topRowsDiv.appendChild(rDiv);
+                }
+                topSectorDiv.appendChild(topRowsDiv);
+                arenaWrapper.appendChild(topSectorDiv);
+            }
+
+            // 2. Miolo: Setor Oeste + Tatame Central + Setor Leste
+            const midRowDiv = document.createElement('div');
+            midRowDiv.className = 'flex flex-row items-stretch justify-center gap-3 sm:gap-5 w-full';
+
+            // 2a. Setor Oeste (Esquerda)
+            const leftSectorDiv = document.createElement('div');
+            leftSectorDiv.className = 'flex flex-col items-center';
+            leftSectorDiv.innerHTML = `
+                <div class="px-2 py-0.5 mb-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-arrow-left text-[8px]"></i> Setor Oeste (Lateral)
+                </div>
+            `;
+            const leftRowsDiv = document.createElement('div');
+            leftRowsDiv.className = 'space-y-1';
+            for (let r = topRows; r < rows - bottomRows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1 justify-end';
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                for (let c = 1; c <= sideCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createWebSeatBtn(seatId, c, 'Setor Oeste'));
+                }
+                leftRowsDiv.appendChild(rDiv);
+            }
+            leftSectorDiv.appendChild(leftRowsDiv);
+            midRowDiv.appendChild(leftSectorDiv);
+
+            // 2b. Tatame Central (Acompanha toda a extensão das fileiras laterais para visão frontal contínua)
+            const arenaCenterTatame = document.createElement('div');
+            arenaCenterTatame.className = 'flex-1 self-stretch min-w-[140px] sm:min-w-[220px] max-w-sm flex flex-col items-center justify-center p-4 bg-gradient-to-b from-amber-500/15 via-yellow-500/10 to-amber-500/15 border-2 border-dashed border-amber-500/60 rounded-3xl shadow-inner text-center select-none relative';
+            arenaCenterTatame.innerHTML = `
+                <span class="font-black text-xs sm:text-sm text-amber-300 tracking-widest uppercase">
+                    ${stageLabel}
+                </span>
+            `;
+            midRowDiv.appendChild(arenaCenterTatame);
+
+            // 2c. Setor Leste (Direita)
+            const rightSectorDiv = document.createElement('div');
+            rightSectorDiv.className = 'flex flex-col items-center';
+            rightSectorDiv.innerHTML = `
+                <div class="px-2 py-0.5 mb-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[10px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    Setor Leste (Lateral) <i class="fas fa-arrow-right text-[8px]"></i>
+                </div>
+            `;
+            const rightRowsDiv = document.createElement('div');
+            rightRowsDiv.className = 'space-y-1';
+            for (let r = topRows; r < rows - bottomRows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1 justify-start';
+
+                for (let c = cols - sideCols + 1; c <= cols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createWebSeatBtn(seatId, c, 'Setor Leste'));
+                }
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                rightRowsDiv.appendChild(rDiv);
+            }
+            rightSectorDiv.appendChild(rightRowsDiv);
+            midRowDiv.appendChild(rightSectorDiv);
+
+            arenaWrapper.appendChild(midRowDiv);
+
+            // 3. Setor Inferior (Sul)
+            const bottomSectorDiv = document.createElement('div');
+            bottomSectorDiv.className = 'flex flex-col items-center';
+            bottomSectorDiv.innerHTML = `
+                <div class="px-2.5 py-0.5 mb-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-arrow-down text-[8px]"></i> Setor Sul (Frontal)
+                </div>
+            `;
+            const bottomRowsDiv = document.createElement('div');
+            bottomRowsDiv.className = 'space-y-1';
+            for (let r = rows - bottomRows; r < rows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1 justify-center';
+
+                const lblLeft = document.createElement('span');
+                lblLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lblLeft.textContent = rowLetter;
+                rDiv.appendChild(lblLeft);
+
+                for (let c = 1; c <= cols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createWebSeatBtn(seatId, c, 'Setor Inferior'));
+                }
+
+                const lblRight = document.createElement('span');
+                lblRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lblRight.textContent = rowLetter;
+                rDiv.appendChild(lblRight);
+
+                bottomRowsDiv.appendChild(rDiv);
+            }
+            bottomSectorDiv.appendChild(bottomRowsDiv);
+            arenaWrapper.appendChild(bottomSectorDiv);
+
+            webSeatGridContainer.appendChild(arenaWrapper);
+        } else {
+            // Layout Teatro / Auditório
+            for (let r = 0; r < rows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'flex items-center gap-1.5 sm:gap-2 justify-center';
+
+                const labelLeft = document.createElement('span');
+                labelLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                labelLeft.textContent = rowLetter;
+                rowDiv.appendChild(labelLeft);
+
+                for (let c = 1; c <= cols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rowDiv.appendChild(createWebSeatBtn(seatId, c));
+                }
+
+                const labelRight = document.createElement('span');
+                labelRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                labelRight.textContent = rowLetter;
+                rowDiv.appendChild(labelRight);
+
+                webSeatGridContainer.appendChild(rowDiv);
+            }
         }
+    };
     };
 
     const toggleSeat = (seatId) => {
@@ -691,7 +882,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const all = getAllSelectedSeats();
             const seatItemForForm = (productData && productData.hasSeatMap && all[i - 1]) ? all[i - 1] : null;
 
-            const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0));
+            const effectiveExtraPrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+                ? selectedLocation.extraTicketPrice
+                : ((productData && productData.extraTicketPrice) || 0);
+            const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
             const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
             const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (i > includedTicketsCount));
 
@@ -702,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     seatBadgeHtml = ` <span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black inline-flex items-center gap-1 ml-2"><i class="fas fa-couch"></i> Cadeira ${seatItemForForm.seatId}${sessionInfo}</span>`;
                 }
                 if (isExtraTicket) {
-                    const priceFormatted = (productData.extraTicketPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const priceFormatted = (effectiveExtraPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const badgeLabel = (currentPurchaseMode === 'extra_only') ? `Acompanhante (${priceFormatted})` : `Acompanhante (+ ${priceFormatted})`;
                     formInstanceTitle.innerHTML = `Ingresso <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">${badgeLabel}</span>${seatBadgeHtml}`;
                 } else if (hasExtraTicketMode) {
@@ -730,6 +924,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (label) label.setAttribute('for', `${field}-${i}`);
                 if (input) input.id = `${field}-${i}`;
             });
+
+            // Configuração do Tipo de Ingresso (Inteira vs Meia-Entrada)
+            const ticketTypeContainer = formInstance.querySelector('.ticket-type-container');
+            if (ticketTypeContainer) {
+                const hasHalfForThis = isExtraTicket
+                    ? Boolean(productData.hasHalfPrice || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
+                    : Boolean(productData.hasHalfPrice);
+
+                if (hasHalfForThis) {
+                    ticketTypeContainer.classList.remove('hidden');
+
+                    const radioInteira = ticketTypeContainer.querySelector('.ticket-type-label-inteira input[type="radio"]');
+                    const radioMeia = ticketTypeContainer.querySelector('.ticket-type-label-meia input[type="radio"]');
+                    const priceInteiraEl = ticketTypeContainer.querySelector('.ticket-price-inteira');
+                    const priceMeiaEl = ticketTypeContainer.querySelector('.ticket-price-meia');
+                    const labelInteira = ticketTypeContainer.querySelector('.ticket-type-label-inteira');
+                    const labelMeia = ticketTypeContainer.querySelector('.ticket-type-label-meia');
+
+                    radioInteira.name = `ticket-type-${i}`;
+                    radioMeia.name = `ticket-type-${i}`;
+                    radioInteira.id = `ticket-type-inteira-${i}`;
+                    radioMeia.id = `ticket-type-meia-${i}`;
+
+                    let fInteira = isExtraTicket ? (productData.extraTicketPrice || 0) : (productData.price || 0);
+                    let fMeia = isExtraTicket
+                        ? (productData.extraTicketHalfPrice || Math.round((productData.extraTicketPrice || 0) / 2))
+                        : (productData.halfPrice || Math.round((productData.price || 0) / 2));
+
+                    if (priceInteiraEl) priceInteiraEl.textContent = formatCurrency(fInteira);
+                    if (priceMeiaEl) priceMeiaEl.textContent = formatCurrency(fMeia);
+
+                    const updateLabelStyles = () => {
+                        if (radioInteira.checked) {
+                            labelInteira.className = 'ticket-type-label-inteira flex items-center justify-between p-3 rounded-xl border border-amber-500 bg-amber-500/10 cursor-pointer transition-all';
+                            labelMeia.className = 'ticket-type-label-meia flex items-center justify-between p-3 rounded-xl border border-gray-700 bg-gray-900 cursor-pointer hover:border-gray-600 transition-all';
+                        } else {
+                            labelInteira.className = 'ticket-type-label-inteira flex items-center justify-between p-3 rounded-xl border border-gray-700 bg-gray-900 cursor-pointer hover:border-gray-600 transition-all';
+                            labelMeia.className = 'ticket-type-label-meia flex items-center justify-between p-3 rounded-xl border border-purple-500 bg-purple-500/10 cursor-pointer transition-all';
+                        }
+                    };
+
+                    radioInteira.addEventListener('change', () => {
+                        updateLabelStyles();
+                        updateTotalPrice();
+                    });
+                    radioMeia.addEventListener('change', () => {
+                        updateLabelStyles();
+                        updateTotalPrice();
+                    });
+                } else {
+                    ticketTypeContainer.classList.add('hidden');
+                }
+            }
 
             // Campo Idade condicional (ignorado em ingressos adicionais)
             if (productData.askAge && !isExtraTicket) {
@@ -916,7 +1163,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const formInstances = formsContainer.querySelectorAll('.form-instance');
         let activeLoteName = null;
 
-        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0));
+        const effectiveExtraPrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+            ? selectedLocation.extraTicketPrice
+            : ((productData && productData.extraTicketPrice) || 0);
+        const effectiveBasePrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.price && selectedLocation.price > 0)
+            ? selectedLocation.price
+            : ((productData && productData.price) || 0);
+
+        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
         const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
 
         formInstances.forEach((form, idx) => {
@@ -924,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (idx >= includedTicketsCount));
 
             if (isExtraTicket) {
-                instancePrice = productData.extraTicketPrice || 0;
+                instancePrice = effectiveExtraPrice;
             } else if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
                 const selectedVariant = selector ? productData.priceVariants[selector.value] : productData.priceVariants[0];
@@ -949,9 +1203,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     activeLoteName = productData.lotes[0].name;
                 }
             } else if (productData.priceType === 'kit') {
-                instancePrice = productData.kitBasePrice || productData.price || 0;
+                instancePrice = productData.kitBasePrice || effectiveBasePrice || 0;
             } else {
-                instancePrice = productData.price || 0;
+                instancePrice = effectiveBasePrice || 0;
             }
 
             // Somar Addons apenas para a inscrição principal
@@ -960,6 +1214,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkedAddons.forEach(addon => {
                     instancePrice += parseInt(addon.dataset.addonPrice, 10);
                 });
+            }
+
+            // Aplicar Meia-Entrada se selecionada
+            const hasHalfForThis = isExtraTicket
+                ? Boolean(productData.hasHalfPrice || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
+                : Boolean(productData.hasHalfPrice);
+
+            if (hasHalfForThis) {
+                const isMeia = Boolean(form.querySelector(`input[name="ticket-type-${idx + 1}"][value="meia"]:checked`));
+                if (isMeia) {
+                    if (isExtraTicket) {
+                        instancePrice = (productData.extraTicketHalfPrice !== undefined && productData.extraTicketHalfPrice !== null && productData.extraTicketHalfPrice > 0)
+                            ? productData.extraTicketHalfPrice
+                            : Math.round(effectiveExtraPrice / 2);
+                    } else {
+                        instancePrice = (productData.halfPrice !== undefined && productData.halfPrice !== null && productData.halfPrice > 0)
+                            ? productData.halfPrice
+                            : Math.round(instancePrice / 2);
+                    }
+                }
             }
 
             totalAmount += instancePrice;
@@ -1002,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (productData.hasSeatMap && getAllSelectedSeats().length === 0 && currentPurchaseMode === 'extra_only') {
-            const extraFormatted = ((productData.extraTicketPrice || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const extraFormatted = ((effectiveExtraPrice || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             productPriceDisplay.innerHTML = `${extraFormatted} <span class="text-xs text-gray-400 font-normal">/ ingresso</span>`;
             return;
         }
@@ -1170,11 +1444,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            const hasHalfForThis = isExtraTicket
+                ? Boolean(productData.hasHalfPrice || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
+                : Boolean(productData.hasHalfPrice);
+            const isMeia = Boolean(hasHalfForThis && form.querySelector(`input[name="ticket-type-${idx + 1}"][value="meia"]:checked`));
+            formData.ticketType = isMeia ? 'meia' : 'inteira';
+            formData.ticketTypeName = isMeia ? 'Meia-Entrada' : 'Inteira';
+
             let priceData = {};
             let kitSelections = null;
             if (isExtraTicket) {
                 priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Ingresso Acompanhante' : 'Ingresso Adicional (Acompanhante)';
-                priceData.amount = productData.extraTicketPrice || 0;
+                priceData.amount = effectiveExtraPrice;
             } else if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
                 const selectedVariant = productData.priceVariants[selector.value];
@@ -1185,13 +1466,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         priceData.pixAmount = selectedVariant.pixPrice;
                     }
                 } else {
-                    priceData.amount = productData.price;
+                    priceData.amount = effectiveBasePrice;
                     if (productData.pixPrice) {
                         priceData.pixAmount = productData.pixPrice;
                     }
                 }
             } else if (productData.priceType === 'kit') {
-                priceData.amount = productData.kitBasePrice || productData.price || 0;
+                priceData.amount = productData.kitBasePrice || effectiveBasePrice || 0;
                 const kitSelects = form.querySelectorAll('select[name="kit-item-select"]');
                 if (kitSelects.length > 0) {
                     kitSelections = {};
@@ -1200,9 +1481,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             } else {
-                priceData.amount = productData.price;
+                priceData.amount = effectiveBasePrice;
                 if (productData.pixPrice) {
                     priceData.pixAmount = productData.pixPrice;
+                }
+            }
+
+            if (isMeia) {
+                if (isExtraTicket) {
+                    priceData.amount = (productData.extraTicketHalfPrice !== undefined && productData.extraTicketHalfPrice !== null && productData.extraTicketHalfPrice > 0)
+                        ? productData.extraTicketHalfPrice
+                        : Math.round(effectiveExtraPrice / 2);
+                    priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Ingresso Acompanhante (Meia)' : 'Ingresso Adicional (Meia)';
+                } else {
+                    priceData.amount = productData.halfPrice || Math.round((priceData.amount || effectiveBasePrice || 0) / 2);
+                    priceData.variantName = priceData.variantName ? `${priceData.variantName} (Meia)` : 'Meia-Entrada';
+                }
+                if (productData.halfPricePix) {
+                    priceData.pixAmount = productData.halfPricePix;
                 }
             }
 
@@ -1277,8 +1573,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const all = getAllSelectedSeats();
                     return all.map(s => s.seatId);
                 })(),
-                hasExtraTicketPrice: Boolean(productData.hasExtraTicketPrice),
-                extraTicketPrice: productData.extraTicketPrice || 0,
+                hasExtraTicketPrice: Boolean(productData.hasExtraTicketPrice || effectiveExtraPrice > 0),
+                extraTicketPrice: effectiveExtraPrice || 0,
+                hasHalfPrice: Boolean(productData.hasHalfPrice),
+                halfPrice: productData.halfPrice || null,
+                extraTicketHalfPrice: productData.extraTicketHalfPrice || null,
                 includedTicketsCount: (productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1,
                 lockExpiresAt: productData.hasSeatMap ? (Date.now() + 15 * 60 * 1000) : null,
                 addedAt: new Date().toISOString()

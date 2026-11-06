@@ -9,8 +9,7 @@ import {
   ArrowUp, 
   ArrowDown, 
   RotateCcw, 
-  LayoutGrid, 
-  Award 
+  LayoutGrid
 } from 'lucide-react-native';
 
 export interface SeatConfig {
@@ -55,6 +54,17 @@ export function getSeatSectorName(seatId?: string, config?: SeatConfig): string 
     return col <= leftCols ? 'Ala Esquerda' : 'Ala Direita';
   }
 
+  if (layout === 'arena_u_shape') {
+    const rawBottom = parseInt(String(config.bottomRows || config.topRows || 2), 10) || 2;
+    const rawSide = parseInt(String(config.sideCols || 4), 10) || 4;
+    const bottomRows = Math.min(Math.max(1, rawBottom), Math.max(1, numRows - 1));
+    const sideCols = Math.min(Math.max(1, rawSide), Math.max(1, Math.floor((numCols - 2) / 2)));
+
+    if (rowIdx >= numRows - bottomRows) return 'Setor Sul (Frontal)';
+    if (col <= sideCols) return 'Setor Oeste (Lateral)';
+    return 'Setor Leste (Lateral)';
+  }
+
   if (layout === 'arena_4_sides') {
     const maxBlockRows = Math.max(1, Math.floor((numRows - 1) / 2));
     const rawTop = parseInt(String(config.topRows || 2), 10) || 2;
@@ -88,18 +98,19 @@ export default function SeatMapSelector({
   const layoutType = config?.layoutType || 'theater';
   const numRows = Math.min(26, Math.max(1, parseInt(String(config?.rows || 8), 10) || 8));
   const numCols = Math.min(50, Math.max(1, parseInt(String(config?.seatsPerRow || config?.cols || 16), 10) || 16));
-  const stageLabel = config?.stageLabel || (layoutType === 'theater' ? 'PALCO / TATAME' : 'TATAME CENTRAL');
+  const stageLabel = config?.stageLabel || (layoutType === 'theater' ? 'PALCO / TATAME' : 'TATAME');
   const disabledSet = useMemo(() => new Set(config?.disabledSeats || []), [config?.disabledSeats]);
 
   // Parâmetros de proporção seguros para Ginásio e Arena
+  const isUShape = layoutType === 'arena_u_shape';
   const leftCols = Math.max(1, Math.floor(numCols / 2));
   const maxBlockRows = Math.max(1, Math.floor((numRows - 1) / 2));
   const rawTop = parseInt(String(config?.topRows || 2), 10) || 2;
   const rawBottom = parseInt(String(config?.bottomRows || config?.topRows || 2), 10) || 2;
   const rawSide = parseInt(String(config?.sideCols || 4), 10) || 4;
 
-  const topRows = Math.min(Math.max(1, rawTop), maxBlockRows);
-  const bottomRows = Math.min(Math.max(1, rawBottom), maxBlockRows);
+  const topRows = isUShape ? 0 : Math.min(Math.max(1, rawTop), maxBlockRows);
+  const bottomRows = Math.min(Math.max(1, rawBottom), isUShape ? Math.max(1, numRows - 1) : maxBlockRows);
   const sideCols = Math.min(Math.max(1, rawSide), Math.max(1, Math.floor((numCols - 2) / 2)));
   const midRowsCount = Math.max(0, numRows - topRows - bottomRows);
 
@@ -327,20 +338,25 @@ export default function SeatMapSelector({
       ) : null}
 
       {/* Seletor rápido de setor para Arena 360° */}
-      {layoutType === 'arena_4_sides' ? (
+      {(layoutType === 'arena_4_sides' || layoutType === 'arena_u_shape') ? (
         <View style={{ marginBottom: 14 }}>
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: 6, paddingVertical: 2, paddingHorizontal: 2 }}
           >
-            {[
+            {(layoutType === 'arena_u_shape' ? [
+              { id: 'all', label: 'Formato em U', icon: RotateCcw, activeBg: '#f59e0b', activeText: '#000000' },
+              { id: 'left', label: 'Oeste (Lateral)', icon: ArrowLeft, activeBg: '#f59e0b', activeText: '#000000' },
+              { id: 'right', label: 'Leste (Lateral)', icon: ArrowRight, activeBg: '#2563eb', activeText: '#ffffff' },
+              { id: 'bottom', label: 'Sul (Frontal)', icon: ArrowDown, activeBg: '#059669', activeText: '#ffffff' },
+            ] : [
               { id: 'all', label: 'Arena 360°', icon: RotateCcw, activeBg: '#f59e0b', activeText: '#000000' },
               { id: 'top', label: 'Norte (Sup)', icon: ArrowUp, activeBg: '#4f46e5', activeText: '#ffffff' },
               { id: 'left', label: 'Oeste (Esq)', icon: ArrowLeft, activeBg: '#f59e0b', activeText: '#000000' },
               { id: 'right', label: 'Leste (Dir)', icon: ArrowRight, activeBg: '#2563eb', activeText: '#ffffff' },
               { id: 'bottom', label: 'Sul (Inf)', icon: ArrowDown, activeBg: '#059669', activeText: '#ffffff' },
-            ].map(sec => {
+            ]).map(sec => {
               const isActive = activeSectorFilter === sec.id;
               const IconComp = sec.icon;
               return (
@@ -489,12 +505,8 @@ export default function SeatMapSelector({
                   justifyContent: 'center',
                   minWidth: 130
                 }}>
-                  <Award size={24} color="#b45309" style={{ marginBottom: 4 }} />
                   <Text style={{ fontSize: 10, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1.2, textAlign: 'center' }}>
                     {stageLabel}
-                  </Text>
-                  <Text style={{ fontSize: 8, fontWeight: '700', color: '#9ca3af', marginTop: 2, textTransform: 'uppercase' }}>
-                    Área Central
                   </Text>
                 </View>
               ) : null}
@@ -541,10 +553,10 @@ export default function SeatMapSelector({
             </View>
           ) : null}
 
-          {layoutType === 'arena_4_sides' ? (
+          {(layoutType === 'arena_4_sides' || layoutType === 'arena_u_shape') ? (
             <View style={{ flexDirection: 'column', alignItems: 'center', gap: 16, minWidth: '100%' }}>
-              {/* 1. Setor Superior (Norte) */}
-              {(activeSectorFilter === 'all' || activeSectorFilter === 'top') ? (
+              {/* 1. Setor Superior (Norte) - Não exibido no Formato em U */}
+              {(!isUShape && (activeSectorFilter === 'all' || activeSectorFilter === 'top')) ? (
                 <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                   <View style={{
                     marginBottom: 6,
@@ -588,8 +600,8 @@ export default function SeatMapSelector({
 
               {/* 2. Miolo: Setor Oeste + Tatame Central + Setor Leste */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'left' || activeSectorFilter === 'right') ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-                  {/* Setor Oeste (Esquerda) */}
+                <View style={{ flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: 14 }}>
+                  {/* Setor Oeste (Lateral) */}
                   {(activeSectorFilter === 'all' || activeSectorFilter === 'left') ? (
                     <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                       <View style={{
@@ -606,7 +618,7 @@ export default function SeatMapSelector({
                       }}>
                         <ArrowLeft size={10} color="#d97706" />
                         <Text style={{ fontSize: 9, fontWeight: '900', color: '#d97706', textTransform: 'uppercase' }}>
-                          Oeste (Esq)
+                          Oeste (Lateral)
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'column', gap: 4 }}>
@@ -630,31 +642,29 @@ export default function SeatMapSelector({
                     </View>
                   ) : null}
 
-                  {/* Tatame Central da Arena 360° */}
+                  {/* Tatame Central da Arena / Palco (Acompanha toda a extensão das fileiras laterais) */}
                   {activeSectorFilter === 'all' ? (
                     <View style={{
-                      paddingHorizontal: 14,
-                      paddingVertical: 18,
+                      alignSelf: 'stretch',
+                      paddingHorizontal: 12,
+                      paddingVertical: 16,
                       borderRadius: 20,
                       borderWidth: 1.5,
                       borderStyle: 'dashed',
-                      borderColor: 'rgba(234, 179, 8, 0.45)',
+                      borderColor: 'rgba(234, 179, 8, 0.5)',
                       backgroundColor: 'rgba(234, 179, 8, 0.08)',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: 120
+                      minWidth: 130,
+                      maxWidth: 160
                     }}>
-                      <Award size={22} color="#b45309" style={{ marginBottom: 2 }} />
-                      <Text style={{ fontSize: 9, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1.2, textAlign: 'center' }}>
                         {stageLabel}
-                      </Text>
-                      <Text style={{ fontSize: 7, fontWeight: '700', color: '#9ca3af', marginTop: 2, textTransform: 'uppercase' }}>
-                        Arena 360°
                       </Text>
                     </View>
                   ) : null}
 
-                  {/* Setor Leste (Direita) */}
+                  {/* Setor Leste (Lateral) */}
                   {(activeSectorFilter === 'all' || activeSectorFilter === 'right') ? (
                     <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                       <View style={{
@@ -670,7 +680,7 @@ export default function SeatMapSelector({
                         gap: 4
                       }}>
                         <Text style={{ fontSize: 9, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase' }}>
-                          Leste (Dir)
+                          Leste (Lateral)
                         </Text>
                         <ArrowRight size={10} color="#2563eb" />
                       </View>
@@ -714,7 +724,7 @@ export default function SeatMapSelector({
                   }}>
                     <ArrowDown size={11} color="#059669" />
                     <Text style={{ fontSize: 10, fontWeight: '900', color: '#059669', textTransform: 'uppercase' }}>
-                      Setor Inferior (Sul)
+                      Setor Sul (Frontal)
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'column', gap: 4 }}>

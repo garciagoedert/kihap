@@ -220,11 +220,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             let seatInfoHtml = '';
             if (item.hasSeatMap || (item.seats && item.seats.length > 0)) {
                 const seatsList = (item.seats && item.seats.length > 0) ? item.seats.join(', ') : item.formDataList.map(f => f.seatId).filter(Boolean).join(', ');
+                const meiaCount = item.formDataList ? item.formDataList.filter(f => f.ticketType === 'meia').length : 0;
+                const inteiraCount = item.formDataList ? item.formDataList.filter(f => f.ticketType === 'inteira').length : 0;
+                const ticketTypeBadge = meiaCount > 0 ? `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded text-xs font-semibold"><i class="fas fa-graduation-cap mr-1"></i> ${meiaCount}x Meia-Entrada${inteiraCount > 0 ? `, ${inteiraCount}x Inteira` : ''}</span>` : '';
+
                 seatInfoHtml = `
                     <div class="mt-1 flex flex-wrap gap-1 items-center">
                         ${item.locationName ? `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded text-xs font-semibold"><i class="fas fa-map-marker-alt mr-1"></i> ${item.locationName}${item.locationVenue ? ` - ${item.locationVenue}` : ''}</span>` : ''}
                         ${item.sessionLabel ? `<span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-semibold"><i class="fas fa-calendar-day mr-1"></i> ${item.sessionLabel}</span>` : ''}
                         ${seatsList ? `<span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-xs font-black"><i class="fas fa-couch mr-1"></i> Cadeira(s): ${seatsList}</span>` : ''}
+                        ${ticketTypeBadge}
                     </div>
                 `;
             }
