@@ -871,8 +871,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const getEffectivePrices = () => {
+        const effectiveBasePrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.price && selectedLocation.price > 0)
+            ? selectedLocation.price
+            : ((productData && productData.price) || 0);
+
+        const effectiveExtraPrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+            ? selectedLocation.extraTicketPrice
+            : ((productData && productData.extraTicketPrice) || 0);
+
+        const effectiveBaseHalfPrice = (selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
+            ? selectedLocation.halfPrice
+            : ((productData && productData.halfPrice) || Math.round(effectiveBasePrice / 2));
+
+        const effectiveExtraHalfPrice = (selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
+            ? selectedLocation.halfPrice
+            : ((productData && productData.extraTicketHalfPrice) || (productData && productData.halfPrice) || Math.round(effectiveExtraPrice / 2));
+
+        return {
+            effectiveBasePrice,
+            effectiveExtraPrice,
+            effectiveBaseHalfPrice,
+            effectiveExtraHalfPrice
+        };
+    };
+
     const renderForms = async (quantity) => {
         formsContainer.innerHTML = '';
+        const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
+        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
+        const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
+
         for (let i = 1; i <= quantity; i++) {
             const formClone = formTemplate.content.cloneNode(true);
             const formInstance = formClone.querySelector('.form-instance');
@@ -881,11 +910,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const all = getAllSelectedSeats();
             const seatItemForForm = (productData && productData.hasSeatMap && all[i - 1]) ? all[i - 1] : null;
 
-            const effectiveExtraPrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
-                ? selectedLocation.extraTicketPrice
-                : ((productData && productData.extraTicketPrice) || 0);
-            const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
-            const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
             const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (i > includedTicketsCount));
 
             if (formInstanceTitle) {
@@ -1173,19 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formInstances = formsContainer.querySelectorAll('.form-instance');
         let activeLoteName = null;
 
-        const effectiveExtraPrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
-            ? selectedLocation.extraTicketPrice
-            : ((productData && productData.extraTicketPrice) || 0);
-        const effectiveBasePrice = (productData && productData.hasLocations && selectedLocation && selectedLocation.price && selectedLocation.price > 0)
-            ? selectedLocation.price
-            : ((productData && productData.price) || 0);
-
-        const effectiveExtraHalfPrice = (selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
-            ? selectedLocation.halfPrice
-            : ((productData && productData.extraTicketHalfPrice) || (productData && productData.halfPrice) || Math.round(effectiveExtraPrice / 2));
-        const effectiveBaseHalfPrice = (selectedLocation && selectedLocation.halfPrice && selectedLocation.halfPrice > 0)
-            ? selectedLocation.halfPrice
-            : ((productData && productData.halfPrice) || Math.round(effectiveBasePrice / 2));
+        const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
 
         const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
         const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
@@ -1427,7 +1439,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0));
+        const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
+        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
         const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
 
         formInstances.forEach((form, idx) => {
