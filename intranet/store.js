@@ -437,6 +437,7 @@ export async function setupStorePage() {
     const activeLocationAddressInput = document.getElementById('active-location-address');
     const activeLocationPriceInput = document.getElementById('active-location-price');
     const activeLocationExtraTicketPriceInput = document.getElementById('active-location-extra-ticket-price');
+    const activeLocationHalfPriceInput = document.getElementById('active-location-half-price');
     let currentLocationsList = [];
     let activeLocationIndex = 0;
 
@@ -1453,6 +1454,10 @@ export async function setupStorePage() {
             const parsed = parseInt(activeLocationExtraTicketPriceInput.value, 10);
             loc.extraTicketPrice = (!isNaN(parsed) && parsed > 0) ? parsed : null;
         }
+        if (activeLocationHalfPriceInput) {
+            const parsed = parseInt(activeLocationHalfPriceInput.value, 10);
+            loc.halfPrice = (!isNaN(parsed) && parsed > 0) ? parsed : null;
+        }
         loc.seatMapConfig = {
             layoutType: (seatMapLayoutTypeInput && seatMapLayoutTypeInput.value) || 'theater',
             rows: Math.min(26, Math.max(1, parseInt(seatMapRowsInput ? seatMapRowsInput.value : 8, 10) || 8)),
@@ -1477,6 +1482,7 @@ export async function setupStorePage() {
         if (activeLocationAddressInput) activeLocationAddressInput.value = loc.address || '';
         if (activeLocationPriceInput) activeLocationPriceInput.value = (loc.price !== undefined && loc.price !== null) ? loc.price : '';
         if (activeLocationExtraTicketPriceInput) activeLocationExtraTicketPriceInput.value = (loc.extraTicketPrice !== undefined && loc.extraTicketPrice !== null) ? loc.extraTicketPrice : '';
+        if (activeLocationHalfPriceInput) activeLocationHalfPriceInput.value = (loc.halfPrice !== undefined && loc.halfPrice !== null) ? loc.halfPrice : '';
 
         const smConfig = loc.seatMapConfig || {};
         if (seatMapLayoutTypeInput) {
@@ -1538,7 +1544,7 @@ export async function setupStorePage() {
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
             }`;
 
-            const hasCustomPrices = Boolean(loc.price || loc.extraTicketPrice);
+            const hasCustomPrices = Boolean(loc.price || loc.extraTicketPrice || loc.halfPrice);
             const priceTagIndicator = hasCustomPrices
                 ? `<span class="px-1.5 py-0.2 rounded-md ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-500/20 text-emerald-500'} text-[10px]" title="Possui preço personalizado">R$</span>`
                 : '';

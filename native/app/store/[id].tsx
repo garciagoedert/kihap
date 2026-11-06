@@ -306,6 +306,12 @@ export default function ProductDetailScreen() {
     const effectiveBasePrice = (product.hasLocations && selectedLocation?.price && selectedLocation.price > 0)
       ? selectedLocation.price
       : getEffectiveProductPrice(product, userData).price;
+    const effectiveExtraHalf = (selectedLocation?.halfPrice && selectedLocation.halfPrice > 0)
+      ? selectedLocation.halfPrice
+      : (product.extraTicketHalfPrice || product.halfPrice || Math.round(effectiveExtraPrice / 2));
+    const effectiveBaseHalf = (selectedLocation?.halfPrice && selectedLocation.halfPrice > 0)
+      ? selectedLocation.halfPrice
+      : (product.halfPrice || Math.round(effectiveBasePrice / 2));
 
     const hasExtraTicket = product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0);
     const includedCount = product.includedTicketsCount !== undefined ? product.includedTicketsCount : 1;
@@ -313,18 +319,18 @@ export default function ProductDetailScreen() {
     let total = 0;
     participants.forEach((p, idx) => {
       const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
-      const isMeia = Boolean((product.hasHalfPrice || (isExtra && product.extraTicketHalfPrice)) && p.ticketType === 'meia');
+      const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || (isExtra && product.extraTicketHalfPrice)) && p.ticketType === 'meia');
 
       if (isExtra) {
         const extraBase = effectiveExtraPrice;
-        const extraHalf = product.extraTicketHalfPrice || product.halfPrice || Math.round(extraBase / 2);
+        const extraHalf = effectiveExtraHalf;
         total += isMeia ? extraHalf : extraBase;
       } else {
         const pVariant = p?.selectedVariant || product.priceVariants?.[0];
         const basePrice = (product.priceType === 'variable' && pVariant)
           ? getEffectiveVariantPrice(pVariant, userData, product).price
           : effectiveBasePrice;
-        const half = product.halfPrice || Math.round(basePrice / 2);
+        const half = effectiveBaseHalf;
         total += isMeia ? half : basePrice;
       }
     });
@@ -960,7 +966,7 @@ export default function ProductDetailScreen() {
                 
                 <View className="space-y-4">
                   {/* Seletor de Tipo de Ingresso (Inteira vs Meia-Entrada) */}
-                  {(product.hasHalfPrice || (isExtra && product.extraTicketHalfPrice)) && (
+                  {(product.hasHalfPrice || Boolean(selectedLocation?.halfPrice) || (isExtra && product.extraTicketHalfPrice)) && (
                     <View style={{ marginBottom: 12 }}>
                       <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
                         Tipo de Ingresso
@@ -1008,7 +1014,9 @@ export default function ProductDetailScreen() {
                             Meia-Entrada
                           </Text>
                           <Text style={{ fontSize: 11, fontWeight: '900', color: (participant.ticketType === 'meia') ? '#a855f7' : '#9ca3af' }}>
-                            {formatCentsToCurrency(isExtra ? (product.extraTicketHalfPrice || product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) / 2)) : (product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)) / 2)))}
+                            {formatCentsToCurrency(isExtra 
+                              ? ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.extraTicketHalfPrice || product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) / 2)))
+                              : ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)) / 2))))}
                           </Text>
                         </TouchableOpacity>
                       </View>

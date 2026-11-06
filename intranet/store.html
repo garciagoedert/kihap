@@ -1780,14 +1780,19 @@
                                                 <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                             </label>
                                         </div>
-                                        <div id="extra-ticket-price-container" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-emerald-500/20 animate-fadeIn">
+                                        <div id="extra-ticket-price-container" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-emerald-500/20 animate-fadeIn">
                                             <div>
-                                                <label for="product-extra-ticket-price" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">Valor por Ingresso Adicional (centavos)</label>
-                                                <input type="number" id="product-extra-ticket-price" placeholder="Ex: 5000 para R$ 50,00"
+                                                <label for="product-extra-ticket-price" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">Valor do Ingresso Inteira (centavos)</label>
+                                                <input type="number" id="product-extra-ticket-price" placeholder="Ex: 8000 para R$ 80,00"
                                                     class="w-full px-4 py-2.5 text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                             </div>
                                             <div>
-                                                <label for="product-included-tickets-count" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">Ingressos Inclusos na Inscrição Principal</label>
+                                                <label for="product-extra-ticket-half-price" class="block text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1.5">Valor da Meia-Entrada (centavos)</label>
+                                                <input type="number" id="product-extra-ticket-half-price" placeholder="Ex: 4000 para R$ 40,00 (opcional)"
+                                                    class="w-full px-4 py-2.5 text-xs font-bold text-purple-700 dark:text-purple-300 bg-white dark:bg-gray-900/80 border border-purple-300 dark:border-purple-800/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                            </div>
+                                            <div>
+                                                <label for="product-included-tickets-count" class="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest mb-1.5">Ingressos Inclusos na Inscrição</label>
                                                 <input type="number" id="product-included-tickets-count" value="1" min="0" placeholder="Padrão: 1"
                                                     class="w-full px-4 py-2.5 text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
                                             </div>
@@ -1831,24 +1836,33 @@
                                         </div>
 
                                         <!-- Preços Específicos deste Local (Opcional - sobrescreve o valor padrão) -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700">
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700">
                                             <div class="p-3 bg-blue-500/5 dark:bg-blue-500/10 rounded-xl border border-blue-500/20">
                                                 <label for="active-location-price" class="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1 flex items-center justify-between">
-                                                    <span><i class="fas fa-tag mr-1"></i> Preço Principal deste Local</span>
+                                                    <span><i class="fas fa-tag mr-1"></i> Inscrição Principal</span>
                                                     <span class="text-[10px] text-gray-400 font-normal lowercase">(vazio = preço geral)</span>
                                                 </label>
-                                                <input type="number" id="active-location-price" placeholder="Ex: 10000 para R$ 100,00 (centavos)"
+                                                <input type="number" id="active-location-price" placeholder="Ex: 35000 para R$ 350,00"
                                                     class="w-full px-3 py-2 text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                <span class="text-[10px] text-gray-400 mt-1 block">Inscrição principal do aluno/participante nesta cidade.</span>
+                                                <span class="text-[10px] text-gray-400 mt-1 block">Valor da inscrição/graduação do aluno nesta cidade.</span>
                                             </div>
                                             <div class="p-3 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-xl border border-emerald-500/20">
                                                 <label for="active-location-extra-ticket-price" class="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1 flex items-center justify-between">
-                                                    <span><i class="fas fa-ticket-alt mr-1"></i> Ingresso Extra / Acompanhante</span>
-                                                    <span class="text-[10px] text-gray-400 font-normal lowercase">(vazio = preço geral)</span>
+                                                    <span><i class="fas fa-ticket-alt mr-1"></i> Ingresso Inteira</span>
+                                                    <span class="text-[10px] text-gray-400 font-normal lowercase">(vazio = ingresso geral)</span>
                                                 </label>
-                                                <input type="number" id="active-location-extra-ticket-price" placeholder="Ex: 5000 para R$ 50,00 (centavos)"
+                                                <input type="number" id="active-location-extra-ticket-price" placeholder="Ex: 8000 para R$ 80,00"
                                                     class="w-full px-3 py-2 text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                                                <span class="text-[10px] text-gray-400 mt-1 block">Valor de cada cadeira extra para familiares nesta cidade.</span>
+                                                <span class="text-[10px] text-gray-400 mt-1 block">Valor da cadeira inteira para acompanhantes.</span>
+                                            </div>
+                                            <div class="p-3 bg-purple-500/5 dark:bg-purple-500/10 rounded-xl border border-purple-500/20">
+                                                <label for="active-location-half-price" class="block text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest mb-1 flex items-center justify-between">
+                                                    <span><i class="fas fa-graduation-cap mr-1"></i> Ingresso Meia-Entrada</span>
+                                                    <span class="text-[10px] text-gray-400 font-normal lowercase">(vazio = meia geral)</span>
+                                                </label>
+                                                <input type="number" id="active-location-half-price" placeholder="Ex: 4000 para R$ 40,00"
+                                                    class="w-full px-3 py-2 text-xs font-bold text-gray-900 dark:text-white bg-white dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                <span class="text-[10px] text-gray-400 mt-1 block">Valor da meia-entrada para acompanhantes.</span>
                                             </div>
                                         </div>
                                     </div>
