@@ -537,10 +537,15 @@
                             </div>
                             <div class="form-group">
                                 <label for="instrutor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Instrutor Responsável</label>
-                                <select id="instrutor"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
-                                    <option value="">Selecione o Instrutor</option>
-                                </select>
+                                <div class="flex items-center gap-2">
+                                    <div id="instrutorAvatarPreview" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 flex items-center justify-center shrink-0 overflow-hidden text-xs text-gray-400">
+                                        <i class="fas fa-user-ninja text-yellow-500 text-sm"></i>
+                                    </div>
+                                    <select id="instrutor"
+                                        class="flex-1 bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                        <option value="">Selecione o Instrutor</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-group md:col-span-2">
                                 <label for="dataChegada" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data de Chegada</label>
@@ -1562,13 +1567,23 @@
                             <span class="truncate">${escapeHtml(unitLabel)}</span>
                         </span>
                     </div>
-                    ${(prospect.instrutor || prospect.instructor) ? `
+                    ${(() => {
+                        const rawInstName = prospect.instrutor || prospect.instructor;
+                        if (!rawInstName) return '';
+                        const instInfo = getInstructorInfo(rawInstName);
+                        const safeName = escapeHtml(instInfo?.name || rawInstName);
+                        const photoURL = instInfo?.photoURL;
+                        const avatarHTML = photoURL
+                            ? `<img src="${photoURL}" alt="${safeName}" class="w-4 h-4 rounded-full object-cover shrink-0 border border-yellow-500/50 shadow-xs" onerror="this.onerror=null; this.outerHTML='<i class=\\'fas fa-user-ninja text-yellow-500 text-[11px] shrink-0\\'></i>';">`
+                            : `<i class="fas fa-user-ninja text-yellow-500 text-[11px] shrink-0"></i>`;
+                        return `
                         <div class="flex items-center gap-1.5 text-[10px] font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-750 px-2 py-1 rounded-md border border-gray-100 dark:border-gray-700/60">
-                            <i class="fas fa-user-ninja text-yellow-500 text-[11px] shrink-0"></i>
+                            ${avatarHTML}
                             <span class="text-gray-400 dark:text-gray-500 text-[9px] uppercase tracking-wider font-bold shrink-0">Instrutor:</span>
-                            <span class="font-bold text-gray-800 dark:text-gray-200 truncate" title="${escapeHtml(prospect.instrutor || prospect.instructor)}">${escapeHtml(prospect.instrutor || prospect.instructor)}</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 truncate" title="${safeName}">${safeName}</span>
                         </div>
-                    ` : ''}
+                        `;
+                    })()}
                 </div>
             `;
 
@@ -1907,6 +1922,10 @@
             if (modalElements.archiveBtn) {
                 modalElements.archiveBtn.onclick = () => {
                     if (!activeProspect) return;
+                    if (!isCurrentUserAdmin()) {
+                        alert('Apenas administradores podem arquivar cards.');
+                        return;
+                    }
                     const name = activeProspect.responsavel || 'este prospect';
                     showConfirmModal(`Deseja arquivar "${name}"?`, () => {
                         archiveProspect(activeProspect.id);
@@ -1918,6 +1937,10 @@
             if (modalElements.deleteBtn) {
                 modalElements.deleteBtn.onclick = () => {
                     if (!activeProspect) return;
+                    if (!isCurrentUserAdmin()) {
+                        alert('Apenas administradores podem excluir cards.');
+                        return;
+                    }
                     const name = activeProspect.responsavel || 'este prospect';
                     showConfirmModal(`Deseja realmente excluir "${name}"?`, () => {
                         deleteItem(activeProspect.id);
@@ -3177,6 +3200,15 @@
             }
 
             updateWhatsAppLink();
+            updateInstructorModalPreview(prospect ? (prospect.instrutor || prospect.instructor || '') : '');
+
+            const isUserAdmin = isCurrentUserAdmin();
+            if (modalElements.archiveBtn) {
+                modalElements.archiveBtn.classList.toggle('hidden', !isUserAdmin);
+            }
+            if (modalElements.deleteBtn) {
+                modalElements.deleteBtn.classList.toggle('hidden', !isUserAdmin);
+            }
         }
 
         function closeFormModal() {
@@ -3762,6 +3794,40 @@
             }
         }
 
+        function isCurrentUserAdmin() {
+            if (localStorage.getItem('isAdmin') === 'true') return true;
+            try {
+                const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (cu && (cu.isAdmin === true || cu.role === 'admin')) return true;
+            } catch (e) {}
+            return false;
+        }
+
+        const instructorsMap = new Map();
+
+        function normalizeInstructorName(name) {
+            return (name || '').trim().toLowerCase();
+        }
+
+        function getInstructorInfo(name) {
+            if (!name) return null;
+            const cleanName = name.trim();
+            const mapped = instructorsMap.get(normalizeInstructorName(cleanName));
+            if (mapped) return mapped;
+            return { name: cleanName, photoURL: '' };
+        }
+
+        function updateInstructorModalPreview(name) {
+            const preview = document.getElementById('instrutorAvatarPreview');
+            if (!preview) return;
+            const info = getInstructorInfo(name);
+            if (info && info.photoURL) {
+                preview.innerHTML = `<img src="${info.photoURL}" alt="${escapeHtml(info.name)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\'fas fa-user-ninja text-yellow-500 text-sm\\'></i>';">`;
+            } else {
+                preview.innerHTML = `<i class="fas fa-user-ninja text-yellow-500 text-sm"></i>`;
+            }
+        }
+
         async function populateInstructors() {
             const instrutorSelect = document.getElementById('instrutor');
             if (!instrutorSelect) return;
@@ -3770,15 +3836,21 @@
                 const q = query(collection(db, 'users'), where('isInstructor', '==', true));
                 const snap = await getDocs(q);
                 const list = [];
+                instructorsMap.clear();
+
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
                     const name = data.name || data.nome || data.displayName || docSnap.id;
+                    const photoURL = data.photoURL || data.photoUrl || data.profilePicture || data.profilePic || data.avatarUrl || data.foto || '';
                     if (name && !list.some(item => item.name === name)) {
-                        list.push({ id: docSnap.id, name: name });
+                        const item = { id: docSnap.id, name: name, photoURL: photoURL };
+                        list.push(item);
+                        instructorsMap.set(normalizeInstructorName(name), item);
                     }
                 });
                 list.sort((a, b) => a.name.localeCompare(b.name));
 
+                const currentVal = instrutorSelect.value;
                 instrutorSelect.innerHTML = '<option value="">Selecione o Instrutor</option>';
                 list.forEach(inst => {
                     const opt = document.createElement('option');
@@ -3786,6 +3858,18 @@
                     opt.textContent = inst.name;
                     instrutorSelect.appendChild(opt);
                 });
+                if (currentVal) instrutorSelect.value = currentVal;
+
+                if (!instrutorSelect.dataset.hasChangeListener) {
+                    instrutorSelect.dataset.hasChangeListener = 'true';
+                    instrutorSelect.addEventListener('change', (e) => {
+                        updateInstructorModalPreview(e.target.value);
+                    });
+                }
+
+                if (combinedData && combinedData.length > 0) {
+                    renderBoard();
+                }
             } catch (error) {
                 console.error("Erro ao buscar instrutores:", error);
             }
