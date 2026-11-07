@@ -897,20 +897,50 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const renderForms = async (quantity) => {
-        formsContainer.innerHTML = '';
         const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
         const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
-        const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
+        const all = getAllSelectedSeats();
 
-        for (let i = 1; i <= quantity; i++) {
+        let numForms = 1;
+        if (productData && productData.hasSeatMap) {
+            if (hasExtraTicketMode) {
+                numForms = (currentPurchaseMode === 'full') ? (1 + all.length) : all.length;
+            } else {
+                numForms = all.length > 0 ? all.length : 1;
+            }
+        } else {
+            numForms = (quantity !== undefined && quantity !== null) ? quantity : (quantitySelector ? parseInt(quantitySelector.value, 10) || 1 : 1);
+        }
+
+        formsContainer.innerHTML = '';
+
+        if (numForms === 0) {
+            formsContainer.innerHTML = `
+                <div class="p-6 rounded-2xl bg-gray-900/60 border border-gray-800 text-center space-y-2">
+                    <div class="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl">
+                        <i class="fas fa-couch"></i>
+                    </div>
+                    <h4 class="font-bold text-white text-sm">Selecione suas cadeiras no mapa</h4>
+                    <p class="text-xs text-gray-400">Clique nas cadeiras disponíveis no mapa acima para reservar os ingressos dos acompanhantes.</p>
+                </div>
+            `;
+            updateTotalPrice();
+            return;
+        }
+
+        for (let i = 1; i <= numForms; i++) {
             const formClone = formTemplate.content.cloneNode(true);
             const formInstance = formClone.querySelector('.form-instance');
 
             const formInstanceTitle = formInstance.querySelector('.form-instance-title');
-            const all = getAllSelectedSeats();
-            const seatItemForForm = (productData && productData.hasSeatMap && all[i - 1]) ? all[i - 1] : null;
+            const isStudent = hasExtraTicketMode && (currentPurchaseMode === 'full') && (i === 1);
+            const isExtraTicket = hasExtraTicketMode ? (currentPurchaseMode === 'extra_only' || i > 1) : false;
 
-            const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (i > includedTicketsCount));
+            const seatItemForForm = (productData && productData.hasSeatMap)
+                ? (hasExtraTicketMode
+                    ? (isExtraTicket ? (currentPurchaseMode === 'full' ? all[i - 2] : all[i - 1]) : null)
+                    : all[i - 1])
+                : null;
 
             if (formInstanceTitle) {
                 let seatBadgeHtml = '';
@@ -918,12 +948,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const sessionInfo = seatItemForForm.sessionName ? ` - ${seatItemForForm.sessionName}` : '';
                     seatBadgeHtml = ` <span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black inline-flex items-center gap-1 ml-2"><i class="fas fa-couch"></i> Cadeira ${seatItemForForm.seatId}${sessionInfo}</span>`;
                 }
-                if (isExtraTicket) {
+                if (isStudent) {
+                    formInstanceTitle.innerHTML = `Inscrição do Aluno <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold ml-1">🥋 Aluno (Tatame)</span>`;
+                } else if (isExtraTicket) {
                     const priceFormatted = (effectiveExtraPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    const badgeLabel = (currentPurchaseMode === 'extra_only') ? `Acompanhante (${priceFormatted})` : `Acompanhante (+ ${priceFormatted})`;
-                    formInstanceTitle.innerHTML = `Ingresso <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">${badgeLabel}</span>${seatBadgeHtml}`;
-                } else if (hasExtraTicketMode) {
-                    formInstanceTitle.innerHTML = `Inscrição Principal <span class="form-instance-number">${i}</span> <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold ml-1">Graduando</span>${seatBadgeHtml}`;
+                    const compNum = (hasExtraTicketMode && currentPurchaseMode === 'full') ? (i - 1) : i;
+                    formInstanceTitle.innerHTML = `Acompanhante <span class="form-instance-number">${compNum}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">Cadeira (${priceFormatted})</span>${seatBadgeHtml}`;
                 } else if (productData.priceType === 'kit') {
                     formInstanceTitle.innerHTML = `Detalhes do Item <span class="form-instance-number">${i}</span>${seatBadgeHtml}`;
                 } else {
@@ -936,8 +966,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isExtraTicket) {
                 const companionNotice = document.createElement('div');
                 companionNotice.className = 'p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-center gap-2 mb-2';
-                companionNotice.innerHTML = `<i class="fas fa-ticket-alt text-base text-emerald-400"></i><span>Ingresso para familiar/convidado assistir ao evento. Apenas a cadeira será reservada para o acompanhante.</span>`;
+                companionNotice.innerHTML = `<i class="fas fa-ticket-alt text-base text-emerald-400"></i><span>Ingresso para familiar/convidado assistir da plateia. Cadeira: <strong>${seatItemForForm ? seatItemForForm.seatId : 'Selecione no mapa'}</strong>.</span>`;
                 formInstance.querySelector('.grid').prepend(companionNotice);
+            } else if (isStudent) {
+                const studentNotice = document.createElement('div');
+                studentNotice.className = 'p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-400 flex items-center gap-2 mb-2';
+                studentNotice.innerHTML = `<i class="fas fa-info-circle text-base text-amber-400"></i><span>Participação na graduação no tatame. Cadeiras na plateia são exclusivas para familiares e acompanhantes.</span>`;
+                formInstance.querySelector('.grid').prepend(studentNotice);
             }
 
             const fields = ['price-variant-selector', 'size-selector'];
@@ -1200,11 +1235,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
 
         const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
-        const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
 
         formInstances.forEach((form, idx) => {
             let instancePrice = 0;
-            const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (idx >= includedTicketsCount));
+            const isStudent = hasExtraTicketMode && (currentPurchaseMode === 'full') && (idx === 0);
+            const isExtraTicket = hasExtraTicketMode ? (currentPurchaseMode === 'extra_only' || idx > 0) : false;
 
             if (isExtraTicket) {
                 instancePrice = effectiveExtraPrice;
@@ -1394,11 +1429,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
+        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
+
         // Seat Map Validation & Locking
         if (productData.hasSeatMap) {
             const all = getAllSelectedSeats();
-            if (all.length === 0) {
-                formStatus.textContent = 'Por favor, selecione pelo menos uma cadeira no mapa de assentos acima.';
+            const requiresSeats = !hasExtraTicketMode || currentPurchaseMode === 'extra_only';
+            if (requiresSeats && all.length === 0) {
+                formStatus.textContent = (currentPurchaseMode === 'extra_only')
+                    ? 'Por favor, selecione pelo menos uma cadeira no mapa para os acompanhantes.'
+                    : 'Por favor, selecione pelo menos uma cadeira no mapa de assentos acima.';
                 formStatus.className = 'mt-6 text-center text-lg text-amber-400 font-bold';
                 payButton.disabled = false;
                 if (seatMapSection) {
@@ -1407,44 +1448,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            try {
-                formStatus.textContent = 'Reservando suas cadeiras no mapa...';
-                const userIdentifier = getUserIdentifier();
+            if (all.length > 0) {
+                try {
+                    formStatus.textContent = 'Reservando suas cadeiras no mapa...';
+                    const userIdentifier = getUserIdentifier();
 
-                // Bloqueia as cadeiras para cada sessão selecionada
-                for (const [sessId, group] of Object.entries(selectedSeatsBySession)) {
-                    if (!group.seats || group.seats.length === 0) continue;
-                    const lockRes = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/lockSeats', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            productId: currentProductId,
-                            sessionId: sessId,
-                            seatIds: group.seats,
-                            userIdentifier: userIdentifier
-                        })
-                    });
+                    // Bloqueia as cadeiras para cada sessão selecionada
+                    for (const [sessId, group] of Object.entries(selectedSeatsBySession)) {
+                        if (!group.seats || group.seats.length === 0) continue;
+                        const lockRes = await fetch('https://us-central1-intranet-kihap.cloudfunctions.net/lockSeats', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                productId: currentProductId,
+                                sessionId: sessId,
+                                seatIds: group.seats,
+                                userIdentifier: userIdentifier
+                            })
+                        });
 
-                    if (!lockRes.ok) {
-                        const errJson = await lockRes.json();
-                        throw new Error(`Sessão "${group.session?.name || ''}": ` + (errJson.error || 'Um ou mais assentos selecionados não estão mais disponíveis.'));
+                        if (!lockRes.ok) {
+                            const errJson = await lockRes.json();
+                            throw new Error(`Sessão "${group.session?.name || ''}": ` + (errJson.error || 'Um ou mais assentos selecionados não estão mais disponíveis.'));
+                        }
                     }
+                } catch (err) {
+                    console.error('Lock Seats Error:', err);
+                    formStatus.textContent = err.message || 'Erro ao reservar assentos.';
+                    formStatus.className = 'mt-6 text-center text-lg text-red-500 font-bold';
+                    payButton.disabled = false;
+                    return;
                 }
-            } catch (err) {
-                console.error('Lock Seats Error:', err);
-                formStatus.textContent = err.message || 'Erro ao reservar assentos.';
-                formStatus.className = 'mt-6 text-center text-lg text-red-500 font-bold';
-                payButton.disabled = false;
-                return;
             }
         }
 
-        const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
-        const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
-        const includedTicketsCount = (productData && productData.includedTicketsCount !== undefined) ? productData.includedTicketsCount : 1;
-
         formInstances.forEach((form, idx) => {
-            const isExtraTicket = hasExtraTicketMode && (currentPurchaseMode === 'extra_only' || (idx >= includedTicketsCount));
+            const isStudent = hasExtraTicketMode && (currentPurchaseMode === 'full') && (idx === 0);
+            const isExtraTicket = hasExtraTicketMode ? (currentPurchaseMode === 'extra_only' || idx > 0) : false;
+            const all = getAllSelectedSeats();
+            const seatItem = (productData && productData.hasSeatMap)
+                ? (hasExtraTicketMode
+                    ? (isExtraTicket ? (currentPurchaseMode === 'full' ? all[idx - 1] : all[idx]) : null)
+                    : all[idx])
+                : null;
+
             const formData = {
                 isExtraTicket: isExtraTicket,
                 isMainParticipant: !isExtraTicket,
@@ -1453,26 +1500,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 userProfessor: isExtraTicket ? null : (form.querySelector('[name="professor-selector"]') && !form.querySelector('.professor-container').classList.contains('hidden') ? form.querySelector('[name="professor-selector"]').value : null),
             };
 
-            if (productData.hasSeatMap) {
-                const all = getAllSelectedSeats();
-                const seatItem = all[idx];
-                if (seatItem) {
-                    formData.seatId = seatItem.seatId;
-                    formData.sessionId = seatItem.sessionId;
-                    formData.sessionName = seatItem.sessionName;
-                    formData.sessionDate = seatItem.sessionDate;
-                    formData.sessionTime = seatItem.sessionTime;
-                    formData.sessionLabel = seatItem.sessionLabel;
-                    formData.locationId = seatItem.locationId || null;
-                    formData.locationName = seatItem.locationName || null;
-                    formData.locationVenue = seatItem.locationVenue || null;
-                    formData.locationAddress = seatItem.locationAddress || null;
-                }
+            if (seatItem) {
+                formData.seatId = seatItem.seatId;
+                formData.sessionId = seatItem.sessionId;
+                formData.sessionName = seatItem.sessionName;
+                formData.sessionDate = seatItem.sessionDate;
+                formData.sessionTime = seatItem.sessionTime;
+                formData.sessionLabel = seatItem.sessionLabel;
+                formData.locationId = seatItem.locationId || null;
+                formData.locationName = seatItem.locationName || null;
+                formData.locationVenue = seatItem.locationVenue || null;
+                formData.locationAddress = seatItem.locationAddress || null;
+            } else {
+                formData.seatId = null;
             }
 
             const hasHalfForThis = isExtraTicket
-                ? Boolean(productData.hasHalfPrice || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
-                : Boolean(productData.hasHalfPrice);
+                ? Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice) || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
+                : Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice));
             const isMeia = Boolean(hasHalfForThis && form.querySelector(`input[name="ticket-type-${idx + 1}"][value="meia"]:checked`));
             formData.ticketType = isMeia ? 'meia' : 'inteira';
             formData.ticketTypeName = isMeia ? 'Meia-Entrada' : 'Inteira';
@@ -1480,7 +1525,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let priceData = {};
             let kitSelections = null;
             if (isExtraTicket) {
-                priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Ingresso Acompanhante' : 'Ingresso Adicional (Acompanhante)';
+                priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Cadeira Extra (Acompanhante)' : 'Cadeira Extra (Acompanhante)';
                 priceData.amount = effectiveExtraPrice;
             } else if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
@@ -1516,7 +1561,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isMeia) {
                 if (isExtraTicket) {
                     priceData.amount = effectiveExtraHalfPrice;
-                    priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Ingresso Acompanhante (Meia)' : 'Ingresso Adicional (Meia)';
+                    priceData.variantName = 'Cadeira Extra (Meia-Entrada)';
                 } else {
                     priceData.amount = effectiveBaseHalfPrice;
                     priceData.variantName = priceData.variantName ? `${priceData.variantName} (Meia)` : 'Meia-Entrada';
@@ -1561,7 +1606,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             cart.addItem({
                 productId: currentProductId,
-                productName: (currentPurchaseMode === 'extra_only') ? `${productData.name} (Ingressos Acompanhante)` : productData.name,
+                productName: (currentPurchaseMode === 'extra_only') ? `${productData.name} (Cadeiras Extras)` : productData.name,
                 purchaseMode: currentPurchaseMode,
                 isExtraTicketOnly: (currentPurchaseMode === 'extra_only'),
                 imageUrl: productData.imageUrl,

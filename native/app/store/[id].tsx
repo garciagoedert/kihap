@@ -238,16 +238,25 @@ export default function ProductDetailScreen() {
       : null;
 
     if (product.hasSeatMap) {
-      const count = Math.max(1, allSelectedSeats.length);
+      const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+        ? selectedLocation.extraTicketPrice
+        : (product.extraTicketPrice || 0);
+      const isGraduation = Boolean(product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0);
+
+      const count = isGraduation
+        ? (purchaseMode === 'full' ? 1 + allSelectedSeats.length : allSelectedSeats.length)
+        : Math.max(1, allSelectedSeats.length);
+
       if (quantity !== count) {
         setQuantity(count);
       }
+
       setParticipants(prev => {
         const newList = [];
-        for (let i = 0; i < count; i++) {
-          const seatInfo = allSelectedSeats[i];
+        if (isGraduation && purchaseMode === 'full') {
+          // Participant 0: Aluno no tatame (sem cadeira)
           newList.push({
-            ...(prev[i] || {
+            ...(prev[0] || {
               userName: '',
               userPrograma: '',
               userGraduacao: '',
@@ -255,15 +264,74 @@ export default function ProductDetailScreen() {
               userSize: '',
               selectedVariant: defaultVariant
             }),
-            seatId: seatInfo?.seatId || null,
-            sessionId: seatInfo?.sessionId || null,
-            sessionName: seatInfo?.sessionName || null,
-            sessionLabel: seatInfo?.sessionLabel || null,
-            locationId: seatInfo?.locationId || null,
-            locationName: seatInfo?.locationName || null,
-            locationVenue: seatInfo?.locationVenue || null,
-            locationAddress: seatInfo?.locationAddress || null
+            seatId: null,
+            sessionId: selectedSession?.id || null,
+            sessionName: selectedSession?.name || null,
+            sessionLabel: selectedSession?.label || selectedSession?.name || null,
+            locationId: selectedLocation?.id || null,
+            locationName: selectedLocation?.name || null,
+            locationVenue: selectedLocation?.venue || null,
+            locationAddress: selectedLocation?.address || null
           });
+          // Participants 1..N: Cadeiras de acompanhantes
+          for (let i = 0; i < allSelectedSeats.length; i++) {
+            const seatInfo = allSelectedSeats[i];
+            newList.push({
+              ...(prev[i + 1] || {
+                userName: '',
+                ticketType: 'inteira'
+              }),
+              seatId: seatInfo?.seatId || null,
+              sessionId: seatInfo?.sessionId || null,
+              sessionName: seatInfo?.sessionName || null,
+              sessionLabel: seatInfo?.sessionLabel || null,
+              locationId: seatInfo?.locationId || null,
+              locationName: seatInfo?.locationName || null,
+              locationVenue: seatInfo?.locationVenue || null,
+              locationAddress: seatInfo?.locationAddress || null
+            });
+          }
+        } else if (isGraduation && purchaseMode === 'extra_only') {
+          // Apenas cadeiras de acompanhantes
+          for (let i = 0; i < allSelectedSeats.length; i++) {
+            const seatInfo = allSelectedSeats[i];
+            newList.push({
+              ...(prev[i] || {
+                userName: '',
+                ticketType: 'inteira'
+              }),
+              seatId: seatInfo?.seatId || null,
+              sessionId: seatInfo?.sessionId || null,
+              sessionName: seatInfo?.sessionName || null,
+              sessionLabel: seatInfo?.sessionLabel || null,
+              locationId: seatInfo?.locationId || null,
+              locationName: seatInfo?.locationName || null,
+              locationVenue: seatInfo?.locationVenue || null,
+              locationAddress: seatInfo?.locationAddress || null
+            });
+          }
+        } else {
+          for (let i = 0; i < count; i++) {
+            const seatInfo = allSelectedSeats[i];
+            newList.push({
+              ...(prev[i] || {
+                userName: '',
+                userPrograma: '',
+                userGraduacao: '',
+                userProfessor: '',
+                userSize: '',
+                selectedVariant: defaultVariant
+              }),
+              seatId: seatInfo?.seatId || null,
+              sessionId: seatInfo?.sessionId || null,
+              sessionName: seatInfo?.sessionName || null,
+              sessionLabel: seatInfo?.sessionLabel || null,
+              locationId: seatInfo?.locationId || null,
+              locationName: seatInfo?.locationName || null,
+              locationVenue: seatInfo?.locationVenue || null,
+              locationAddress: seatInfo?.locationAddress || null
+            });
+          }
         }
         return newList;
       });
@@ -313,52 +381,66 @@ export default function ProductDetailScreen() {
       ? selectedLocation.halfPrice
       : (product.halfPrice || Math.round(effectiveBasePrice / 2));
 
-    const hasExtraTicket = product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0);
-    const includedCount = product.includedTicketsCount !== undefined ? product.includedTicketsCount : 1;
+    const isGraduation = Boolean(product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0));
+
+    if (isGraduation) {
+      let total = 0;
+      if (purchaseMode === 'full') {
+        // Aluno no tatame (participante 0)
+        const student = participants[0];
+        const isStudentMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice) && student?.ticketType === 'meia');
+        total += isStudentMeia ? effectiveBaseHalf : effectiveBasePrice;
+
+        // Cadeiras extras de acompanhantes (participantes 1 em diante)
+        for (let i = 1; i < participants.length; i++) {
+          const comp = participants[i];
+          const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || product.extraTicketHalfPrice) && comp?.ticketType === 'meia');
+          total += isMeia ? effectiveExtraHalf : effectiveExtraPrice;
+        }
+      } else {
+        // Apenas cadeiras de acompanhantes (todos os participantes)
+        participants.forEach(comp => {
+          const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || product.extraTicketHalfPrice) && comp?.ticketType === 'meia');
+          total += isMeia ? effectiveExtraHalf : effectiveExtraPrice;
+        });
+      }
+      return total;
+    }
 
     let total = 0;
-    participants.forEach((p, idx) => {
-      const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
-      const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || (isExtra && product.extraTicketHalfPrice)) && p.ticketType === 'meia');
-
-      if (isExtra) {
-        const extraBase = effectiveExtraPrice;
-        const extraHalf = effectiveExtraHalf;
-        total += isMeia ? extraHalf : extraBase;
-      } else {
-        const pVariant = p?.selectedVariant || product.priceVariants?.[0];
-        const basePrice = (product.priceType === 'variable' && pVariant)
-          ? getEffectiveVariantPrice(pVariant, userData, product).price
-          : effectiveBasePrice;
-        const half = effectiveBaseHalf;
-        total += isMeia ? half : basePrice;
-      }
+    participants.forEach((p) => {
+      const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice) && p.ticketType === 'meia');
+      const pVariant = p?.selectedVariant || product.priceVariants?.[0];
+      const basePrice = (product.priceType === 'variable' && pVariant)
+        ? getEffectiveVariantPrice(pVariant, userData, product).price
+        : effectiveBasePrice;
+      const half = effectiveBaseHalf;
+      total += isMeia ? half : basePrice;
     });
 
     return total;
   };
 
   const handleAddToCart = async () => {
-    if (product.hasSeatMap) {
+    const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+      ? selectedLocation.extraTicketPrice
+      : (product.extraTicketPrice || 0);
+    const isGraduation = Boolean(product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0));
+
+    if (product.hasSeatMap && purchaseMode === 'extra_only') {
       if (allSelectedSeats.length === 0) {
-        alert('Por favor, selecione pelo menos uma cadeira no mapa do evento.');
+        alert('Por favor, selecione pelo menos uma cadeira no mapa para os ingressos de acompanhante.');
         return;
       }
     }
 
-    const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
-      ? selectedLocation.extraTicketPrice
-      : (product.extraTicketPrice || 0);
     const effectiveBasePrice = (product.hasLocations && selectedLocation?.price && selectedLocation.price > 0)
       ? selectedLocation.price
       : getEffectiveProductPrice(product, userData).price;
 
-    const hasExtraTicket = product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0);
-    const includedCount = product.includedTicketsCount !== undefined ? product.includedTicketsCount : 1;
-
     // Basic validation
     const incomplete = participants.some((p, idx) => {
-      const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
+      const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
       if (isExtra) {
         return !p.userName?.trim();
       }
@@ -415,8 +497,8 @@ export default function ProductDetailScreen() {
       : getEffectiveProductPrice(product, userData);
 
     const formDataList = participants.map((p, idx) => {
-      const isExtra = hasExtraTicket && (purchaseMode === 'extra_only' || idx >= includedCount);
-      const isMeia = Boolean(product.hasHalfPrice && p.ticketType === 'meia');
+      const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
+      const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || (isExtra && product.extraTicketHalfPrice)) && p.ticketType === 'meia');
       const pVariant = p.selectedVariant || (product.priceType === 'variable' ? product.priceVariants?.[0] : null);
 
       let selectedAmount = isExtra
@@ -425,8 +507,8 @@ export default function ProductDetailScreen() {
 
       if (isMeia) {
         selectedAmount = isExtra
-          ? (product.extraTicketHalfPrice || product.halfPrice || Math.round(effectiveExtraPrice / 2))
-          : (product.halfPrice || Math.round(selectedAmount / 2));
+          ? ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.extraTicketHalfPrice || product.halfPrice || Math.round(effectiveExtraPrice / 2)))
+          : ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.halfPrice || Math.round(selectedAmount / 2)));
       }
 
       const selectedVariantName = isExtra
@@ -444,14 +526,16 @@ export default function ProductDetailScreen() {
       };
 
       const { selectedVariant, ...rest } = p;
-      const seatInfo = allSelectedSeats[idx];
+      const seatInfo = isGraduation
+        ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[idx - 1] : allSelectedSeats[idx]) : null)
+        : allSelectedSeats[idx];
       return {
         ...rest,
         ticketType: isMeia ? 'meia' : 'inteira',
         ticketTypeName: isMeia ? 'Meia-Entrada' : 'Inteira',
         isExtraTicket: isExtra,
         isMainParticipant: !isExtra,
-        seatId: seatInfo ? seatInfo.seatId : (p.seatId || null),
+        seatId: seatInfo ? seatInfo.seatId : null,
         ...(product.hasSeatMap && seatInfo ? {
           sessionId: seatInfo.sessionId,
           sessionName: seatInfo.sessionName,
@@ -462,7 +546,12 @@ export default function ProductDetailScreen() {
           locationName: seatInfo.locationName || null,
           locationVenue: seatInfo.locationVenue || null,
           locationAddress: seatInfo.locationAddress || null,
-        } : {}),
+        } : (selectedLocation ? {
+          locationId: selectedLocation.id,
+          locationName: selectedLocation.name,
+          locationVenue: selectedLocation.venue,
+          locationAddress: selectedLocation.address
+        } : {})),
         priceData
       };
     });
@@ -665,12 +754,12 @@ export default function ProductDetailScreen() {
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                         <Text style={{ fontSize: 13, fontWeight: '900', color: purchaseMode === 'full' ? '#eab308' : (isDark ? '#ffffff' : '#111827') }}>
-                          Inscrição + Cadeira
+                          Inscrição do Aluno
                         </Text>
                         {purchaseMode === 'full' && <Check size={14} color="#eab308" />}
                       </View>
                       <Text style={{ fontSize: 10, color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>
-                        Graduação do aluno (já inclui 1 cadeira)
+                        Graduação no tatame (cadeira não inclusa)
                       </Text>
                     </TouchableOpacity>
 
@@ -693,7 +782,7 @@ export default function ProductDetailScreen() {
                         {purchaseMode === 'extra_only' && <Check size={14} color="#10b981" />}
                       </View>
                       <Text style={{ fontSize: 10, color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '500' }}>
-                        {formatCentsToCurrency(product.extraTicketPrice || 0)} cada (Acompanhante)
+                        {formatCentsToCurrency((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0))} cada (Acompanhante)
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -905,8 +994,15 @@ export default function ProductDetailScreen() {
 
           {/* Participant Info Fields */}
           {participants.map((participant, index) => {
-            const isExtra = !!(product.hasSeatMap && product.hasExtraTicketPrice && (purchaseMode === 'extra_only' || index >= (product.includedTicketsCount || 1)));
-            const isGraduationMain = !!(product.hasSeatMap && product.hasExtraTicketPrice && purchaseMode !== 'extra_only' && index < (product.includedTicketsCount || 1));
+            const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+              ? selectedLocation.extraTicketPrice
+              : (product.extraTicketPrice || 0);
+            const isGraduation = Boolean(product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0));
+            const isStudent = isGraduation && purchaseMode === 'full' && index === 0;
+            const isExtra = isGraduation ? (purchaseMode === 'extra_only' || index > 0) : false;
+            const seatInfoForCard = isGraduation
+              ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[index - 1] : allSelectedSeats[index]) : null)
+              : allSelectedSeats[index];
 
             return (
               <View 
@@ -928,37 +1024,44 @@ export default function ProductDetailScreen() {
                   <View className="flex-1 mr-2">
                     <View className="flex-row items-center gap-2">
                       <Text className={`text-xs font-black uppercase tracking-widest ${isExtra ? 'text-amber-600 dark:text-amber-400' : 'text-yellow-600 dark:text-yellow-500'}`}>
-                        {product.hasSeatMap 
-                          ? (isExtra ? `Ingresso ${index + 1} • Acompanhante` : (isGraduationMain ? `Ingresso 1 • Graduando` : `Ingresso ${index + 1}`))
-                          : `Informações do Item ${index + 1}`}
+                        {isStudent 
+                          ? 'Inscrição do Aluno' 
+                          : (isExtra 
+                              ? `Acompanhante ${isGraduation && purchaseMode === 'full' ? index : index + 1}` 
+                              : `Informações do Item ${index + 1}`)}
                       </Text>
-                      {isExtra && (
+                      {isStudent && (
                         <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(234, 179, 8, 0.2)', borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.4)' }}>
                           <Text style={{ fontSize: 9, fontWeight: '900', color: '#d97706' }}>
-                            Extra {formatCentsToCurrency(product.extraTicketPrice || 0)}
+                            🥋 Aluno (Tatame)
                           </Text>
                         </View>
                       )}
-                      {isGraduationMain && (
-                        <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.4)' }}>
-                          <Text style={{ fontSize: 9, fontWeight: '900', color: '#2563eb' }}>
-                            Incluso
+                      {isExtra && (
+                        <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+                          <Text style={{ fontSize: 9, fontWeight: '900', color: '#059669' }}>
+                            {formatCentsToCurrency(effectiveExtraPrice)}
                           </Text>
                         </View>
                       )}
                     </View>
-                    {product.hasSeatMap && allSelectedSeats[index] && (
+                    {isStudent && (
+                      <Text className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                        Participação na graduação no tatame (cadeira na plateia não inclusa)
+                      </Text>
+                    )}
+                    {seatInfoForCard && (
                       <Text className="text-[10px] text-gray-400 font-semibold mt-0.5" numberOfLines={1}>
-                        📅 {allSelectedSeats[index].sessionLabel} {allSelectedSeats[index].locationName ? `• 📍 ${allSelectedSeats[index].locationName}` : ''}
+                        📅 {seatInfoForCard.sessionLabel} {seatInfoForCard.locationName ? `• 📍 ${seatInfoForCard.locationName}` : ''}
                       </Text>
                     )}
                   </View>
-                  {product.hasSeatMap && allSelectedSeats[index]?.seatId && (
+                  {seatInfoForCard?.seatId && (
                     <View className="px-3 py-1 bg-yellow-500 rounded-full flex-row items-center gap-1.5 shadow-sm">
                       <Armchair size={12} color="#000" />
                       <Text className="text-xs font-black text-black">
-                        Cadeira {allSelectedSeats[index].seatId}
-                        {getSeatSectorName(allSelectedSeats[index].seatId, activeSeatMapConfig) ? ` • ${getSeatSectorName(allSelectedSeats[index].seatId, activeSeatMapConfig)}` : ''}
+                        Cadeira {seatInfoForCard.seatId}
+                        {getSeatSectorName(seatInfoForCard.seatId, activeSeatMapConfig) ? ` • ${getSeatSectorName(seatInfoForCard.seatId, activeSeatMapConfig)}` : ''}
                       </Text>
                     </View>
                   )}
@@ -1223,12 +1326,12 @@ export default function ProductDetailScreen() {
           
           <View className="items-end">
             <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-              {product.hasSeatMap && product.hasExtraTicketPrice
+              {product.hasSeatMap && (product.hasExtraTicketPrice || ((product.hasLocations && selectedLocation?.extraTicketPrice) ? selectedLocation.extraTicketPrice > 0 : product.extraTicketPrice > 0))
                 ? (purchaseMode === 'extra_only'
                     ? `${allSelectedSeats.length}x Cadeira Extra`
-                    : (allSelectedSeats.length > (product.includedTicketsCount || 1)
-                        ? `1x Inscrição + ${allSelectedSeats.length - (product.includedTicketsCount || 1)}x Extra`
-                        : 'Total'))
+                    : (allSelectedSeats.length > 0
+                        ? `1x Inscrição + ${allSelectedSeats.length}x Cadeira`
+                        : '1x Inscrição do Aluno'))
                 : 'Total'}
             </Text>
             <Text className="text-xl font-black text-gray-900 dark:text-white">
@@ -1250,7 +1353,9 @@ export default function ProductDetailScreen() {
               <ShoppingCart size={20} color="#fff" strokeWidth={3} />
               <Text className="ml-3 text-white font-black uppercase tracking-widest">
                 {product.hasSeatMap 
-                  ? (purchaseMode === 'extra_only' ? 'Comprar Ingressos Extras' : 'Garantir Cadeiras & Comprar') 
+                  ? (purchaseMode === 'extra_only' 
+                      ? 'Comprar Ingressos Extras' 
+                      : (allSelectedSeats.length > 0 ? 'Garantir Inscrição & Cadeiras' : 'Garantir Inscrição & Comprar'))
                   : 'Adicionar ao Carrinho'}
               </Text>
             </>

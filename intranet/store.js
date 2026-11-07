@@ -2241,7 +2241,7 @@ export async function setupStorePage() {
         if (productHasExtraTicketPriceInput) productHasExtraTicketPriceInput.checked = false;
         if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
         if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
-        if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '1';
+        if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '0';
         if (activeLocationPriceInput) activeLocationPriceInput.value = '';
         if (activeLocationExtraTicketPriceInput) activeLocationExtraTicketPriceInput.value = '';
         currentLocationsList = [];
@@ -2277,7 +2277,7 @@ export async function setupStorePage() {
             if (productHasExtraTicketPriceInput) productHasExtraTicketPriceInput.checked = false;
             if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
             if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
-            if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '1';
+            if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '0';
 
             // Reset meia-entrada fields
             if (productHasHalfPriceInput) productHasHalfPriceInput.checked = false;
@@ -2520,8 +2520,8 @@ Requisitos:
                         ? (parseInt(productExtraTicketPriceInput.value, 10) || 0)
                         : 0,
                     includedTicketsCount: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked)
-                        ? (parseInt(productIncludedTicketsCountInput.value, 10) || 1)
-                        : 1,
+                        ? (!isNaN(parseInt(productIncludedTicketsCountInput.value, 10)) ? parseInt(productIncludedTicketsCountInput.value, 10) : 0)
+                        : 0,
                     locations: (() => {
                         if (productHasSeatMapInput && productHasSeatMapInput.checked && productHasLocationsInput && productHasLocationsInput.checked) {
                             syncActiveLocationFromUI();
@@ -3048,7 +3048,7 @@ Requisitos:
                         productExtraTicketHalfPriceInput.value = (product.extraTicketHalfPrice !== undefined && product.extraTicketHalfPrice !== null) ? product.extraTicketHalfPrice : '';
                     }
                     if (productIncludedTicketsCountInput) {
-                        productIncludedTicketsCountInput.value = (product.includedTicketsCount !== undefined) ? product.includedTicketsCount : 1;
+                        productIncludedTicketsCountInput.value = (product.includedTicketsCount !== undefined && product.includedTicketsCount !== null) ? product.includedTicketsCount : 0;
                     }
 
                     // Meia-Entrada loading
