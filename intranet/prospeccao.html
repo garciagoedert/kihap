@@ -535,6 +535,13 @@
                                 <input type="text" id="origemLead" placeholder="Ex: Indicação, Google"
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
                             </div>
+                            <div class="form-group">
+                                <label for="instrutor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Instrutor Responsável</label>
+                                <select id="instrutor"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    <option value="">Selecione o Instrutor</option>
+                                </select>
+                            </div>
                             <div class="form-group md:col-span-2">
                                 <label for="dataChegada" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data de Chegada</label>
                                 <input type="text" id="dataChegada" placeholder="N/A" disabled
@@ -1230,7 +1237,7 @@
     <script type="module">
         // Firebase Imports
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { collection, doc, addDoc, getDoc, setDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, doc, addDoc, getDoc, getDocs, query, where, setDoc, onSnapshot, updateDoc, deleteDoc, serverTimestamp, writeBatch, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { db, appId, app, functions } from './firebase-config.js';
         import { httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
         import { setupUIListeners, loadComponents } from './common-ui.js';
@@ -1374,6 +1381,7 @@
                 status: lead.status || 'Novo',
                 ticketEstimado: lead.ticketEstimado || getDefaultTicketByUnit(lead.unidade),
                 origemLead: lead['origem do lead'] || 'Site',
+                instrutor: lead.instrutor || '',
                 telefone: lead.telefone,
                 email: lead.email,
                 createdAt: lead.createdAt,
@@ -1384,7 +1392,8 @@
             }));
             const enrichedProspects = prospects.map(p => ({
                 ...p,
-                ticketEstimado: p.ticketEstimado || getDefaultTicketByUnit(p.unidade)
+                ticketEstimado: p.ticketEstimado || getDefaultTicketByUnit(p.unidade),
+                instrutor: p.instrutor || p.instructor || ''
             }));
             combinedData = [...enrichedProspects, ...formattedLeads];
             applyFilters();
@@ -1407,17 +1416,29 @@
                 const columnProspects = filteredProspects.filter(p => p.status === status);
                 const colColor = COLUMN_COLORS[status] || '#9ca3af';
 
+                const totalColumnTicket = columnProspects.reduce((sum, p) => {
+                    const val = Number(p.ticketEstimado) || getDefaultTicketByUnit(p.unidade);
+                    return sum + (val > 0 ? val : 0);
+                }, 0);
+                const formattedColumnTicket = totalColumnTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
                 const columnEl = document.createElement('div');
                 columnEl.className = 'bg-gray-100 dark:bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-sm dark:shadow-lg border border-gray-200 dark:border-gray-800 kanban-column shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0 transition-all';
                 columnEl.dataset.column = columnId;
 
                 columnEl.innerHTML = `
-                    <h2 class="font-bold mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center w-full shrink-0" style="color: ${colColor}">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="truncate" title="${status}">${status}</span>
-                            <span class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-1 px-2 rounded-full count shadow-inner shrink-0">${columnProspects.length}</span>
+                    <div class="mb-4 pb-2.5 border-b border-gray-200 dark:border-gray-700 w-full shrink-0">
+                        <div class="flex justify-between items-center w-full" style="color: ${colColor}">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="font-bold truncate text-base" title="${status}">${status}</span>
+                                <span class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-0.5 px-2 rounded-full count shadow-inner shrink-0 font-bold">${columnProspects.length}</span>
+                            </div>
                         </div>
-                    </h2>
+                        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1.5 flex items-center justify-between">
+                            <span class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">Ticket Total:</span>
+                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200">${formattedColumnTicket}</span>
+                        </div>
+                    </div>
                     <div id="${columnId}" data-status="${status}" class="column-content flex-1 overflow-y-auto custom-scrollbar space-y-3 min-h-[200px]">
                         <!-- Cards will be injected here -->
                     </div>
@@ -1515,9 +1536,13 @@
             card.innerHTML = `
                 ${statusBadgesHTML ? `<div class="flex items-center gap-1.5 flex-wrap mb-1.5">${statusBadgesHTML}</div>` : ''}
                 <div class="flex items-start justify-between gap-2 mb-2">
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <div class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug" title="${escapeHtml(prospect.responsavel || 'Prospect sem nome')}">${escapeHtml(prospect.responsavel || 'Prospect sem nome')}</div>
                         ${prospect.origemLead ? `<span class="inline-block mt-1 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-gray-700/40 px-1.5 py-0.5 rounded leading-none">${escapeHtml(prospect.origemLead)}</span>` : ''}
+                        <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                            <i class="fas fa-money-bill-wave text-[10px] text-emerald-500/80"></i>
+                            <span>${formattedTicket}</span>
+                        </div>
                     </div>
                     <div class="group/ticket relative shrink-0">
                         <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold border transition-colors ${ticketVal > 0 ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:text-emerald-600 hover:border-emerald-300'}">
@@ -1529,12 +1554,21 @@
                     </div>
                 </div>
                 ${tagsHTML ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHTML}</div>` : ''}
-                <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 flex flex-wrap items-center justify-between gap-y-1 gap-x-2 text-[10px] text-gray-500 dark:text-gray-400">
-                    ${dateTimeHTML || '<span></span>'}
-                    <span class="inline-flex items-center gap-1.5 font-semibold px-1.5 py-0.5 rounded-md truncate max-w-[145px]" style="background-color: ${unitColor}18; color: ${unitColor}; border: 1px solid ${unitColor}35;" title="Unidade: ${escapeHtml(unitLabel)}">
-                        <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${unitColor};"></span>
-                        <span class="truncate">${escapeHtml(unitLabel)}</span>
-                    </span>
+                <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 space-y-1.5 text-[10px] text-gray-500 dark:text-gray-400">
+                    <div class="flex flex-wrap items-center justify-between gap-y-1 gap-x-2">
+                        ${dateTimeHTML || '<span></span>'}
+                        <span class="inline-flex items-center gap-1.5 font-semibold px-1.5 py-0.5 rounded-md truncate max-w-[145px]" style="background-color: ${unitColor}18; color: ${unitColor}; border: 1px solid ${unitColor}35;" title="Unidade: ${escapeHtml(unitLabel)}">
+                            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${unitColor};"></span>
+                            <span class="truncate">${escapeHtml(unitLabel)}</span>
+                        </span>
+                    </div>
+                    ${(prospect.instrutor || prospect.instructor) ? `
+                        <div class="flex items-center gap-1.5 text-[10px] font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-750 px-2 py-1 rounded-md border border-gray-100 dark:border-gray-700/60">
+                            <i class="fas fa-user-ninja text-yellow-500 text-[11px] shrink-0"></i>
+                            <span class="text-gray-400 dark:text-gray-500 text-[9px] uppercase tracking-wider font-bold shrink-0">Instrutor:</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 truncate" title="${escapeHtml(prospect.instrutor || prospect.instructor)}">${escapeHtml(prospect.instrutor || prospect.instructor)}</span>
+                        </div>
+                    ` : ''}
                 </div>
             `;
 
@@ -1771,6 +1805,7 @@
                 prioridade: document.getElementById('prioridade'),
                 ticketEstimado: document.getElementById('ticketEstimado'),
                 origemLead: document.getElementById('origemLead'),
+                instrutor: document.getElementById('instrutor'),
                 dataChegada: document.getElementById('dataChegada'),
                 responsavel: document.getElementById('responsavel'),
                 email: document.getElementById('email'),
@@ -3058,6 +3093,9 @@
                 modalElements.prioridade.value = prospect.prioridade || '';
                 modalElements.ticketEstimado.value = prospect.ticketEstimado || getDefaultTicketByUnit(prospect.unidade) || '';
                 modalElements.origemLead.value = prospect.origemLead || '';
+                if (modalElements.instrutor) {
+                    modalElements.instrutor.value = prospect.instrutor || prospect.instructor || '';
+                }
 
                 let dateTimeStr = '';
                 if (prospect.createdAt) {
@@ -3130,6 +3168,7 @@
                 modalElements.modalActionButtons.classList.add('hidden');
                 modalElements.modalTitle.textContent = 'Adicionar Novo Prospect';
                 modalElements.prospectId.value = '';
+                if (modalElements.instrutor) modalElements.instrutor.value = '';
                 if (modalElements.dataChegada) modalElements.dataChegada.value = '';
                 if (modalElements.createdByContainer) modalElements.createdByContainer.classList.add('hidden');
                 if (modalElements.perdidoNotice) modalElements.perdidoNotice.classList.add('hidden');
@@ -3404,6 +3443,7 @@
                 prioridade: parseInt(document.getElementById('prioridade').value),
                 ticketEstimado: parseInt(document.getElementById('ticketEstimado').value) || getDefaultTicketByUnit(selectedUnidade),
                 origemLead: document.getElementById('origemLead').value,
+                instrutor: (document.getElementById('instrutor') ? document.getElementById('instrutor').value : '').trim(),
                 telefone: document.getElementById('telefone').value,
                 email: document.getElementById('email').value,
                 cpf: document.getElementById('cpf').value,
@@ -3511,6 +3551,7 @@
                         prioridade: item.prioridade || 3,
                         ticketEstimado: item.ticketEstimado || 0,
                         origemLead: item.origemLead || 'Site',
+                        instrutor: item.instrutor || '',
                         telefone: item.telefone || '',
                         email: item.email || '',
                         cpf: item.cpf || '',
@@ -3721,6 +3762,35 @@
             }
         }
 
+        async function populateInstructors() {
+            const instrutorSelect = document.getElementById('instrutor');
+            if (!instrutorSelect) return;
+
+            try {
+                const q = query(collection(db, 'users'), where('isInstructor', '==', true));
+                const snap = await getDocs(q);
+                const list = [];
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const name = data.name || data.nome || data.displayName || docSnap.id;
+                    if (name && !list.some(item => item.name === name)) {
+                        list.push({ id: docSnap.id, name: name });
+                    }
+                });
+                list.sort((a, b) => a.name.localeCompare(b.name));
+
+                instrutorSelect.innerHTML = '<option value="">Selecione o Instrutor</option>';
+                list.forEach(inst => {
+                    const opt = document.createElement('option');
+                    opt.value = inst.name;
+                    opt.textContent = inst.name;
+                    instrutorSelect.appendChild(opt);
+                });
+            } catch (error) {
+                console.error("Erro ao buscar instrutores:", error);
+            }
+        }
+
         function exportData() {
             if (prospects.length === 0) {
                 alert("Não há dados para exportar.");
@@ -3915,6 +3985,7 @@
 
             populateTags();
             populateEvoUnits();
+            populateInstructors();
             initModalElements();
             initWhatsAppDrawer();
 
