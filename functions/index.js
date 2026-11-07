@@ -4980,9 +4980,12 @@ exports.triggerMetaCapiManual = functions.https.onCall(async (data, context) => 
         throw new functions.https.HttpsError('invalid-argument', 'Os campos prospectId e eventName são obrigatórios.');
     }
 
-    const docSnap = await db.collection('prospects').doc(prospectId).get();
+    let docSnap = await db.collection('prospects').doc(prospectId).get();
     if (!docSnap.exists) {
-        throw new functions.https.HttpsError('not-found', `Prospect ${prospectId} não encontrado.`);
+        docSnap = await db.collection('leads').doc(prospectId).get();
+    }
+    if (!docSnap.exists) {
+        throw new functions.https.HttpsError('not-found', `Prospect ou lead ${prospectId} não encontrado.`);
     }
 
     const prospectData = docSnap.data();

@@ -1252,6 +1252,7 @@
         const getEvoUnits = httpsCallable(functions, 'getEvoUnits');
         const sendWhatsAppMessage = httpsCallable(functions, 'sendWhatsAppMessage');
         const getWhatsAppHistory = httpsCallable(functions, 'getWhatsAppHistory');
+        const triggerMetaCapiManual = httpsCallable(functions, 'triggerMetaCapiManual');
 
         // --- GLOBAL STATE ---
         let evoUnits = [];
@@ -1963,7 +1964,6 @@
                     if (!activeProspect) return;
                     try {
                         if (typeof showToast === 'function') showToast('Enviando evento para a Meta Conversions API...', 'info');
-                        const triggerMetaCapiManual = firebase.functions().httpsCallable('triggerMetaCapiManual');
                         let eventToTrigger = 'Lead';
                         if (activeProspect.status && activeProspect.status.toLowerCase().includes('agendad')) {
                             eventToTrigger = 'Schedule';
