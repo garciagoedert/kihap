@@ -685,8 +685,98 @@ exports.onSalePaid = functions.firestore
             }
         }
 
+        // 3. Sincroniza venda do Espetáculo Kihap 2026 com o Google Sheets
+        await syncEspetaculoSaleToGoogleSheets(context.params.saleId, afterData);
+
         return null;
     });
+
+const ESPETACULO_2026_PRODUCT_ID = 'cEzXGtFc5oC1mqhoAB8o';
+const ESPETACULO_SHEETS_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx_7KLykXFDf-yW8Al02WH9brxSjzZiHu3ph3Q2Wl_COrNRS2aHrSEYiyLgnjoVQ-Tijg/exec';
+
+/**
+ * Sincroniza a venda do Espetáculo Kihap 2026 com a planilha no Google Sheets via Webhook
+ */
+async function syncEspetaculoSaleToGoogleSheets(saleId, saleData) {
+    try {
+        const isEspetaculo = saleData.productId === ESPETACULO_2026_PRODUCT_ID ||
+            (saleData.productName && /espet[aá]culo.*2026/i.test(saleData.productName)) ||
+            (saleData.productTitle && /espet[aá]culo.*2026/i.test(saleData.productTitle)) ||
+            (Array.isArray(saleData.items) && saleData.items.some(i => i.productId === ESPETACULO_2026_PRODUCT_ID || /espet[aá]culo.*2026/i.test(i.name || i.productName || '')));
+
+        if (!isEspetaculo) return false;
+
+        // Evita re-envio duplicado
+        if (saleData.googleSheetsSynced) {
+            console.log(`[syncEspetaculoSaleToGoogleSheets] Venda ${saleId} já sincronizada anteriormente.`);
+            return false;
+        }
+
+        const dateStr = saleData.created 
+            ? (saleData.created.toDate ? saleData.created.toDate().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : new Date(saleData.created).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }))
+            : new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+        const seats = Array.isArray(saleData.selectedSeats) 
+            ? saleData.selectedSeats 
+            : (saleData.seatId ? [saleData.seatId] : []);
+
+        const payload = {
+            dataHora: dateStr,
+            pedidoId: saleId,
+            produto: saleData.productName || saleData.productTitle || 'Espetáculo Kihap 2026',
+            clienteNome: saleData.userName || saleData.payerName || saleData.buyerName || '',
+            clienteEmail: saleData.userEmail || saleData.payerEmail || '',
+            clienteTelefone: saleData.userPhone || saleData.payerPhone || '',
+            alunoNome: saleData.studentName || saleData.alunoNome || saleData.userName || saleData.payerName || '',
+            unidade: saleData.locationName || saleData.userUnidade || saleData.unit || '',
+            sessao: saleData.sessionLabel || saleData.sessionName || saleData.sessionTime || '',
+            cadeiras: seats,
+            tipoIngresso: saleData.ticketTypeName || (saleData.isExtraTicket ? 'Cadeira Extra' : (saleData.ticketType === 'meia' ? 'Meia-Entrada' : 'Inteira')),
+            valor: Number(saleData.totalAmount || saleData.amount || (saleData.priceData && saleData.priceData.amount) || 0),
+            formaPagamento: saleData.paymentMethod || (saleData.mercadoPagoPaymentId ? 'Mercado Pago' : 'Online'),
+            status: 'Pago'
+        };
+
+        console.log(`[syncEspetaculoSaleToGoogleSheets] Enviando venda ${saleId} para Google Sheets...`, payload);
+        const res = await fetch(ESPETACULO_SHEETS_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+        const resData = await res.json();
+        console.log(`[syncEspetaculoSaleToGoogleSheets] Resposta do webhook para ${saleId}:`, resData);
+
+        // Marca como sincronizado no Firestore
+        await db.collection('inscricoesFaixaPreta').doc(saleId).update({
+            googleSheetsSynced: true,
+            googleSheetsSyncedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return true;
+    } catch (err) {
+        console.error(`[syncEspetaculoSaleToGoogleSheets] Erro ao sincronizar venda ${saleId}:`, err.message);
+        return false;
+    }
+}
+
+exports.syncEspetaculoSaleManual = functions.https.onCall(async (data, context) => {
+    const saleId = data && data.saleId;
+    if (!saleId) {
+        throw new functions.https.HttpsError('invalid-argument', 'O ID da venda (saleId) é obrigatório.');
+    }
+    try {
+        const docSnap = await db.collection('inscricoesFaixaPreta').doc(saleId).get();
+        if (!docSnap.exists) {
+            throw new functions.https.HttpsError('not-found', 'Venda não encontrada.');
+        }
+        const saleData = docSnap.data();
+        const success = await syncEspetaculoSaleToGoogleSheets(saleId, saleData);
+        return { success, saleId };
+    } catch (err) {
+        throw new functions.https.HttpsError('internal', err.message);
+    }
+});
 
 // Helper para atualizar uma venda como paga, enviar e-mail e notificar gerente
 async function updateSaleToPaid(saleId, saleData, providerPaymentId = null, paymentDetails = null) {
