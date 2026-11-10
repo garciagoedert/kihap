@@ -580,7 +580,7 @@ export default function ProductDetailScreen() {
       hasSeatMap: Boolean(product.hasSeatMap),
       hasExtraTicketPrice: Boolean(product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0),
       extraTicketPrice: effectiveExtraPrice,
-      includedTicketsCount: purchaseMode === 'extra_only' ? 0 : includedCount,
+      includedTicketsCount: purchaseMode === 'extra_only' ? 0 : ((product as any)?.includedTicketsCount ?? 1),
       selectedSeats: summarySeats,
       sessionId: allSelectedSeats[0]?.sessionId || selectedSession?.id || 'default',
       sessionLabel: summarySessions.join(' | ') || selectedSession?.label || null,
