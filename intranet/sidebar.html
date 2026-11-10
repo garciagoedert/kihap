@@ -36,12 +36,104 @@
     .dark #sidebar-nav:hover::-webkit-scrollbar-thumb {
         background-color: rgba(255, 255, 255, 0.1);
     }
+
+    @media (min-width: 768px) {
+        body {
+            transition: padding-left 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        body.sidebar-collapsed {
+            padding-left: 72px !important;
+        }
+        #sidebar {
+            transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover),
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed {
+            width: 72px !important;
+        }
+        body.sidebar-collapsed #sidebar:hover:not(.sidebar-just-collapsed) {
+            width: 288px !important;
+            box-shadow: 14px 0 36px -6px rgba(0, 0, 0, 0.25) !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-header,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-header {
+            padding: 1.25rem 0.5rem !important;
+            justify-content: center !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-header img,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-header img {
+            height: 2.25rem !important;
+            width: auto !important;
+            margin: 0 auto !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) #sidebar-collapse-toggle,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-collapse-toggle {
+            display: none !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav,
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-footer,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-footer {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            overflow-x: hidden !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav > a,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav > a,
+        body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav .sidebar-dropdown-toggle,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav .sidebar-dropdown-toggle,
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-footer > a,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-footer > a {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav .sidebar-dropdown-toggle > span,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav .sidebar-dropdown-toggle > span {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav > a > i,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav > a > i,
+        body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav .sidebar-dropdown-toggle > span > i,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav .sidebar-dropdown-toggle > span > i,
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-footer > a > i,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-footer > a > i {
+            width: auto !important;
+            margin: 0 !important;
+            text-align: center !important;
+            font-size: 1.15rem !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-label,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-label,
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-dropdown-toggle i.fa-chevron-down,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-dropdown-toggle i.fa-chevron-down,
+        body.sidebar-collapsed #sidebar:not(:hover) [id$="-submenu"],
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed [id$="-submenu"] {
+            display: none !important;
+        }
+    }
 </style>
 
 <aside id="sidebar"
-    class="bg-white/90 dark:bg-[#1a1a1a]/80 backdrop-blur-xl w-72 h-screen flex flex-col fixed top-0 left-0 z-40 shadow-2xl border-r border-gray-200 dark:border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
-    <div class="flex items-center justify-between p-8 border-b border-gray-100 dark:border-gray-800">
-        <img src="/imgs/favicon.png" alt="Kihap Icon" class="h-12 invert dark:invert-0 drop-shadow-xl">
+    class="bg-white/95 dark:bg-[#1a1a1a]/95 w-72 h-screen flex flex-col fixed top-0 left-0 z-40 shadow-2xl border-r border-gray-200 dark:border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+    <button id="sidebar-edge-toggle" type="button"
+        class="hidden md:flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white shadow-md absolute top-7 -right-3 z-50 cursor-pointer transition-colors"
+        title="Recolher menu lateral (mostrar apenas ícones)"
+        aria-label="Alternar recolhimento do menu lateral">
+        <i id="sidebar-edge-icon" class="fas fa-chevron-left text-[10px]"></i>
+    </button>
+    <div class="sidebar-header flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
+        <img src="/imgs/favicon.png" alt="Kihap Icon" class="h-11 invert dark:invert-0 drop-shadow-xl">
+        <button id="sidebar-collapse-toggle" type="button"
+            class="hidden md:flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            title="Recolher menu lateral (mostrar apenas ícones)"
+            aria-label="Alternar modo do menu lateral">
+            <i id="sidebar-collapse-icon" class="fas fa-angles-left text-xs"></i>
+            <span id="sidebar-collapse-text" class="text-[11px]">Recolher</span>
+        </button>
         <button id="sidebar-close-btn" class="p-2 rounded-md text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden"
             aria-label="Close sidebar">
             <i class="fas fa-times"></i>
@@ -291,18 +383,18 @@
             </div>
         </div>
     </nav>
-    <div class="p-6 border-t border-gray-100 dark:border-gray-800 space-y-2">
+    <div class="sidebar-footer p-6 border-t border-gray-100 dark:border-gray-800 space-y-2">
         <a href="suporte.html"
             class="w-full flex items-center bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 group">
-            <i class="fas fa-question-circle w-8 text-lg group-hover:scale-110 transition-transform"></i> Suporte
+            <i class="fas fa-question-circle w-8 text-lg group-hover:scale-110 transition-transform"></i> <span class="sidebar-label">Suporte</span>
         </a>
         <a id="gestao-suporte-link" href="trello.html?dept=Suporte"
             class="w-full flex items-center bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 group hidden">
-            <i class="fas fa-headset w-8 text-lg group-hover:scale-110 transition-transform"></i> Gestão de Suporte
+            <i class="fas fa-headset w-8 text-lg group-hover:scale-110 transition-transform"></i> <span class="sidebar-label">Gestão de Suporte</span>
         </a>
         <a id="admin-link" href="admin.html"
             class="w-full flex items-center bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 group hidden">
-            <i class="fas fa-user-shield w-8 text-lg group-hover:scale-110 transition-transform"></i> Admin
+            <i class="fas fa-user-shield w-8 text-lg group-hover:scale-110 transition-transform"></i> <span class="sidebar-label">Admin</span>
         </a>
     </div>
 </aside>

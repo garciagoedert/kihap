@@ -63,6 +63,106 @@ function invalidateUnidadesCache() {
     _unidadesCache = null;
 }
 
+function setupDesktopSidebarCollapse(sidebar) {
+    if (!sidebar || sidebar.dataset.collapseAttached === 'true') return;
+    sidebar.dataset.collapseAttached = 'true';
+
+    // Garante as classes estruturais no header e footer
+    const firstDiv = sidebar.querySelector(':scope > div:first-of-type');
+    if (firstDiv && !firstDiv.classList.contains('sidebar-header')) {
+        firstDiv.classList.add('sidebar-header');
+    }
+    const lastDiv = sidebar.querySelector(':scope > div:last-of-type');
+    if (lastDiv && !lastDiv.classList.contains('sidebar-footer')) {
+        lastDiv.classList.add('sidebar-footer');
+    }
+
+    // Envolve nós de texto soltos nos itens principais em <span class="sidebar-label">
+    const wrapDirectTextNodes = (el) => {
+        if (!el) return;
+        let labelText = '';
+        Array.from(el.childNodes).forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+                const text = node.textContent.trim();
+                labelText = text;
+                const span = document.createElement('span');
+                span.className = 'sidebar-label ml-1';
+                span.textContent = text;
+                el.replaceChild(span, node);
+            } else if (node.nodeType === Node.ELEMENT_NODE && node.classList?.contains('sidebar-label')) {
+                labelText = node.textContent.trim();
+            }
+        });
+        const target = el.closest('a, button') || el;
+        if (labelText && !target.getAttribute('title')) {
+            target.setAttribute('title', labelText);
+        }
+    };
+
+    sidebar.querySelectorAll('#sidebar-nav > a, .sidebar-footer > a').forEach(wrapDirectTextNodes);
+    sidebar.querySelectorAll('#sidebar-nav .sidebar-dropdown-toggle > span').forEach(wrapDirectTextNodes);
+
+    const collapseToggleBtn = document.getElementById('sidebar-collapse-toggle');
+    const collapseIcon = document.getElementById('sidebar-collapse-icon');
+    const collapseText = document.getElementById('sidebar-collapse-text');
+    const edgeToggleBtn = document.getElementById('sidebar-edge-toggle');
+    const edgeIcon = document.getElementById('sidebar-edge-icon');
+
+    const STORAGE_KEY = 'kihap_sidebar_collapsed';
+    const isCrmPage = window.location.pathname.includes('prospeccao');
+    const savedPref = localStorage.getItem(STORAGE_KEY);
+    // Se ainda não houver preferência salva, recolhe por padrão no CRM para dar mais espaço às colunas
+    let isCollapsed = savedPref !== null ? savedPref === 'true' : isCrmPage;
+
+    const syncCollapseUI = (collapsed, immediateShrink = false) => {
+        document.body.classList.toggle('sidebar-collapsed', collapsed);
+        if (collapsed && immediateShrink) {
+            sidebar.classList.add('sidebar-just-collapsed');
+        } else if (!collapsed) {
+            sidebar.classList.remove('sidebar-just-collapsed');
+        }
+
+        if (collapseIcon) {
+            collapseIcon.className = collapsed ? 'fas fa-thumbtack text-xs' : 'fas fa-angles-left text-xs';
+        }
+        if (collapseText) {
+            collapseText.textContent = collapsed ? 'Fixar menu' : 'Recolher';
+        }
+        if (collapseToggleBtn) {
+            collapseToggleBtn.title = collapsed
+                ? 'Fixar menu lateral aberto'
+                : 'Recolher menu lateral (mostrar apenas ícones e abrir ao passar o mouse)';
+            collapseToggleBtn.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+        }
+        if (edgeIcon) {
+            edgeIcon.className = collapsed ? 'fas fa-chevron-right text-[10px]' : 'fas fa-chevron-left text-[10px]';
+        }
+        if (edgeToggleBtn) {
+            edgeToggleBtn.title = collapsed
+                ? 'Fixar menu lateral aberto'
+                : 'Recolher menu lateral (mostrar apenas ícones e abrir ao passar o mouse)';
+            edgeToggleBtn.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+        }
+    };
+
+    syncCollapseUI(isCollapsed, false);
+
+    const handleToggle = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isCollapsed = !isCollapsed;
+        localStorage.setItem(STORAGE_KEY, isCollapsed ? 'true' : 'false');
+        syncCollapseUI(isCollapsed, isCollapsed);
+    };
+
+    if (collapseToggleBtn) collapseToggleBtn.addEventListener('click', handleToggle);
+    if (edgeToggleBtn) edgeToggleBtn.addEventListener('click', handleToggle);
+
+    sidebar.addEventListener('mouseleave', () => {
+        sidebar.classList.remove('sidebar-just-collapsed');
+    });
+}
+
 function setupUIListeners(handlers = {}) {
     const {
         openFormModal,
@@ -79,6 +179,7 @@ function setupUIListeners(handlers = {}) {
     // Sidebar toggle
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
+    setupDesktopSidebarCollapse(sidebar);
     
     if (sidebar && !sidebar.dataset.listenerAttached) {
         sidebar.dataset.listenerAttached = 'true';
@@ -827,7 +928,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.1.5'; 
+    const CACHE_VERSION = '1.1.7'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
