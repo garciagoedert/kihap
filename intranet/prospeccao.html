@@ -4504,14 +4504,19 @@
         }
 
         function ensureSelectOption(selectEl, value, label = value) {
-            if (!selectEl || !value) return;
-            const exists = Array.from(selectEl.options).some(opt => opt.value === value);
-            if (!exists) {
-                const opt = document.createElement('option');
-                opt.value = value;
-                opt.textContent = label;
-                selectEl.appendChild(opt);
+            if (!selectEl || !selectEl.options || !value) return;
+            const norm = normalizeKey(value);
+            const existing = Array.from(selectEl.options).find(opt => opt.value === value || (norm && normalizeKey(opt.value) === norm));
+            if (existing) {
+                selectEl.value = existing.value;
+                return existing.value;
             }
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = label;
+            selectEl.appendChild(opt);
+            selectEl.value = value;
+            return value;
         }
 
         function openFormModal(prospect = null) {
@@ -4568,33 +4573,46 @@
                     modalElements.createdByContainer.classList.add('hidden');
                 }
 
+                // Nome do cliente / aluno
+                modalElements.responsavel.value = (prospect.responsavel || prospect.nome || prospect.empresa || '').trim();
+
                 // Unidade (usa chave canônica ou vazia para "Sem unidade")
                 const unitMeta = getUnitMetadata(prospect.unidade);
                 const unitVal = unitMeta.key === '__SEM_UNIDADE__' ? '' : unitMeta.key;
-                if (unitVal) ensureSelectOption(modalElements.unidade, unitVal, unitMeta.cardLabel);
-                modalElements.unidade.value = unitVal;
+                if (unitVal) {
+                    ensureSelectOption(modalElements.unidade, unitVal, unitMeta.cardLabel);
+                } else if (modalElements.unidade) {
+                    modalElements.unidade.value = '';
+                }
 
-                // Perfil (setor)
-                const perfilVal = (prospect.setor || '').trim();
-                if (perfilVal) ensureSelectOption(modalElements.setor, perfilVal, perfilVal);
-                modalElements.setor.value = perfilVal;
+                // Perfil (setor — input com datalist)
+                const rawPerfil = (prospect.setor || prospect.perfil || '').trim();
+                const perfilVal = (rawPerfil && !/^[.\-_/\\]+$/.test(rawPerfil)) ? rawPerfil : '';
+                if (modalElements.setor) {
+                    modalElements.setor.value = perfilVal;
+                }
 
                 // Prioridade
-                modalElements.prioridade.value = String(prospect.prioridade || '3');
+                if (modalElements.prioridade) {
+                    modalElements.prioridade.value = String(prospect.prioridade || '3');
+                }
 
                 // Mensalidade (preserva 0 como "0" e ausente como "")
                 const ticketVal = getTicketNumericValue(prospect);
-                modalElements.ticketEstimado.value = ticketVal !== null ? String(ticketVal) : '';
+                if (modalElements.ticketEstimado) {
+                    modalElements.ticketEstimado.value = ticketVal !== null ? String(ticketVal) : '';
+                }
 
-                // Origem do Lead
-                const origemVal = (prospect.origemLead || '').trim();
-                if (origemVal) ensureSelectOption(modalElements.origemLead, origemVal, origemVal);
-                modalElements.origemLead.value = origemVal;
+                // Origem do Lead (input com datalist)
+                const origemVal = (prospect.origemLead || prospect.origem || '').trim();
+                if (modalElements.origemLead) {
+                    modalElements.origemLead.value = origemVal;
+                }
 
                 // Agendamento (Data/Hora em America/Sao_Paulo + Status do Agendamento)
                 if (modalElements.agendamentoDataHora) {
                     modalElements.agendamentoDataHora.value = formatDateTimeLocalInputSP(
-                        prospect.agendamentoDataHora || prospect.agendamento || prospect.dataAgendamento || null
+                        prospect.agendamentoDataHora || prospect.agendamento || prospect.dataAgendamento || prospect.experimentalDate || null
                     );
                 }
                 if (modalElements.agendamentoStatus) {
@@ -4602,10 +4620,15 @@
                 }
 
                 // Instrutor (separado de Responsável pelo lead)
-                const instVal = (prospect.instrutor || prospect.instructor || '').trim();
+                const rawInstVal = (prospect.instrutor || prospect.instructor || '').trim();
+                const instInfo = rawInstVal ? getInstructorInfo(rawInstVal) : null;
+                const instVal = instInfo?.name || rawInstVal;
                 if (modalElements.instrutor) {
-                    if (instVal) ensureSelectOption(modalElements.instrutor, instVal, instVal);
-                    modalElements.instrutor.value = instVal;
+                    if (instVal) {
+                        ensureSelectOption(modalElements.instrutor, instVal, instVal);
+                    } else {
+                        modalElements.instrutor.value = '';
+                    }
                 }
 
                 // Responsável pelo lead
@@ -4615,8 +4638,9 @@
                     if (ownerVal) {
                         const label = ownerInfo.isCurrentUser ? `${ownerVal} (Você)` : ownerVal;
                         ensureSelectOption(modalElements.responsavelLead, ownerVal, label);
+                    } else {
+                        modalElements.responsavelLead.value = '';
                     }
-                    modalElements.responsavelLead.value = ownerVal;
                 }
 
                 // Entrada do lead (histórica em America/Sao_Paulo)
@@ -4624,7 +4648,6 @@
                     modalElements.dataChegada.value = formatDateTimeSP(prospect.createdAt) || 'Não informado';
                 }
 
-                modalElements.responsavel.value = prospect.responsavel || prospect.nome || prospect.empresa || '';
                 modalElements.telefone.value = prospect.telefone || '';
                 modalElements.email.value = prospect.email || '';
                 modalElements.cpf.value = prospect.cpf || '';
