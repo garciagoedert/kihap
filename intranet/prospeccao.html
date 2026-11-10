@@ -255,6 +255,13 @@
             }
 
             /* === CRM KIHAP — ESPECIFICAÇÃO KANBAN & CARDS (10/11/2026) === */
+            .kanban-column {
+                flex: 1 0 315px;
+                width: 315px;
+                min-width: 315px;
+                max-width: 380px;
+            }
+
             .prospect-card {
                 border-radius: 3px;
                 background-color: #ffffff;
@@ -577,9 +584,9 @@
             <div id="header-container" class="flex-shrink-0"></div>
 
             <!-- Board Content -->
-            <div class="p-3 md:p-5 flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div class="p-3 md:px-4 md:py-3.5 flex flex-col flex-1 min-h-0 overflow-hidden">
                 <!-- === SEÇÃO 1 & 6: TOPO DO QUADRO (BUSCA, ATALHOS, FILTROS SEMPRE VISÍVEIS, SELEÇÕES ATIVAS E CONTAGEM) === -->
-                <section aria-label="Controles e filtros do CRM" class="bg-white dark:bg-[#18191c] border border-gray-200 dark:border-gray-800 rounded-md p-3 mb-3 shrink-0 shadow-xs space-y-2.5">
+                <section aria-label="Controles e filtros do CRM" class="relative z-30 bg-white dark:bg-[#18191c] border border-gray-200 dark:border-gray-800 rounded-md p-3 mb-3 shrink-0 shadow-xs space-y-2.5">
                     <!-- Linha 1: Busca por nome + Atalhos de responsabilidade + Quantidade de resultados e Limpar filtros -->
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
                         <div class="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
@@ -630,7 +637,7 @@
                     <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-gray-100 dark:border-gray-800/80">
                         <!-- Filtro: Unidades (agrupada por cidade) -->
                         <div class="crm-filter-dropdown" data-filter-key="unidades">
-                            <button type="button" id="filterBtn-unidades" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" id="filterBtn-unidades" data-filter-trigger="unidades" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
                                 <span class="crm-filter-label">Unidades</span>
                                 <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
                             </button>
@@ -650,7 +657,7 @@
 
                         <!-- Filtro: Responsáveis pelo lead -->
                         <div class="crm-filter-dropdown" data-filter-key="responsaveis">
-                            <button type="button" id="filterBtn-responsaveis" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" id="filterBtn-responsaveis" data-filter-trigger="responsaveis" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
                                 <span class="crm-filter-label">Responsáveis</span>
                                 <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
                             </button>
@@ -668,7 +675,7 @@
 
                         <!-- Filtro: Origens do lead -->
                         <div class="crm-filter-dropdown" data-filter-key="origens">
-                            <button type="button" id="filterBtn-origens" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" id="filterBtn-origens" data-filter-trigger="origens" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
                                 <span class="crm-filter-label">Origens</span>
                                 <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
                             </button>
@@ -686,7 +693,7 @@
 
                         <!-- Filtro: Perfis -->
                         <div class="crm-filter-dropdown" data-filter-key="perfis">
-                            <button type="button" id="filterBtn-perfis" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" id="filterBtn-perfis" data-filter-trigger="perfis" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
                                 <span class="crm-filter-label">Perfis</span>
                                 <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
                             </button>
@@ -704,7 +711,7 @@
 
                         <!-- Filtro: Instrutores -->
                         <div class="crm-filter-dropdown" data-filter-key="instrutores">
-                            <button type="button" id="filterBtn-instrutores" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" id="filterBtn-instrutores" data-filter-trigger="instrutores" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
                                 <span class="crm-filter-label">Instrutores</span>
                                 <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
                             </button>
@@ -722,7 +729,7 @@
 
                         <!-- Filtro: Prioridades -->
                         <div class="crm-filter-dropdown" data-filter-key="prioridades">
-                            <button type="button" id="filterBtn-prioridades" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" id="filterBtn-prioridades" data-filter-trigger="prioridades" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
                                 <span class="crm-filter-label">Prioridades</span>
                                 <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
                             </button>
@@ -740,7 +747,7 @@
 
                         <!-- Filtro: Tags -->
                         <div class="crm-filter-dropdown" data-filter-key="tags">
-                            <button type="button" id="filterBtn-tags" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                            <button type="button" id="filterBtn-tags" data-filter-trigger="tags" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
                                 <span class="crm-filter-label">Tags</span>
                                 <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
                             </button>
@@ -2230,7 +2237,7 @@
                     : '';
 
                 const columnEl = document.createElement('div');
-                columnEl.className = 'bg-gray-100/90 dark:bg-[#151619] rounded-md p-2.5 flex flex-col border border-gray-200/90 dark:border-gray-800 kanban-column shrink-0 w-[268px] sm:w-[278px] md:flex-1 md:min-w-[260px] max-w-[340px] max-h-full min-h-0 transition-all';
+                columnEl.className = 'bg-gray-100/90 dark:bg-[#151619] rounded-md p-3 flex flex-col border border-gray-200/90 dark:border-gray-800 kanban-column shrink-0 max-h-full min-h-0 transition-all';
                 columnEl.dataset.column = columnId;
 
                 columnEl.innerHTML = `
@@ -2299,7 +2306,8 @@
                 : 'Não definido';
 
             // 6. Perfil (Littles, Kids, etc. ou "Não informado")
-            const perfilText = (prospect.setor || '').trim() || 'Não informado';
+            const rawPerfil = (prospect.setor || '').trim();
+            const perfilText = (rawPerfil && !/^[.\-_/\\]+$/.test(rawPerfil)) ? rawPerfil : 'Não informado';
 
             // 7. Agendamento (dd/mm/aa hh:mm em America/Sao_Paulo ou "Não agendado" + regra de vencido)
             const scheduleInfo = getScheduleInfo(prospect);
@@ -2726,7 +2734,7 @@
                 defaultPerfis.forEach(pf => perfilMap.set(normalizeKey(pf), pf));
                 combinedData.forEach(p => {
                     const pf = (p.setor || '').trim();
-                    if (pf && !perfilMap.has(normalizeKey(pf))) {
+                    if (pf && !/^[.\-_/\\]+$/.test(pf) && !perfilMap.has(normalizeKey(pf))) {
                         perfilMap.set(normalizeKey(pf), pf);
                     }
                 });
@@ -3058,10 +3066,11 @@
                 // 5. Filtro Perfis (OU dentro do mesmo filtro)
                 if (filterState.perfis.size > 0) {
                     const rawPerfil = (p.setor || '').trim();
-                    if (!rawPerfil) {
+                    const cleanPerfil = (rawPerfil && !/^[.\-_/\\]+$/.test(rawPerfil)) ? rawPerfil : '';
+                    if (!cleanPerfil) {
                         if (!filterState.perfis.has('__SEM_PERFIL__')) return false;
                     } else {
-                        const matched = Array.from(filterState.perfis).some(pf => normalizeKey(pf) === normalizeKey(rawPerfil));
+                        const matched = Array.from(filterState.perfis).some(pf => normalizeKey(pf) === normalizeKey(cleanPerfil));
                         if (!matched) return false;
                     }
                 }
@@ -5852,12 +5861,19 @@
             if (filterTrigger) {
                 e.preventDefault();
                 e.stopPropagation();
-                const filterKey = filterTrigger.getAttribute('data-filter-trigger');
+                const dropdown = filterTrigger.closest('.crm-filter-dropdown');
+                const filterKey = filterTrigger.getAttribute('data-filter-trigger')
+                    || dropdown?.getAttribute('data-filter-key')
+                    || (filterTrigger.id ? filterTrigger.id.replace('filterBtn-', '') : '');
                 const menu = document.getElementById(`filterMenu-${filterKey}`);
                 if (!menu) return;
                 const isOpen = menu.classList.contains('open');
                 closeAllFilterMenus(false);
                 if (!isOpen) {
+                    const optionsContainer = document.getElementById(`filterOptions-${filterKey}`);
+                    if (optionsContainer && optionsContainer.children.length === 0) {
+                        rebuildDynamicFilterMenus();
+                    }
                     menu.classList.add('open');
                     filterTrigger.setAttribute('aria-expanded', 'true');
                 }
