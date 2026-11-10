@@ -19,6 +19,7 @@ export const unstable_settings = {
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
 import * as Notifications from 'expo-notifications';
+import * as Updates from 'expo-updates';
 import { registerForPushNotificationsAsync } from '../src/services/notifications';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -27,6 +28,23 @@ function RootLayoutNav() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  // Força verificação e aplicação de atualização OTA ao abrir o app
+  useEffect(() => {
+    async function checkAndApplyUpdates() {
+      if (__DEV__) return;
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        console.warn('Erro ao verificar atualização OTA:', e);
+      }
+    }
+    checkAndApplyUpdates();
+  }, []);
 
   // Registra Push Notifications quando o usuário estiver autenticado
   useEffect(() => {
