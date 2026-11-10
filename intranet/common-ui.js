@@ -162,8 +162,10 @@ function setupUIListeners(handlers = {}) {
         document.getElementById('searchInput')?.addEventListener('keyup', applyFilters);
         document.getElementById('priorityFilter')?.addEventListener('change', applyFilters);
         document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('priorityFilter').value = '';
+            const searchEl = document.getElementById('searchInput');
+            if (searchEl) searchEl.value = '';
+            const priorityEl = document.getElementById('priorityFilter');
+            if (priorityEl) priorityEl.value = '';
             applyFilters();
         });
     }

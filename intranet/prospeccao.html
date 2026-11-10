@@ -253,6 +253,313 @@
             .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                 background: rgba(255, 255, 255, 0.2);
             }
+
+            /* === CRM KIHAP — ESPECIFICAÇÃO KANBAN & CARDS (10/11/2026) === */
+            .prospect-card {
+                border-radius: 3px;
+                background-color: #ffffff;
+                border: 1px solid #e2e5e9;
+                padding: 10px 11px;
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                color: #1f2937;
+                box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+                transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+            }
+            .dark .prospect-card {
+                background-color: #18191c;
+                border-color: #2b2d33;
+                color: #e5e7eb;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+            }
+            .prospect-card:hover {
+                border-color: #cbd2d9;
+                box-shadow: 0 2px 6px rgba(16, 24, 40, 0.08);
+            }
+            .dark .prospect-card:hover {
+                border-color: #3f434c;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            }
+            .prospect-card:focus-visible {
+                outline: 2px solid #2563eb;
+                outline-offset: 2px;
+            }
+
+            .crm-card-section {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+
+            .crm-card-divider {
+                margin: 7px 0;
+                border: 0;
+                border-top: 1px solid #e5e7eb;
+                width: 100%;
+            }
+            .dark .crm-card-divider {
+                border-top-color: #2a2d34;
+            }
+
+            .crm-unit-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 2px 7px;
+                border-radius: 3px;
+                font-size: 11px;
+                font-weight: 600;
+                line-height: 1.35;
+                width: fit-content;
+                max-width: 100%;
+            }
+            .crm-unit-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 9999px;
+                flex-shrink: 0;
+            }
+
+            .crm-card-name {
+                font-size: 13px;
+                font-weight: 700;
+                line-height: 1.3;
+                color: #111827;
+                word-break: break-word;
+                overflow-wrap: anywhere;
+                white-space: normal;
+                margin-top: 1px;
+            }
+            .dark .crm-card-name {
+                color: #f3f4f6;
+            }
+
+            .crm-card-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 6px;
+                font-size: 11.5px;
+                line-height: 1.35;
+                color: #4b5563;
+            }
+            .dark .crm-card-row {
+                color: #9ca3af;
+            }
+            .crm-card-icon {
+                width: 13px;
+                text-align: center;
+                font-size: 11px;
+                line-height: 1.45;
+                color: #6b7280;
+                flex-shrink: 0;
+            }
+            .dark .crm-card-icon {
+                color: #9ca3af;
+            }
+
+            .crm-dollar-sign {
+                width: 13px;
+                text-align: center;
+                font-size: 11.5px;
+                line-height: 1.35;
+                font-weight: 700;
+                color: #168654;
+                flex-shrink: 0;
+                user-select: none;
+            }
+            .dark .crm-dollar-sign {
+                color: #22c55e;
+            }
+
+            .crm-ticket-value {
+                color: #374151;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            .dark .crm-ticket-value {
+                color: #d1d5db;
+            }
+
+            /* Agendamento vencido (#BC3030 no claro) */
+            .crm-schedule-row.is-overdue {
+                color: #BC3030;
+                font-weight: 600;
+            }
+            .crm-schedule-row.is-overdue .crm-card-icon {
+                color: #BC3030;
+            }
+            .dark .crm-schedule-row.is-overdue {
+                color: #f87171;
+            }
+            .dark .crm-schedule-row.is-overdue .crm-card-icon {
+                color: #f87171;
+            }
+            .crm-overdue-alert {
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+                font-size: 10.5px;
+                font-weight: 700;
+                color: #BC3030;
+                background-color: #fef2f2;
+                border: 1px solid #fecaca;
+                border-radius: 3px;
+                padding: 0 4px;
+                line-height: 1.35;
+            }
+            .dark .crm-overdue-alert {
+                color: #fca5a5;
+                background-color: rgba(188, 48, 48, 0.2);
+                border-color: rgba(248, 113, 113, 0.35);
+            }
+
+            /* Bloco do Responsável pelo lead */
+            .crm-card-owner {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 0;
+            }
+            .crm-owner-avatar {
+                width: 26px;
+                height: 26px;
+                border-radius: 9999px;
+                background-color: #e5e7eb;
+                color: #374151;
+                font-size: 10px;
+                font-weight: 700;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                overflow: hidden;
+                border: 1px solid rgba(0, 0, 0, 0.06);
+            }
+            .dark .crm-owner-avatar {
+                background-color: #27272a;
+                color: #d4d4d8;
+                border-color: rgba(255, 255, 255, 0.08);
+            }
+            .crm-owner-info {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                flex: 1;
+                line-height: 1.2;
+            }
+            .crm-owner-name-row {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                flex-wrap: wrap;
+            }
+            .crm-owner-name {
+                font-size: 11.5px;
+                font-weight: 600;
+                color: #1f2937;
+                word-break: break-word;
+            }
+            .dark .crm-owner-name {
+                color: #e5e7eb;
+            }
+            .crm-owner-you-badge {
+                font-size: 10px;
+                font-weight: 700;
+                padding: 1px 5px;
+                border-radius: 3px;
+                background-color: #e0f2fe;
+                color: #0369a1;
+                line-height: 1.2;
+            }
+            .dark .crm-owner-you-badge {
+                background-color: rgba(3, 105, 161, 0.3);
+                color: #7dd3fc;
+            }
+            .crm-owner-caption {
+                font-size: 10px;
+                color: #6b7280;
+                margin-top: 1px;
+            }
+            .dark .crm-owner-caption {
+                color: #9ca3af;
+            }
+
+            /* Dropdowns de filtro múltiplos */
+            .crm-filter-dropdown {
+                position: relative;
+            }
+            .crm-filter-trigger {
+                display: inline-flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+                height: 32px;
+                padding: 0 10px;
+                font-size: 12px;
+                font-weight: 500;
+                border-radius: 4px;
+                border: 1px solid #d1d5db;
+                background-color: #ffffff;
+                color: #374151;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: all 0.15s ease;
+            }
+            .dark .crm-filter-trigger {
+                background-color: #1a1b1e;
+                border-color: #374151;
+                color: #e5e7eb;
+            }
+            .crm-filter-trigger:hover {
+                border-color: #9ca3af;
+                background-color: #f9fafb;
+            }
+            .dark .crm-filter-trigger:hover {
+                border-color: #4b5563;
+                background-color: #222429;
+            }
+            .crm-filter-trigger.has-selection {
+                border-color: #2563eb;
+                background-color: #eff6ff;
+                color: #1d4ed8;
+                font-weight: 600;
+            }
+            .dark .crm-filter-trigger.has-selection {
+                border-color: #3b82f6;
+                background-color: rgba(37, 99, 235, 0.18);
+                color: #93c5fd;
+            }
+            .crm-filter-trigger:focus-visible,
+            .crm-shortcut-btn:focus-visible,
+            .crm-active-chip-remove:focus-visible {
+                outline: 2px solid #2563eb;
+                outline-offset: 2px;
+            }
+
+            .crm-filter-menu {
+                position: absolute;
+                top: calc(100% + 4px);
+                left: 0;
+                z-index: 60;
+                min-width: 250px;
+                max-width: 310px;
+                background-color: #ffffff;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+                display: none;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            .dark .crm-filter-menu {
+                background-color: #1c1d21;
+                border-color: #374151;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            }
+            .crm-filter-menu.open {
+                display: flex;
+            }
     </style>
 </head>
 
@@ -270,24 +577,217 @@
             <div id="header-container" class="flex-shrink-0"></div>
 
             <!-- Board Content -->
-            <div class="p-4 md:p-6 lg:p-8 flex flex-col flex-1 min-h-0 overflow-hidden">
-                <!-- Filters -->
-                <div class="flex flex-col sm:flex-row gap-2 mb-6 shrink-0">
-                    <div class="relative flex-grow">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" id="searchInput" placeholder="Busca"
-                            class="w-full bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm dark:shadow-md transition-all">
+            <div class="p-3 md:p-5 flex flex-col flex-1 min-h-0 overflow-hidden">
+                <!-- === SEÇÃO 1 & 6: TOPO DO QUADRO (BUSCA, ATALHOS, FILTROS SEMPRE VISÍVEIS, SELEÇÕES ATIVAS E CONTAGEM) === -->
+                <section aria-label="Controles e filtros do CRM" class="bg-white dark:bg-[#18191c] border border-gray-200 dark:border-gray-800 rounded-md p-3 mb-3 shrink-0 shadow-xs space-y-2.5">
+                    <!-- Linha 1: Busca por nome + Atalhos de responsabilidade + Quantidade de resultados e Limpar filtros -->
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+                            <!-- 1. Busca por nome do cliente/aluno -->
+                            <div class="relative flex-1 max-w-md min-w-[200px]">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                <input type="text" id="searchInput"
+                                    placeholder="Buscar por nome do cliente ou aluno..."
+                                    aria-label="Buscar por nome do cliente ou aluno"
+                                    class="w-full h-8 bg-gray-50 dark:bg-[#111214] text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 rounded pl-8 pr-7 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all">
+                                <button type="button" id="clearSearchBtn" title="Limpar busca" aria-label="Limpar texto da busca"
+                                    class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xs px-1">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <!-- 2. Atalhos por responsável -->
+                            <div role="group" aria-label="Atalhos por responsável" class="inline-flex items-center bg-gray-100 dark:bg-[#111214] p-0.5 rounded border border-gray-200 dark:border-gray-700/80 shrink-0 self-start sm:self-auto">
+                                <button type="button" id="shortcutAllLeads" data-shortcut="all" aria-pressed="true"
+                                    class="crm-shortcut-btn px-2.5 py-1 rounded-[3px] text-xs font-semibold transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs">
+                                    Todos os leads
+                                </button>
+                                <button type="button" id="shortcutMyLeads" data-shortcut="mine" aria-pressed="false"
+                                    class="crm-shortcut-btn px-2.5 py-1 rounded-[3px] text-xs font-medium transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                                    Sob minha responsabilidade
+                                </button>
+                                <button type="button" id="shortcutUnassignedLeads" data-shortcut="unassigned" aria-pressed="false"
+                                    class="crm-shortcut-btn px-2.5 py-1 rounded-[3px] text-xs font-medium transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                                    Sem responsável
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 5. Quantidade de resultados e ação Limpar filtros -->
+                        <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 lg:pt-0 border-t lg:border-t-0 border-gray-100 dark:border-gray-800">
+                            <span id="crmResultsCount" aria-live="polite" class="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                0 resultados
+                            </span>
+                            <button type="button" id="resetFiltersBtn"
+                                class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:pointer-events-none transition-opacity">
+                                <i class="fas fa-rotate-left text-[10px]"></i>
+                                <span>Limpar filtros</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button id="openFiltersBtn"
-                            class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-2 px-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-md flex items-center gap-2 transition-all">
-                            <i class="fas fa-filter text-primary"></i> <span class="hidden sm:inline">Filtros</span>
-                        </button>
+
+                    <!-- Linha 2: 3. Filtros sempre visíveis -->
+                    <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                        <!-- Filtro: Unidades (agrupada por cidade) -->
+                        <div class="crm-filter-dropdown" data-filter-key="unidades">
+                            <button type="button" id="filterBtn-unidades" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                                <span class="crm-filter-label">Unidades</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div id="filterMenu-unidades" class="crm-filter-menu" role="region" aria-label="Filtro de Unidades">
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Unidades por cidade</span>
+                                    <button type="button" data-clear-filter="unidades" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar</button>
+                                </div>
+                                <div id="filterOptions-unidades" class="p-2 max-h-72 overflow-y-auto custom-scrollbar space-y-2.5 text-xs">
+                                    <!-- Preenchido via JS com Brasília, Florianópolis, Dourados e Sem unidade -->
+                                </div>
+                                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end">
+                                    <button type="button" data-close-filter="unidades" class="px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-xs font-semibold hover:opacity-90">Concluir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtro: Responsáveis pelo lead -->
+                        <div class="crm-filter-dropdown" data-filter-key="responsaveis">
+                            <button type="button" id="filterBtn-responsaveis" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                                <span class="crm-filter-label">Responsáveis</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div id="filterMenu-responsaveis" class="crm-filter-menu" role="region" aria-label="Filtro de Responsáveis pelo lead">
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Responsáveis pelo lead</span>
+                                    <button type="button" data-clear-filter="responsaveis" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar</button>
+                                </div>
+                                <div id="filterOptions-responsaveis" class="p-2 max-h-64 overflow-y-auto custom-scrollbar space-y-1 text-xs"></div>
+                                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end">
+                                    <button type="button" data-close-filter="responsaveis" class="px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-xs font-semibold hover:opacity-90">Concluir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtro: Origens do lead -->
+                        <div class="crm-filter-dropdown" data-filter-key="origens">
+                            <button type="button" id="filterBtn-origens" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                                <span class="crm-filter-label">Origens</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div id="filterMenu-origens" class="crm-filter-menu" role="region" aria-label="Filtro de Origens do lead">
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Origens do lead</span>
+                                    <button type="button" data-clear-filter="origens" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar</button>
+                                </div>
+                                <div id="filterOptions-origens" class="p-2 max-h-64 overflow-y-auto custom-scrollbar space-y-1 text-xs"></div>
+                                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end">
+                                    <button type="button" data-close-filter="origens" class="px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-xs font-semibold hover:opacity-90">Concluir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtro: Perfis -->
+                        <div class="crm-filter-dropdown" data-filter-key="perfis">
+                            <button type="button" id="filterBtn-perfis" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                                <span class="crm-filter-label">Perfis</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div id="filterMenu-perfis" class="crm-filter-menu" role="region" aria-label="Filtro de Perfis">
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Perfis</span>
+                                    <button type="button" data-clear-filter="perfis" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar</button>
+                                </div>
+                                <div id="filterOptions-perfis" class="p-2 max-h-64 overflow-y-auto custom-scrollbar space-y-1 text-xs"></div>
+                                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end">
+                                    <button type="button" data-close-filter="perfis" class="px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-xs font-semibold hover:opacity-90">Concluir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtro: Instrutores -->
+                        <div class="crm-filter-dropdown" data-filter-key="instrutores">
+                            <button type="button" id="filterBtn-instrutores" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                                <span class="crm-filter-label">Instrutores</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div id="filterMenu-instrutores" class="crm-filter-menu" role="region" aria-label="Filtro de Instrutores">
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Instrutores</span>
+                                    <button type="button" data-clear-filter="instrutores" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar</button>
+                                </div>
+                                <div id="filterOptions-instrutores" class="p-2 max-h-64 overflow-y-auto custom-scrollbar space-y-1 text-xs"></div>
+                                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end">
+                                    <button type="button" data-close-filter="instrutores" class="px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-xs font-semibold hover:opacity-90">Concluir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtro: Prioridades -->
+                        <div class="crm-filter-dropdown" data-filter-key="prioridades">
+                            <button type="button" id="filterBtn-prioridades" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                                <span class="crm-filter-label">Prioridades</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div id="filterMenu-prioridades" class="crm-filter-menu" role="region" aria-label="Filtro de Prioridades">
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Prioridades</span>
+                                    <button type="button" data-clear-filter="prioridades" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar</button>
+                                </div>
+                                <div id="filterOptions-prioridades" class="p-2 max-h-64 overflow-y-auto custom-scrollbar space-y-1 text-xs"></div>
+                                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end">
+                                    <button type="button" data-close-filter="prioridades" class="px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-xs font-semibold hover:opacity-90">Concluir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtro: Tags -->
+                        <div class="crm-filter-dropdown" data-filter-key="tags">
+                            <button type="button" id="filterBtn-tags" class="crm-filter-trigger" aria-haspopup="true" aria-expanded="false">
+                                <span class="crm-filter-label">Tags</span>
+                                <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                            </button>
+                            <div id="filterMenu-tags" class="crm-filter-menu" role="region" aria-label="Filtro de Tags">
+                                <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60">
+                                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300">Tags</span>
+                                    <button type="button" data-clear-filter="tags" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Limpar</button>
+                                </div>
+                                <div id="filterOptions-tags" class="p-2 max-h-64 overflow-y-auto custom-scrollbar space-y-1 text-xs"></div>
+                                <div class="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex justify-end">
+                                    <button type="button" data-close-filter="tags" class="px-3 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded text-xs font-semibold hover:opacity-90">Concluir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Separador vertical -->
+                        <span class="hidden xl:inline-block h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1"></span>
+
+                        <!-- Filtro: Período de referência + Data inicial e final -->
+                        <div class="inline-flex flex-wrap items-center gap-1.5 bg-gray-50 dark:bg-[#111214] border border-gray-200 dark:border-gray-700/80 rounded px-2 py-1">
+                            <label for="dateReferenceFilter" class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Período:</label>
+                            <select id="dateReferenceFilter" aria-label="Período de referência"
+                                class="h-6 bg-white dark:bg-[#1a1b1e] border border-gray-300 dark:border-gray-700 rounded px-1.5 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <option value="entrada">Entrada do lead</option>
+                                <option value="agendamento">Agendamento</option>
+                            </select>
+                            <input type="date" id="startDateFilter" aria-label="Data inicial" title="Data inicial"
+                                class="h-6 bg-white dark:bg-[#1a1b1e] border border-gray-300 dark:border-gray-700 rounded px-1.5 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            <span class="text-[11px] text-gray-400">até</span>
+                            <input type="date" id="endDateFilter" aria-label="Data final" title="Data final"
+                                class="h-6 bg-white dark:bg-[#1a1b1e] border border-gray-300 dark:border-gray-700 rounded px-1.5 text-xs text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            <button type="button" id="clearDateFilterBtn" title="Limpar período" aria-label="Limpar intervalo de datas"
+                                class="hidden text-[11px] text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 px-1">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
+
+                    <!-- Linha 3: 4. Seleções ativas, com remoção individual -->
+                    <div id="activeFiltersRow" class="hidden items-center flex-wrap gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-800/80">
+                        <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mr-1">Filtros ativos:</span>
+                        <div id="activeFiltersChips" class="flex flex-wrap items-center gap-1.5"></div>
+                    </div>
+                </section>
 
                 <!-- Kanban Board -->
-                <div id="kanban-board" class="flex-1 min-h-0 flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
+                <div id="kanban-board" class="flex-1 min-h-0 flex gap-3.5 overflow-x-auto pb-3 custom-scrollbar">
                     <!-- Columns will be injected here by JS -->
                 </div>
             </div>
@@ -495,60 +995,110 @@
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="form-group">
-                                <label for="responsavel" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome do responsável</label>
-                                <input type="text" id="responsavel"
+                                <label for="responsavel" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome do cliente / aluno *</label>
+                                <input type="text" id="responsavel" placeholder="Nome completo do cliente ou aluno" required
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
                             </div>
                             <div class="form-group">
                                 <label for="unidade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Unidade</label>
                                 <select id="unidade"
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
-                                    <option value="">Selecione a Unidade</option>
+                                    <option value="">Sem unidade</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="setor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Aluno *</label>
-                                <input type="text" id="setor" placeholder="Ex: Kids, Adultos"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
-                                    required>
+                                <label for="setor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Perfil (Programa)</label>
+                                <input type="text" id="setor" list="perfisSuggestions" placeholder="Ex: Littles, Kids, Adults (ou deixe vazio)"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                <datalist id="perfisSuggestions">
+                                    <option value="Littles"></option>
+                                    <option value="Kids"></option>
+                                    <option value="Youth"></option>
+                                    <option value="Adults"></option>
+                                    <option value="Marcial"></option>
+                                    <option value="Defesa Pessoal"></option>
+                                </datalist>
                             </div>
                             <div class="form-group">
                                 <label for="prioridade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Prioridade *</label>
                                 <select id="prioridade"
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
                                     required>
-                                    <option value="">Selecione</option>
                                     <option value="5">5 - Máxima 🚀</option>
                                     <option value="4">4 - Alta 🔥</option>
-                                    <option value="3">3 - Média ⭐</option>
+                                    <option value="3" selected>3 - Média ⭐</option>
                                     <option value="2">2 - Baixa ❄️</option>
                                     <option value="1">1 - Mínima 💤</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="ticketEstimado" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Ticket Estimado (R$)</label>
-                                <input type="number" id="ticketEstimado" placeholder="15000"
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label for="ticketEstimado" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Mensalidade (R$ / mês)</label>
+                                    <button type="button" id="suggestTicketBtn" class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">Sugerir valor da unidade</button>
+                                </div>
+                                <input type="number" step="0.01" min="0" id="ticketEstimado" placeholder="Não definido (ex: 507.00 ou 0)"
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
                             </div>
                             <div class="form-group">
                                 <label for="origemLead" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Origem do Lead</label>
-                                <input type="text" id="origemLead" placeholder="Ex: Indicação, Google"
+                                <input type="text" id="origemLead" list="origensSuggestions" placeholder="Ex: Site, Chatbot Miles, WhatsApp Web"
                                     class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                <datalist id="origensSuggestions">
+                                    <option value="Site"></option>
+                                    <option value="Chatbot Miles"></option>
+                                    <option value="WhatsApp Web"></option>
+                                    <option value="Meta Ads"></option>
+                                    <option value="Instagram"></option>
+                                    <option value="Google"></option>
+                                    <option value="Indicação"></option>
+                                </datalist>
+                            </div>
+                            <!-- Agendamento (Data/Hora + Status do Agendamento) -->
+                            <div class="form-group">
+                                <label for="agendamentoDataHora" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data e Hora do Agendamento</label>
+                                <input type="datetime-local" id="agendamentoDataHora"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
                             </div>
                             <div class="form-group">
-                                <label for="instrutor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Instrutor Responsável</label>
+                                <label for="agendamentoStatus" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Status do Agendamento</label>
+                                <select id="agendamentoStatus"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    <option value="Pendente">Pendente</option>
+                                    <option value="Concluído">Concluído</option>
+                                    <option value="Cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                            <!-- Instrutor (separado do Responsável pelo lead) -->
+                            <div class="form-group">
+                                <label for="instrutor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Instrutor</label>
                                 <div class="flex items-center gap-2">
                                     <div id="instrutorAvatarPreview" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 flex items-center justify-center shrink-0 overflow-hidden text-xs text-gray-400">
                                         <i class="fas fa-user-ninja text-yellow-500 text-sm"></i>
                                     </div>
                                     <select id="instrutor"
                                         class="flex-1 bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
-                                        <option value="">Selecione o Instrutor</option>
+                                        <option value="">Não definido</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Responsável pelo lead (usuário da equipe/intranet) -->
+                            <div class="form-group">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <label for="responsavelLead" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Responsável pelo lead</label>
+                                    <button type="button" id="assignToMeBtn" class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline">Atribuir a mim</button>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div id="responsavelLeadAvatarPreview" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-250 dark:border-gray-700 flex items-center justify-center shrink-0 overflow-hidden text-xs font-bold text-gray-500">
+                                        --
+                                    </div>
+                                    <select id="responsavelLead"
+                                        class="flex-1 bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                        <option value="">Sem responsável</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="form-group md:col-span-2">
-                                <label for="dataChegada" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data de Chegada</label>
+                                <label for="dataChegada" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Entrada do Lead (América/São Paulo)</label>
                                 <input type="text" id="dataChegada" placeholder="N/A" disabled
                                     class="w-full bg-gray-100 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm focus:outline-none cursor-not-allowed select-none transition-all">
                             </div>
@@ -945,86 +1495,6 @@
         </div>
     </div>
 
-    <!-- Filters Modal -->
-    <div id="filtersModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-sm">
-        <div class="bg-white dark:bg-[#1a1a1a] w-full max-w-lg rounded-xl shadow-2xl flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                    <i class="fas fa-filter text-primary"></i> Filtros
-                </h2>
-                <button id="closeFiltersModalBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-white text-2xl transition-colors">&times;</button>
-            </div>
-            <div class="p-6 space-y-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Prioridade</label>
-                        <select id="priorityFilter"
-                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all">
-                            <option value="">Todas</option>
-                            <option value="5">Máxima (5)</option>
-                            <option value="4">Alta (4)</option>
-                            <option value="3">Média (3)</option>
-                            <option value="2">Baixa (2)</option>
-                            <option value="1">Mínima (1)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Unidade</label>
-                        <select id="unidadeFilter"
-                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all">
-                            <option value="">Todas</option>
-                            <option value="__SEM_UNIDADE__">⚠️ Sem Unidade Definida</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Tags</label>
-                    <select id="tagFilter"
-                        class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all">
-                        <option value="">Todas</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Origem do Lead</label>
-                    <select id="originFilter"
-                        class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all">
-                        <option value="">Todas</option>
-                        <option value="miles">Chatbot Miles</option>
-                        <option value="site">Formulário / Site</option>
-                        <option value="outros">Outros</option>
-                    </select>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Data Inicial</label>
-                        <input type="date" id="startDateFilter"
-                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
-                    </div>
-                    <div class="form-group">
-                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">Data Final</label>
-                        <input type="date" id="endDateFilter"
-                            class="w-full bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-primary text-gray-900 dark:text-white transition-all [&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:invert">
-                    </div>
-                </div>
-
-                <div class="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col gap-3">
-                    <button id="resetFiltersBtn"
-                        class="w-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold py-2.5 px-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
-                        Limpar Filtros
-                    </button>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex justify-end">
-                <button id="applyFiltersBtn"
-                    class="bg-primary hover:bg-primary-dark text-black font-bold py-2.5 px-8 rounded-lg shadow-md transition-all active:scale-95">Ver Resultados</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Visual Flow Editor Modal -->
     <!-- Visual Flow Editor Modal -->
     <div id="visualEditorModal" class="fixed inset-0 bg-[#111111] hidden z-[9999]">
@@ -1288,10 +1758,50 @@
         const closeFiltersModalBtn = document.getElementById('closeFiltersModalBtn');
         const applyFiltersBtn = document.getElementById('applyFiltersBtn');
 
-        // --- AUTHENTICATION ---
+        // --- AUTHENTICATION & CONNECTED USER ---
+        let currentConnectedUser = null;
+        const staffUsersMap = new Map(); // normalizedName/email/id -> user obj
+        let staffUsersList = [];
+
+        function normalizeKey(str) {
+            return String(str || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .toLowerCase();
+        }
+
+        function refreshConnectedUserFromStorage() {
+            let stored = {};
+            try {
+                stored = JSON.parse(localStorage.getItem('currentUser') || '{}') || {};
+            } catch (e) {
+                stored = {};
+            }
+            const authUser = auth.currentUser;
+            const uid = stored.uid || stored.id || (authUser && !authUser.isAnonymous ? authUser.uid : '') || '';
+            const email = stored.email || localStorage.getItem('userEmail') || (authUser ? authUser.email : '') || '';
+            const name = stored.name || stored.nome || stored.displayName || localStorage.getItem('userName') || (email ? email.split('@')[0] : '') || 'Você';
+            const photoURL = stored.profilePicture || stored.photoURL || stored.photoUrl || stored.avatarUrl || '';
+            const isAdmin = stored.isAdmin === true || stored.isAdmin === 'true' || localStorage.getItem('isAdmin') === 'true';
+            const allowedUnits = Array.isArray(stored.allowedUnits) ? stored.allowedUnits : (Array.isArray(stored.unidades) ? stored.unidades : null);
+
+            currentConnectedUser = {
+                uid,
+                id: uid,
+                email,
+                name,
+                photoURL,
+                isAdmin,
+                allowedUnits
+            };
+            return currentConnectedUser;
+        }
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 if (localStorage.getItem('isLoggedIn') === 'true') {
+                    refreshConnectedUserFromStorage();
                     document.getElementById('kanban-container').classList.remove('hidden');
                     setupListeners();
                 } else {
@@ -1340,112 +1850,404 @@
             });
         }
 
+        // --- SEÇÃO 4: CORES E AGRUPAMENTO DE UNIDADES POR CIDADE ---
+        const UNIT_DEFINITIONS = [
+            // Brasília (#EDF4EE)
+            { key: 'Asa Sul',         city: 'Brasília',      cityCode: 'BSB', cardLabel: 'BSB · Asa Sul',         dotColor: '#245C42', bgLight: '#EDF4EE', textLight: '#1E3F30', bgDark: 'rgba(36, 92, 66, 0.25)',  textDark: '#A7F3D0', matchers: ['asa sul'] },
+            { key: 'Jardim Botânico', city: 'Brasília',      cityCode: 'BSB', cardLabel: 'BSB · Jardim Botânico', dotColor: '#3C7048', bgLight: '#EDF4EE', textLight: '#1E3F30', bgDark: 'rgba(60, 112, 72, 0.25)', textDark: '#BBF7D0', matchers: ['jardim botanico', 'botanico'] },
+            { key: 'Lago Sul',        city: 'Brasília',      cityCode: 'BSB', cardLabel: 'BSB · Lago Sul',        dotColor: '#467E70', bgLight: '#EDF4EE', textLight: '#1E3F30', bgDark: 'rgba(70, 126, 112, 0.25)',textDark: '#99F6E4', matchers: ['lago sul'] },
+            { key: 'Noroeste',        city: 'Brasília',      cityCode: 'BSB', cardLabel: 'BSB · Noroeste',        dotColor: '#658A48', bgLight: '#EDF4EE', textLight: '#1E3F30', bgDark: 'rgba(101, 138, 72, 0.25)',textDark: '#D9F99D', matchers: ['noroeste'] },
+            { key: 'Pontos de Ensino',city: 'Brasília',      cityCode: 'BSB', cardLabel: 'BSB · Pontos de Ensino',dotColor: '#789D70', bgLight: '#EDF4EE', textLight: '#1E3F30', bgDark: 'rgba(120, 157, 112, 0.25)',textDark: '#DCFCE7', matchers: ['pontos de ensino', 'ensino', 'atadf'] },
+            { key: 'Sudoeste',        city: 'Brasília',      cityCode: 'BSB', cardLabel: 'BSB · Sudoeste',        dotColor: '#248369', bgLight: '#EDF4EE', textLight: '#1E3F30', bgDark: 'rgba(36, 131, 105, 0.25)',textDark: '#6EE7B7', matchers: ['sudoeste'] },
+            // Florianópolis (#EDF3FA)
+            { key: 'Centro',          city: 'Florianópolis', cityCode: 'FLN', cardLabel: 'FLN · Centro',          dotColor: '#1F4F8C', bgLight: '#EDF3FA', textLight: '#1B3B66', bgDark: 'rgba(31, 79, 140, 0.28)', textDark: '#BFDBFE', matchers: ['centro'] },
+            { key: 'Coqueiros',       city: 'Florianópolis', cityCode: 'FLN', cardLabel: 'FLN · Coqueiros',       dotColor: '#2978AB', bgLight: '#EDF3FA', textLight: '#1B3B66', bgDark: 'rgba(41, 120, 171, 0.28)',textDark: '#BAE6FD', matchers: ['coqueiros'] },
+            { key: 'Santa Mônica',    city: 'Florianópolis', cityCode: 'FLN', cardLabel: 'FLN · Santa Mônica',    dotColor: '#528DA3', bgLight: '#EDF3FA', textLight: '#1B3B66', bgDark: 'rgba(82, 141, 163, 0.28)',textDark: '#A5F3FC', matchers: ['santa monica'] },
+            // Dourados (#F3EEF7)
+            { key: 'Dourados',        city: 'Dourados',      cityCode: 'DOU', cardLabel: 'DOU · Dourados',        dotColor: '#8063A1', bgLight: '#F3EEF7', textLight: '#432E5C', bgDark: 'rgba(128, 99, 161, 0.28)',textDark: '#E9D5FF', matchers: ['dourados'] }
+        ];
+
+        const NO_UNIT_DEFINITION = {
+            key: '__SEM_UNIDADE__',
+            displayName: 'Sem unidade',
+            city: 'Sem cidade',
+            cityCode: '',
+            cardLabel: 'Sem unidade',
+            dotColor: '#818181',
+            bgLight: '#EDEDEB',
+            textLight: '#4A4A48',
+            bgDark: 'rgba(129, 129, 129, 0.2)',
+            textDark: '#D4D4D8'
+        };
+
+        const CITY_GROUPS = [
+            { city: 'Brasília',      units: UNIT_DEFINITIONS.filter(u => u.city === 'Brasília') },
+            { city: 'Florianópolis', units: UNIT_DEFINITIONS.filter(u => u.city === 'Florianópolis') },
+            { city: 'Dourados',      units: UNIT_DEFINITIONS.filter(u => u.city === 'Dourados') }
+        ];
+
+        function getUnitMetadata(rawUnidade) {
+            if (!rawUnidade || !String(rawUnidade).trim()) {
+                return NO_UNIT_DEFINITION;
+            }
+            const norm = normalizeKey(rawUnidade).replace(/[-_]/g, ' ');
+            if (!norm || norm === 'sem unidade' || norm === '__sem_unidade__' || norm === 'geral') {
+                return NO_UNIT_DEFINITION;
+            }
+            for (const def of UNIT_DEFINITIONS) {
+                if (def.matchers.some(m => norm.includes(m))) {
+                    return { ...def, displayName: def.key };
+                }
+            }
+            return {
+                key: String(rawUnidade).trim(),
+                displayName: String(rawUnidade).trim(),
+                city: 'Outras',
+                cityCode: '',
+                cardLabel: String(rawUnidade).trim(),
+                dotColor: '#818181',
+                bgLight: '#EDEDEB',
+                textLight: '#4A4A48',
+                bgDark: 'rgba(129, 129, 129, 0.2)',
+                textDark: '#D4D4D8'
+            };
+        }
+
+        function getUnitColor(unidade) {
+            return getUnitMetadata(unidade).dotColor;
+        }
+
         function getDefaultTicketByUnit(unidade) {
-            if (!unidade || !unidade.trim()) return 0;
-            const norm = unidade
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLowerCase()
-                .replace(/[-_]/g, ' ')
-                .trim();
-
-            // Unidades de Brasília -> R$ 677
-            if (
-                norm.includes('asa sul') ||
-                norm.includes('sudoeste') ||
-                norm.includes('noroeste') ||
-                norm.includes('lago sul') ||
-                norm.includes('jardim botanico') ||
-                norm.includes('botanico') ||
-                norm.includes('pontos de ensino') ||
-                norm.includes('ensino') ||
-                norm.includes('brasilia')
-            ) {
-                return 677;
-            }
-
-            // Unidades de Florianópolis -> R$ 507
-            if (
-                norm.includes('centro') ||
-                norm.includes('santa monica') ||
-                norm.includes('coqueiros') ||
-                norm.includes('florianopolis')
-            ) {
-                return 507;
-            }
-
+            const meta = getUnitMetadata(unidade);
+            if (meta.city === 'Brasília') return 677;
+            if (meta.city === 'Florianópolis' || meta.city === 'Dourados') return 507;
             return 0;
         }
 
+        // --- MENSALIDADE: DISTINÇÃO ENTRE VALOR INFORMADO (INCLUSIVE R$ 0,00) E AUSENTE ---
+        function parseTicketOrNull(rawVal) {
+            if (rawVal === null || rawVal === undefined) return null;
+            if (typeof rawVal === 'string' && rawVal.trim() === '') return null;
+            const num = typeof rawVal === 'number' ? rawVal : Number(String(rawVal).replace(',', '.').trim());
+            if (Number.isNaN(num) || num < 0) return null;
+            return num;
+        }
+
+        function hasExplicitTicket(prospect) {
+            return parseTicketOrNull(prospect?.ticketEstimado) !== null;
+        }
+
+        function getTicketNumericValue(prospect) {
+            const parsed = parseTicketOrNull(prospect?.ticketEstimado);
+            return parsed !== null ? parsed : null;
+        }
+
+        function formatBRL(val) {
+            return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // --- DATAS E AGENDAMENTOS NO FUSO AMERICA/SAO_PAULO ---
+        function parseDateValue(val) {
+            if (!val) return null;
+            if (typeof val.toDate === 'function') {
+                const d = val.toDate();
+                return isNaN(d.getTime()) ? null : d;
+            }
+            if (typeof val.toMillis === 'function') {
+                const d = new Date(val.toMillis());
+                return isNaN(d.getTime()) ? null : d;
+            }
+            if (val && typeof val.seconds === 'number') {
+                const d = new Date(val.seconds * 1000);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            if (val instanceof Date) {
+                return isNaN(val.getTime()) ? null : val;
+            }
+            if (typeof val === 'string') {
+                const trimmed = val.trim();
+                if (!trimmed) return null;
+                // Se vier no formato datetime-local sem timezone (YYYY-MM-DDTHH:mm), interpreta como America/Sao_Paulo (-03:00)
+                if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+                    const d = new Date(`${trimmed}:00-03:00`);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+                if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+                    const d = new Date(`${trimmed}-03:00`);
+                    return isNaN(d.getTime()) ? null : d;
+                }
+                const d = new Date(trimmed);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            return null;
+        }
+
+        function formatDateTimeSP(val) {
+            const d = parseDateValue(val);
+            if (!d) return null;
+            try {
+                const parts = new Intl.DateTimeFormat('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).formatToParts(d);
+                const map = {};
+                parts.forEach(p => { map[p.type] = p.value; });
+                return `${map.day}/${map.month}/${map.year} ${map.hour}:${map.minute}`;
+            } catch (e) {
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = String(d.getFullYear()).slice(-2);
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                return `${dd}/${mm}/${yy} ${hh}:${min}`;
+            }
+        }
+
+        function formatDateTimeLocalInputSP(val) {
+            const d = parseDateValue(val);
+            if (!d) return '';
+            try {
+                const parts = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'America/Sao_Paulo',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).formatToParts(d);
+                const map = {};
+                parts.forEach(p => { map[p.type] = p.value; });
+                const hour = map.hour === '24' ? '00' : map.hour;
+                return `${map.year}-${map.month}-${map.day}T${hour}:${map.minute}`;
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function normalizeScheduleStatus(rawStatus) {
+            const norm = normalizeKey(rawStatus);
+            if (norm.includes('conclu') || norm.includes('realiz')) return 'Concluído';
+            if (norm.includes('cancel')) return 'Cancelado';
+            return 'Pendente';
+        }
+
+        function getScheduleInfo(prospect) {
+            const rawDate = prospect?.agendamentoDataHora || prospect?.agendamento || prospect?.dataAgendamento || prospect?.experimentalDate || null;
+            const dateObj = parseDateValue(rawDate);
+            const status = normalizeScheduleStatus(prospect?.agendamentoStatus || 'Pendente');
+            if (!dateObj) {
+                return {
+                    hasSchedule: false,
+                    dateObj: null,
+                    timestamp: 0,
+                    formatted: 'Não agendado',
+                    status,
+                    isOverdue: false
+                };
+            }
+            const formatted = formatDateTimeSP(dateObj) || 'Não agendado';
+            // Regra Seção 5: vencido somente quando data/hora já passou E continua pendente (usa o status do agendamento, não a etapa do funil)
+            const isOverdue = status === 'Pendente' && dateObj.getTime() < Date.now();
+            return {
+                hasSchedule: true,
+                dateObj,
+                timestamp: dateObj.getTime(),
+                formatted,
+                status,
+                isOverdue
+            };
+        }
+
+        // --- RESPONSÁVEL PELO LEAD E IDENTIFICAÇÃO "VOCÊ" ---
+        function computeInitials(name) {
+            const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return '--';
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        function isUserMatchingConnected(candidate) {
+            if (!candidate) return false;
+            const me = currentConnectedUser || refreshConnectedUserFromStorage();
+            if (!me) return false;
+            if (candidate.id && me.uid && candidate.id === me.uid) return true;
+            if (candidate.email && me.email && normalizeKey(candidate.email) === normalizeKey(me.email)) return true;
+            if (candidate.name && me.name && normalizeKey(candidate.name) === normalizeKey(me.name)) return true;
+            return false;
+        }
+
+        function getLeadOwnerInfo(prospect) {
+            const rawName = (prospect?.responsavelLead || prospect?.atendente || prospect?.ownerName || '').trim();
+            const rawId = (prospect?.responsavelLeadId || prospect?.ownerId || '').trim();
+            const rawEmail = (prospect?.responsavelLeadEmail || prospect?.ownerEmail || '').trim();
+            const rawPhoto = (prospect?.responsavelLeadFoto || prospect?.ownerPhoto || '').trim();
+
+            if (!rawName && !rawId && !rawEmail) {
+                return {
+                    hasOwner: false,
+                    filterKey: '__SEM_RESPONSAVEL__',
+                    id: '',
+                    name: 'Sem responsável',
+                    email: '',
+                    photoURL: '',
+                    initials: '--',
+                    isCurrentUser: false
+                };
+            }
+
+            let matchedUser = null;
+            if (rawId && staffUsersMap.has(`id:${rawId}`)) {
+                matchedUser = staffUsersMap.get(`id:${rawId}`);
+            } else if (rawEmail && staffUsersMap.has(`email:${normalizeKey(rawEmail)}`)) {
+                matchedUser = staffUsersMap.get(`email:${normalizeKey(rawEmail)}`);
+            } else if (rawName && staffUsersMap.has(`name:${normalizeKey(rawName)}`)) {
+                matchedUser = staffUsersMap.get(`name:${normalizeKey(rawName)}`);
+            }
+
+            const finalName = matchedUser?.name || rawName || rawEmail.split('@')[0] || 'Responsável';
+            const finalPhoto = matchedUser?.photoURL || rawPhoto || '';
+            const finalId = matchedUser?.id || rawId || '';
+            const finalEmail = matchedUser?.email || rawEmail || '';
+            const isCurrentUser = isUserMatchingConnected({ id: finalId, email: finalEmail, name: finalName });
+
+            return {
+                hasOwner: true,
+                filterKey: finalName,
+                id: finalId,
+                name: finalName,
+                email: finalEmail,
+                photoURL: finalPhoto,
+                initials: computeInitials(finalName),
+                isCurrentUser
+            };
+        }
+
+        function getOriginIcon(origem) {
+            const norm = normalizeKey(origem);
+            if (!norm) return 'fas fa-question-circle';
+            if (norm.includes('miles') || norm.includes('bot') || norm.includes('ia')) return 'fas fa-robot';
+            if (norm.includes('whatsapp')) return 'fab fa-whatsapp';
+            if (norm.includes('instagram') || norm.includes('insta')) return 'fab fa-instagram';
+            if (norm.includes('meta') || norm.includes('facebook') || norm.includes('fb')) return 'fab fa-facebook';
+            if (norm.includes('google')) return 'fab fa-google';
+            if (norm.includes('indicac')) return 'fas fa-user-friends';
+            if (norm.includes('site') || norm.includes('form') || norm.includes('web')) return 'fas fa-globe';
+            return 'fas fa-bullhorn';
+        }
+
         function combineAndRender() {
+            refreshConnectedUserFromStorage();
             const formattedLeads = leads.map(lead => ({
                 id: lead.id,
-                responsavel: lead.nome,
-                unidade: lead.unidade,
-                setor: '', // Leads from website don't have a program yet
-                prioridade: 3, // Default priority for leads
+                responsavel: lead.nome || lead.responsavel || '',
+                unidade: lead.unidade || '',
+                setor: lead.setor || lead.perfil || '',
+                prioridade: lead.prioridade || 3,
                 status: lead.status || 'Novo',
-                ticketEstimado: lead.ticketEstimado || getDefaultTicketByUnit(lead.unidade),
-                origemLead: lead['origem do lead'] || 'Site',
+                ticketEstimado: parseTicketOrNull(lead.ticketEstimado),
+                origemLead: lead['origem do lead'] || lead.origemLead || 'Site',
                 instrutor: lead.instrutor || '',
-                telefone: lead.telefone,
-                email: lead.email,
-                createdAt: lead.createdAt,
+                responsavelLead: lead.responsavelLead || '',
+                responsavelLeadId: lead.responsavelLeadId || '',
+                responsavelLeadEmail: lead.responsavelLeadEmail || '',
+                responsavelLeadFoto: lead.responsavelLeadFoto || '',
+                agendamentoDataHora: lead.agendamentoDataHora || lead.agendamento || null,
+                agendamentoStatus: lead.agendamentoStatus || 'Pendente',
+                telefone: lead.telefone || '',
+                email: lead.email || '',
+                createdAt: lead.createdAt || null,
                 motivoPerda: lead.motivoPerda || '',
                 perdidoEm: lead.perdidoEm || null,
                 perdidoPor: lead.perdidoPor || '',
+                tags: Array.isArray(lead.tags) ? lead.tags : [],
                 type: 'lead'
             }));
-            const enrichedProspects = prospects.map(p => ({
-                ...p,
-                ticketEstimado: p.ticketEstimado || getDefaultTicketByUnit(p.unidade),
-                instrutor: p.instrutor || p.instructor || ''
-            }));
+
+            const enrichedProspects = prospects.map(p => {
+                // Se foi criado automaticamente por webhook sem intervenção humana e ticketEstimado === 0 sem flag explícita, trata como não definido
+                const isUntouchedWebhookZero = (
+                    (p.createdBy === 'webhook' || p.createdBy === 'webhook_bot_off' || p.createdBy === 'meta_lead_webhook') &&
+                    p.ticketEstimado === 0 &&
+                    p.ticketDefinido !== true
+                );
+                return {
+                    ...p,
+                    ticketEstimado: isUntouchedWebhookZero ? null : parseTicketOrNull(p.ticketEstimado),
+                    instrutor: p.instrutor || p.instructor || '',
+                    responsavelLead: p.responsavelLead || p.atendente || '',
+                    agendamentoDataHora: p.agendamentoDataHora || p.agendamento || null,
+                    agendamentoStatus: p.agendamentoStatus || 'Pendente'
+                };
+            });
+
             combinedData = [...enrichedProspects, ...formattedLeads];
+            rebuildDynamicFilterMenus();
             applyFilters();
         }
 
-        // --- RENDERING ---
+        // --- RENDERING (SEÇÃO 3: CABEÇALHO DAS ETAPAS & SEÇÃO 2: ESTRUTURA DOS CARDS) ---
         const COLUMN_COLORS = {
-            'Novo': '#9ca3af',
-            'Contactado': '#3b82f6',
-            'Aula experimental': '#eab308',
-            'Matrícula': '#22c55e',
-            'Perdido': '#ef4444'
+            'Novo': '#6b7280',
+            'Contactado': '#2563eb',
+            'Aula experimental': '#ca8a04',
+            'Matrícula': '#168654',
+            'Perdido': '#dc2626'
         };
 
         function renderBoard() {
+            const isDark = document.documentElement.classList.contains('dark');
             kanbanBoard.innerHTML = '';
 
             COLUMN_NAMES.forEach(status => {
                 const columnId = COLUMNS[status];
+                // Considera TODOS os resultados correspondentes à etapa conforme filtros ativos
                 const columnProspects = filteredProspects.filter(p => p.status === status);
-                const colColor = COLUMN_COLORS[status] || '#9ca3af';
+                const colColor = COLUMN_COLORS[status] || '#6b7280';
 
-                const totalColumnTicket = columnProspects.reduce((sum, p) => {
-                    const val = Number(p.ticketEstimado) || getDefaultTicketByUnit(p.unidade);
-                    return sum + (val > 0 ? val : 0);
-                }, 0);
-                const formattedColumnTicket = totalColumnTicket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                let totalColumnTicket = 0;
+                let missingTicketCount = 0;
+
+                columnProspects.forEach(p => {
+                    const ticketVal = getTicketNumericValue(p);
+                    if (ticketVal === null) {
+                        missingTicketCount++;
+                    } else {
+                        totalColumnTicket += ticketVal;
+                    }
+                });
+
+                // Sem resultados na coluna -> mostrar R$ 0,00
+                // Com resultados -> soma apenas das mensalidades informadas (sem rótulo "Mensalidades" e sem sinal "+")
+                const formattedColumnTicket = formatBRL(totalColumnTicket);
+                const missingTicketLineHTML = missingTicketCount > 0
+                    ? `<div class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5 leading-tight" data-missing-ticket-count="${missingTicketCount}">Sem mensalidade: ${missingTicketCount} ${missingTicketCount === 1 ? 'card' : 'cards'}</div>`
+                    : '';
 
                 const columnEl = document.createElement('div');
-                columnEl.className = 'bg-gray-100 dark:bg-[#1a1a1a] rounded-lg p-4 flex flex-col shadow-sm dark:shadow-lg border border-gray-200 dark:border-gray-800 kanban-column shrink-0 w-[280px] xs:w-[320px] md:flex-1 md:min-w-[300px] max-w-[400px] max-h-full min-h-0 transition-all';
+                columnEl.className = 'bg-gray-100/90 dark:bg-[#151619] rounded-md p-2.5 flex flex-col border border-gray-200/90 dark:border-gray-800 kanban-column shrink-0 w-[268px] sm:w-[278px] md:flex-1 md:min-w-[260px] max-w-[340px] max-h-full min-h-0 transition-all';
                 columnEl.dataset.column = columnId;
 
                 columnEl.innerHTML = `
-                    <div class="mb-4 pb-2.5 border-b border-gray-200 dark:border-gray-700 w-full shrink-0">
-                        <div class="flex justify-between items-center w-full" style="color: ${colColor}">
-                            <div class="flex items-center gap-2 min-w-0">
-                                <span class="font-bold truncate text-base" title="${status}">${status}</span>
-                                <span class="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs py-0.5 px-2 rounded-full count shadow-inner shrink-0 font-bold">${columnProspects.length}</span>
+                    <div class="mb-2.5 pb-2 border-b border-gray-200 dark:border-gray-800 w-full shrink-0">
+                        <div class="flex justify-between items-center w-full gap-2">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${colColor}"></span>
+                                <h2 class="font-bold truncate text-[13.5px] text-gray-900 dark:text-gray-100" title="${escapeHtml(status)}">${escapeHtml(status)}</h2>
                             </div>
+                            <span class="bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 text-[11px] py-0.5 px-2 rounded-full count shrink-0 font-bold" aria-label="${columnProspects.length} ${columnProspects.length === 1 ? 'card' : 'cards'}">${columnProspects.length}</span>
                         </div>
-                        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 mt-1.5 flex items-center justify-between">
-                            <span class="text-[11px] text-gray-400 dark:text-gray-500 font-medium">Ticket Total:</span>
-                            <span class="text-xs font-bold text-gray-800 dark:text-gray-200">${formattedColumnTicket}</span>
+                        <div class="mt-1.5">
+                            <div class="text-[13px] font-bold text-gray-900 dark:text-gray-100 leading-tight" data-column-sum="${totalColumnTicket}">${formattedColumnTicket}</div>
+                            ${missingTicketLineHTML}
                         </div>
                     </div>
-                    <div id="${columnId}" data-status="${status}" class="column-content flex-1 overflow-y-auto custom-scrollbar space-y-3 min-h-[200px]">
+                    <div id="${columnId}" data-status="${status}" class="column-content flex-1 overflow-y-auto custom-scrollbar space-y-2 min-h-[180px] pr-0.5">
                         <!-- Cards will be injected here -->
                     </div>
                 `;
@@ -1453,147 +2255,208 @@
 
                 const contentArea = columnEl.querySelector('.column-content');
                 if (columnProspects.length === 0) {
-                    contentArea.innerHTML = `<div class="text-center text-gray-400 dark:text-gray-500 p-4 text-xs flex-shrink-0 w-full">Nenhum card aqui</div>`;
+                    contentArea.innerHTML = `
+                        <div class="text-center text-gray-400 dark:text-gray-500 py-8 px-3 text-xs border border-dashed border-gray-200 dark:border-gray-800 rounded select-none">
+                            Nenhum card nesta etapa
+                        </div>
+                    `;
                 } else {
                     columnProspects
+                        .slice()
                         .sort((a, b) => {
-                            const getTime = (p) => {
-                                if (!p.createdAt) return 0;
-                                if (typeof p.createdAt.toMillis === 'function') return p.createdAt.toMillis();
-                                if (p.createdAt instanceof Date) return p.createdAt.getTime();
-                                return new Date(p.createdAt).getTime();
-                            };
-                            return getTime(b) - getTime(a);
+                            const dA = parseDateValue(a.createdAt);
+                            const dB = parseDateValue(b.createdAt);
+                            return (dB ? dB.getTime() : 0) - (dA ? dA.getTime() : 0);
                         })
                         .forEach(prospect => {
-                            contentArea.appendChild(createProspectCard(prospect));
+                            contentArea.appendChild(createProspectCard(prospect, isDark));
                         });
                 }
             });
             addDragAndDropHandlers();
         }
 
-        function getUnitColor(unidade) {
-            if (!unidade || !unidade.trim() || unidade.trim().toLowerCase() === 'sem unidade') {
-                return '#f59e0b'; // Amber (Sem Unidade)
-            }
-            const norm = unidade
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLowerCase()
-                .replace(/[-_]/g, ' ')
-                .trim();
+        function createProspectCard(prospect, isDark = document.documentElement.classList.contains('dark')) {
+            // 1. Etiqueta da unidade (ponto colorido + fundo suave + sigla da cidade · unidade)
+            const unitMeta = getUnitMetadata(prospect.unidade);
+            const badgeBg = isDark ? unitMeta.bgDark : unitMeta.bgLight;
+            const badgeText = isDark ? unitMeta.textDark : unitMeta.textLight;
 
-            if (norm.includes('santa monica')) return '#8b5cf6'; // Violeta
-            if (norm.includes('centro')) return '#3b82f6';       // Azul
-            if (norm.includes('coqueiros')) return '#06b6d4';    // Ciano
-            if (norm.includes('asa sul')) return '#10b981';      // Esmeralda
-            if (norm.includes('sudoeste')) return '#f97316';     // Laranja
-            if (norm.includes('noroeste')) return '#ec4899';     // Rosa/Magenta
-            if (norm.includes('lago sul')) return '#6366f1';     // Índigo
-            if (norm.includes('dourados')) return '#14b8a6';     // Teal
-            if (norm.includes('jardim botanico') || norm.includes('botanico')) return '#84cc16'; // Lima
-            if (norm.includes('pontos de ensino') || norm.includes('ensino')) return '#0ea5e9';  // Azul Celeste
+            // 2. Nome do cliente/aluno
+            const clientName = (prospect.responsavel || prospect.nome || prospect.empresa || 'Cliente sem nome').trim();
 
-            const fallbackPalette = ['#3b82f6', '#8b5cf6', '#10b981', '#f97316', '#ec4899', '#06b6d4', '#6366f1', '#14b8a6'];
-            return fallbackPalette[stringToColorIndex(norm, fallbackPalette.length)];
-        }
+            // 3. Origem do lead
+            const originText = (prospect.origemLead || '').trim() || 'Não informado';
+            const originIcon = getOriginIcon(originText);
 
-        function createProspectCard(prospect) {
-            const hasUnit = Boolean(prospect.unidade && prospect.unidade.trim() && prospect.unidade.trim().toLowerCase() !== 'sem unidade');
-            const unitLabel = hasUnit ? prospect.unidade.trim() : 'Sem Unidade';
-            const unitColor = getUnitColor(prospect.unidade);
+            // 4. Data de entrada (dd/mm/aa hh:mm em America/Sao_Paulo — histórica e neutra)
+            const entryFormatted = formatDateTimeSP(prospect.createdAt) || 'Não informado';
 
-            const ticketVal = Number(prospect.ticketEstimado) || getDefaultTicketByUnit(prospect.unidade);
-            const formattedTicket = ticketVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            // 5. Mensalidade (Cifrão verde #168654 + R$ 507,00 / mês ou "Não definido" em linha única)
+            const ticketVal = getTicketNumericValue(prospect);
+            const ticketDisplay = ticketVal !== null
+                ? `${formatBRL(ticketVal)} / mês`
+                : 'Não definido';
 
-            const card = document.createElement('div');
-            card.className = 'prospect-card bg-white dark:bg-gray-800 border-l-4 rounded shadow-sm dark:shadow p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-all border border-gray-100 dark:border-transparent relative';
-            card.style.borderLeftColor = unitColor;
+            // 6. Perfil (Littles, Kids, etc. ou "Não informado")
+            const perfilText = (prospect.setor || '').trim() || 'Não informado';
+
+            // 7. Agendamento (dd/mm/aa hh:mm em America/Sao_Paulo ou "Não agendado" + regra de vencido)
+            const scheduleInfo = getScheduleInfo(prospect);
+
+            // 8. Instrutor (nome ou "Não definido")
+            const rawInstName = (prospect.instrutor || prospect.instructor || '').trim();
+            const instInfo = rawInstName ? getInstructorInfo(rawInstName) : null;
+            const instrutorText = instInfo?.name || rawInstName || 'Não definido';
+
+            // 9. Responsável pelo lead (Foto ou iniciais + nome + "Você" + legenda "Responsável pelo lead")
+            const ownerInfo = getLeadOwnerInfo(prospect);
+
+            const card = document.createElement('article');
+            card.className = 'prospect-card cursor-pointer select-none';
             card.draggable = true;
+            card.tabIndex = 0;
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', `${clientName}, unidade ${unitMeta.cardLabel}, mensalidade ${ticketDisplay}`);
             card.dataset.id = prospect.id;
 
-            const tagsHTML = (prospect.tags || []).map(tag => `<span class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[10px] px-1.5 py-0.5 rounded">${tag}</span>`).join(' ');
+            const scheduleRowHTML = !scheduleInfo.hasSchedule
+                ? `
+                    <div class="crm-card-row crm-schedule-row" data-schedule-ts="0" data-schedule-status="${escapeHtml(scheduleInfo.status)}">
+                        <i class="far fa-calendar-check crm-card-icon" aria-hidden="true"></i>
+                        <span>Agendamento: Não agendado</span>
+                    </div>
+                `
+                : `
+                    <div class="crm-card-row crm-schedule-row ${scheduleInfo.isOverdue ? 'is-overdue' : ''}"
+                         data-schedule-ts="${scheduleInfo.timestamp}"
+                         data-schedule-status="${escapeHtml(scheduleInfo.status)}"
+                         data-schedule-formatted="${escapeHtml(scheduleInfo.formatted)}"
+                         ${scheduleInfo.isOverdue ? 'title="Agendamento vencido"' : ''}>
+                        <i class="far ${scheduleInfo.isOverdue ? 'fa-calendar-times' : 'fa-calendar-check'} crm-card-icon" aria-hidden="true"></i>
+                        <div class="flex flex-wrap items-center gap-1 min-w-0">
+                            <span>Agendamento: ${escapeHtml(scheduleInfo.formatted)}</span>
+                            ${scheduleInfo.isOverdue ? `
+                                <span class="crm-overdue-alert" role="status">
+                                    <i class="fas fa-exclamation-triangle text-[9.5px]" aria-hidden="true"></i>
+                                    <span>Agendamento vencido</span>
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
 
-            let dateTimeHTML = '';
-            if (prospect.createdAt) {
-                let dateObj = null;
-                if (typeof prospect.createdAt.toDate === 'function') {
-                    dateObj = prospect.createdAt.toDate();
-                } else if (typeof prospect.createdAt.toMillis === 'function') {
-                    dateObj = new Date(prospect.createdAt.toMillis());
-                } else {
-                    dateObj = new Date(prospect.createdAt);
-                }
-
-                if (dateObj && !isNaN(dateObj)) {
-                    const formattedDate = dateObj.toLocaleDateString('pt-BR');
-                    const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    dateTimeHTML = `<span class="inline-flex items-center gap-1 shrink-0"><i class="far fa-calendar-alt"></i> ${formattedDate} às ${formattedTime}</span>`;
-                }
-            }
-
-            const statusBadgesHTML = [
-                prospect.unread ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 animate-pulse uppercase">Novo</span>' : '',
-                (prospect.ctwaClid || prospect.metaAdId || (prospect.origemLead && prospect.origemLead.includes('Meta Ads'))) ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 inline-flex items-center gap-1"><i class="fab fa-facebook"></i> Meta</span>' : '',
-                prospect.capiSyncedAt ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 inline-flex items-center gap-1" title="CAPI Sincronizado"><i class="fas fa-check"></i> CAPI</span>' : ''
-            ].filter(Boolean).join('');
+            const ownerAvatarContent = (ownerInfo.hasOwner && ownerInfo.photoURL)
+                ? `<img src="${escapeHtml(ownerInfo.photoURL)}" alt="${escapeHtml(ownerInfo.name)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.textContent='${escapeHtml(ownerInfo.initials)}';">`
+                : `<span>${escapeHtml(ownerInfo.initials)}</span>`;
 
             card.innerHTML = `
-                ${statusBadgesHTML ? `<div class="flex items-center gap-1.5 flex-wrap mb-1.5">${statusBadgesHTML}</div>` : ''}
-                <div class="flex items-start justify-between gap-2 mb-2">
-                    <div class="min-w-0 flex-1">
-                        <div class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug" title="${escapeHtml(prospect.responsavel || 'Prospect sem nome')}">${escapeHtml(prospect.responsavel || 'Prospect sem nome')}</div>
-                        ${prospect.origemLead ? `<span class="inline-block mt-1 text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100/80 dark:bg-gray-700/40 px-1.5 py-0.5 rounded leading-none">${escapeHtml(prospect.origemLead)}</span>` : ''}
-                        <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-                            <i class="fas fa-money-bill-wave text-[10px] text-emerald-500/80"></i>
-                            <span>${formattedTicket}</span>
-                        </div>
-                    </div>
-                    <div class="group/ticket relative shrink-0">
-                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold border transition-colors ${ticketVal > 0 ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60' : 'bg-gray-50 dark:bg-gray-700/60 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:text-emerald-600 hover:border-emerald-300'}">
-                            $
+                <!-- BLOCO 1: Etiqueta da unidade, Nome, Origem, Entrada e Mensalidade -->
+                <div class="crm-card-section">
+                    <div class="flex items-center justify-between gap-1.5">
+                        <span class="crm-unit-badge" style="background-color: ${badgeBg}; color: ${badgeText};" title="Unidade: ${escapeHtml(unitMeta.cardLabel)}">
+                            <span class="crm-unit-dot" style="background-color: ${unitMeta.dotColor};" aria-hidden="true"></span>
+                            <span class="truncate">${escapeHtml(unitMeta.cardLabel)}</span>
                         </span>
-                        <div class="pointer-events-none opacity-0 group-hover/ticket:opacity-100 transition-opacity duration-150 absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-900 dark:bg-black text-white text-[10px] font-semibold whitespace-nowrap shadow-lg z-30">
-                            Ticket: ${formattedTicket}
-                        </div>
+                        ${prospect.unread ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-[2px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 uppercase shrink-0">Novo</span>' : ''}
+                    </div>
+
+                    <div class="crm-card-name">${escapeHtml(clientName)}</div>
+
+                    <div class="crm-card-row">
+                        <i class="${originIcon} crm-card-icon" aria-hidden="true"></i>
+                        <span class="break-words min-w-0">${escapeHtml(originText)}</span>
+                    </div>
+
+                    <div class="crm-card-row">
+                        <i class="far fa-calendar crm-card-icon" aria-hidden="true"></i>
+                        <span>Entrada: ${escapeHtml(entryFormatted)}</span>
+                    </div>
+
+                    <div class="crm-card-row items-center">
+                        <span class="crm-dollar-sign" aria-hidden="true">$</span>
+                        <span class="crm-ticket-value">${escapeHtml(ticketDisplay)}</span>
                     </div>
                 </div>
-                ${tagsHTML ? `<div class="flex flex-wrap gap-1 mb-2">${tagsHTML}</div>` : ''}
-                <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 space-y-1.5 text-[10px] text-gray-500 dark:text-gray-400">
-                    <div class="flex flex-wrap items-center justify-between gap-y-1 gap-x-2">
-                        ${dateTimeHTML || '<span></span>'}
-                        <span class="inline-flex items-center gap-1.5 font-semibold px-1.5 py-0.5 rounded-md truncate max-w-[145px]" style="background-color: ${unitColor}18; color: ${unitColor}; border: 1px solid ${unitColor}35;" title="Unidade: ${escapeHtml(unitLabel)}">
-                            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${unitColor};"></span>
-                            <span class="truncate">${escapeHtml(unitLabel)}</span>
-                        </span>
+
+                <hr class="crm-card-divider" aria-hidden="true">
+
+                <!-- BLOCO 2: Perfil, Agendamento e Instrutor -->
+                <div class="crm-card-section">
+                    <div class="crm-card-row">
+                        <i class="far fa-id-badge crm-card-icon" aria-hidden="true"></i>
+                        <span class="break-words min-w-0">Perfil: ${escapeHtml(perfilText)}</span>
                     </div>
-                    ${(() => {
-                        const rawInstName = prospect.instrutor || prospect.instructor;
-                        if (!rawInstName) return '';
-                        const instInfo = getInstructorInfo(rawInstName);
-                        const safeName = escapeHtml(instInfo?.name || rawInstName);
-                        const photoURL = instInfo?.photoURL;
-                        const avatarHTML = photoURL
-                            ? `<img src="${photoURL}" alt="${safeName}" class="w-4 h-4 rounded-full object-cover shrink-0 border border-yellow-500/50 shadow-xs" onerror="this.onerror=null; this.outerHTML='<i class=\\'fas fa-user-ninja text-yellow-500 text-[11px] shrink-0\\'></i>';">`
-                            : `<i class="fas fa-user-ninja text-yellow-500 text-[11px] shrink-0"></i>`;
-                        return `
-                        <div class="flex items-center gap-1.5 text-[10px] font-medium text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-750 px-2 py-1 rounded-md border border-gray-100 dark:border-gray-700/60">
-                            ${avatarHTML}
-                            <span class="text-gray-400 dark:text-gray-500 text-[9px] uppercase tracking-wider font-bold shrink-0">Instrutor:</span>
-                            <span class="font-bold text-gray-800 dark:text-gray-200 truncate" title="${safeName}">${safeName}</span>
+
+                    ${scheduleRowHTML}
+
+                    <div class="crm-card-row">
+                        <i class="far fa-user crm-card-icon" aria-hidden="true"></i>
+                        <span class="break-words min-w-0">Instrutor: ${escapeHtml(instrutorText)}</span>
+                    </div>
+                </div>
+
+                <hr class="crm-card-divider" aria-hidden="true">
+
+                <!-- BLOCO 3: Foto/Iniciais do responsável + Nome + "Você" + Legenda -->
+                <div class="crm-card-owner">
+                    <div class="crm-owner-avatar" aria-hidden="true">${ownerAvatarContent}</div>
+                    <div class="crm-owner-info">
+                        <div class="crm-owner-name-row">
+                            <span class="crm-owner-name">${escapeHtml(ownerInfo.name)}</span>
+                            ${ownerInfo.isCurrentUser ? '<span class="crm-owner-you-badge" title="Este lead está sob sua responsabilidade">Você</span>' : ''}
                         </div>
-                        `;
-                    })()}
+                        <span class="crm-owner-caption">Responsável pelo lead</span>
+                    </div>
                 </div>
             `;
 
             card.addEventListener('click', () => {
                 openFormModal(prospect);
             });
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openFormModal(prospect);
+                }
+            });
 
             return card;
         }
+
+        // Atualização automática de agendamentos vencidos sem exigir recarregamento (Seção 5)
+        function refreshOverdueSchedulesOnBoard() {
+            const now = Date.now();
+            document.querySelectorAll('.crm-schedule-row[data-schedule-ts]').forEach(row => {
+                const ts = Number(row.dataset.scheduleTs || 0);
+                if (!ts) return;
+                const status = row.dataset.scheduleStatus || 'Pendente';
+                const formatted = row.dataset.scheduleFormatted || '';
+                const isOverdueNow = status === 'Pendente' && ts < now;
+                const wasOverdue = row.classList.contains('is-overdue');
+                if (isOverdueNow !== wasOverdue) {
+                    row.classList.toggle('is-overdue', isOverdueNow);
+                    if (isOverdueNow) {
+                        row.setAttribute('title', 'Agendamento vencido');
+                    } else {
+                        row.removeAttribute('title');
+                    }
+                    row.innerHTML = `
+                        <i class="far ${isOverdueNow ? 'fa-calendar-times' : 'fa-calendar-check'} crm-card-icon" aria-hidden="true"></i>
+                        <div class="flex flex-wrap items-center gap-1 min-w-0">
+                            <span>Agendamento: ${escapeHtml(formatted)}</span>
+                            ${isOverdueNow ? `
+                                <span class="crm-overdue-alert" role="status">
+                                    <i class="fas fa-exclamation-triangle text-[9.5px]" aria-hidden="true"></i>
+                                    <span>Agendamento vencido</span>
+                                </span>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            });
+        }
+        setInterval(refreshOverdueSchedulesOnBoard, 30000);
 
         // --- DRAG & DROP ---
         function addDragAndDropHandlers() {
@@ -1704,69 +2567,581 @@
             }
         }
 
-        // --- FILTERS ---
+        // --- SEÇÃO 6: MOTOR DE FILTROS MÚLTIPLOS, ATALHOS E SELEÇÕES ATIVAS ---
+        const filterState = {
+            unidades: new Set(),
+            responsaveis: new Set(),
+            origens: new Set(),
+            perfis: new Set(),
+            instrutores: new Set(),
+            prioridades: new Set(),
+            tags: new Set()
+        };
+
+        const FILTER_CONFIG = {
+            unidades:     { defaultLabel: 'Unidades',     singular: 'unidade selecionada',     plural: 'unidades selecionadas',     chipPrefix: 'Unidade' },
+            responsaveis: { defaultLabel: 'Responsáveis', singular: 'responsável selecionado', plural: 'responsáveis selecionados', chipPrefix: 'Responsável' },
+            origens:      { defaultLabel: 'Origens',      singular: 'origem selecionada',      plural: 'origens selecionadas',      chipPrefix: 'Origem' },
+            perfis:       { defaultLabel: 'Perfis',       singular: 'perfil selecionado',      plural: 'perfis selecionados',       chipPrefix: 'Perfil' },
+            instrutores:  { defaultLabel: 'Instrutores',  singular: 'instrutor selecionado',   plural: 'instrutores selecionados',  chipPrefix: 'Instrutor' },
+            prioridades:  { defaultLabel: 'Prioridades',  singular: 'prioridade selecionada',  plural: 'prioridades selecionadas',  chipPrefix: 'Prioridade' },
+            tags:         { defaultLabel: 'Tags',         singular: 'tag selecionada',         plural: 'tags selecionadas',         chipPrefix: 'Tag' }
+        };
+
+        function getCurrentUserOwnerFilterKey() {
+            const me = currentConnectedUser || refreshConnectedUserFromStorage();
+            return (me && me.name) ? me.name : '__VOCE__';
+        }
+
+        function rebuildDynamicFilterMenus() {
+            // 1. Unidades agrupadas por cidade (Brasília, Florianópolis, Dourados, Sem unidade)
+            const unitContainer = document.getElementById('filterOptions-unidades');
+            if (unitContainer) {
+                let html = '';
+                CITY_GROUPS.forEach(group => {
+                    html += `
+                        <div class="pb-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                            <div class="flex items-center justify-between px-1 mb-1">
+                                <span class="text-[11px] font-bold text-gray-700 dark:text-gray-300">${escapeHtml(group.city)}</span>
+                                <button type="button" data-select-city="${escapeHtml(group.city)}" class="text-[10.5px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                                    Selecionar cidade
+                                </button>
+                            </div>
+                            <div class="space-y-0.5">
+                                ${group.units.map(u => {
+                                    const checked = filterState.unidades.has(u.key) ? 'checked' : '';
+                                    return `
+                                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                                            <input type="checkbox" data-filter-checkbox="unidades" value="${escapeHtml(u.key)}" ${checked}
+                                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                                            <span class="crm-unit-dot" style="background-color: ${u.dotColor};"></span>
+                                            <span class="text-xs text-gray-800 dark:text-gray-200">${escapeHtml(u.key)}</span>
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                // Grupo Sem unidade
+                const noUnitChecked = filterState.unidades.has('__SEM_UNIDADE__') ? 'checked' : '';
+                html += `
+                    <div class="pt-0.5">
+                        <div class="px-1 mb-1">
+                            <span class="text-[11px] font-bold text-gray-700 dark:text-gray-300">Sem unidade</span>
+                        </div>
+                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                            <input type="checkbox" data-filter-checkbox="unidades" value="__SEM_UNIDADE__" ${noUnitChecked}
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                            <span class="crm-unit-dot" style="background-color: ${NO_UNIT_DEFINITION.dotColor};"></span>
+                            <span class="text-xs text-gray-800 dark:text-gray-200">Sem unidade</span>
+                        </label>
+                    </div>
+                `;
+                unitContainer.innerHTML = html;
+            }
+
+            // 2. Responsáveis pelo lead
+            const respContainer = document.getElementById('filterOptions-responsaveis');
+            if (respContainer) {
+                const meKey = getCurrentUserOwnerFilterKey();
+                const ownersSet = new Map();
+                if (meKey && meKey !== '__VOCE__') {
+                    ownersSet.set(normalizeKey(meKey), { value: meKey, label: `${meKey} (Você)`, isMe: true });
+                }
+                staffUsersList.forEach(u => {
+                    const nKey = normalizeKey(u.name);
+                    if (!ownersSet.has(nKey)) {
+                        const isMe = isUserMatchingConnected(u);
+                        ownersSet.set(nKey, { value: u.name, label: isMe ? `${u.name} (Você)` : u.name, isMe });
+                    }
+                });
+                combinedData.forEach(p => {
+                    const info = getLeadOwnerInfo(p);
+                    if (info.hasOwner) {
+                        const nKey = normalizeKey(info.name);
+                        if (!ownersSet.has(nKey)) {
+                            ownersSet.set(nKey, { value: info.name, label: info.isCurrentUser ? `${info.name} (Você)` : info.name, isMe: info.isCurrentUser });
+                        }
+                    }
+                });
+
+                const sortedOwners = Array.from(ownersSet.values()).sort((a, b) => {
+                    if (a.isMe && !b.isMe) return -1;
+                    if (!a.isMe && b.isMe) return 1;
+                    return a.label.localeCompare(b.label, 'pt-BR');
+                });
+
+                const options = [
+                    { value: '__SEM_RESPONSAVEL__', label: 'Sem responsável' },
+                    ...sortedOwners
+                ];
+
+                respContainer.innerHTML = options.map(opt => {
+                    const checked = filterState.responsaveis.has(opt.value) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                            <input type="checkbox" data-filter-checkbox="responsaveis" value="${escapeHtml(opt.value)}" ${checked}
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                            <span class="text-xs text-gray-800 dark:text-gray-200 truncate">${escapeHtml(opt.label)}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            // 3. Origens do lead
+            const origensContainer = document.getElementById('filterOptions-origens');
+            if (origensContainer) {
+                const defaultOrigins = ['Site', 'Chatbot Miles', 'WhatsApp Web', 'WhatsApp Inbound', 'Meta Ads', 'Meta Ads WhatsApp', 'Meta Lead Ads (Formulário Nativo)', 'Instagram', 'Google', 'Indicação'];
+                const originMap = new Map();
+                defaultOrigins.forEach(o => originMap.set(normalizeKey(o), o));
+                combinedData.forEach(p => {
+                    const o = (p.origemLead || '').trim();
+                    if (o && !originMap.has(normalizeKey(o))) {
+                        originMap.set(normalizeKey(o), o);
+                    }
+                });
+                const sortedOrigins = Array.from(originMap.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                const originOptions = [
+                    ...sortedOrigins.map(o => ({ value: o, label: o })),
+                    { value: '__SEM_ORIGEM__', label: 'Não informado' }
+                ];
+                origensContainer.innerHTML = originOptions.map(opt => {
+                    const checked = filterState.origens.has(opt.value) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                            <input type="checkbox" data-filter-checkbox="origens" value="${escapeHtml(opt.value)}" ${checked}
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                            <span class="text-xs text-gray-800 dark:text-gray-200 truncate">${escapeHtml(opt.label)}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            // 4. Perfis
+            const perfisContainer = document.getElementById('filterOptions-perfis');
+            if (perfisContainer) {
+                const defaultPerfis = ['Littles', 'Kids', 'Youth', 'Adults', 'Marcial', 'Defesa Pessoal'];
+                const perfilMap = new Map();
+                defaultPerfis.forEach(pf => perfilMap.set(normalizeKey(pf), pf));
+                combinedData.forEach(p => {
+                    const pf = (p.setor || '').trim();
+                    if (pf && !perfilMap.has(normalizeKey(pf))) {
+                        perfilMap.set(normalizeKey(pf), pf);
+                    }
+                });
+                const sortedPerfis = Array.from(perfilMap.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                const perfilOptions = [
+                    ...sortedPerfis.map(pf => ({ value: pf, label: pf })),
+                    { value: '__SEM_PERFIL__', label: 'Não informado' }
+                ];
+                perfisContainer.innerHTML = perfilOptions.map(opt => {
+                    const checked = filterState.perfis.has(opt.value) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                            <input type="checkbox" data-filter-checkbox="perfis" value="${escapeHtml(opt.value)}" ${checked}
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                            <span class="text-xs text-gray-800 dark:text-gray-200 truncate">${escapeHtml(opt.label)}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            // 5. Instrutores
+            const instContainer = document.getElementById('filterOptions-instrutores');
+            if (instContainer) {
+                const instMap = new Map();
+                instructorsMap.forEach(inst => {
+                    if (inst.name) instMap.set(normalizeKey(inst.name), inst.name);
+                });
+                combinedData.forEach(p => {
+                    const raw = (p.instrutor || p.instructor || '').trim();
+                    if (raw && !instMap.has(normalizeKey(raw))) {
+                        instMap.set(normalizeKey(raw), raw);
+                    }
+                });
+                const sortedInst = Array.from(instMap.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                const instOptions = [
+                    ...sortedInst.map(i => ({ value: i, label: i })),
+                    { value: '__SEM_INSTRUTOR__', label: 'Não definido' }
+                ];
+                instContainer.innerHTML = instOptions.map(opt => {
+                    const checked = filterState.instrutores.has(opt.value) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                            <input type="checkbox" data-filter-checkbox="instrutores" value="${escapeHtml(opt.value)}" ${checked}
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                            <span class="text-xs text-gray-800 dark:text-gray-200 truncate">${escapeHtml(opt.label)}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            // 6. Prioridades
+            const prioContainer = document.getElementById('filterOptions-prioridades');
+            if (prioContainer) {
+                const prioOptions = [
+                    { value: '5', label: '5 - Máxima' },
+                    { value: '4', label: '4 - Alta' },
+                    { value: '3', label: '3 - Média' },
+                    { value: '2', label: '2 - Baixa' },
+                    { value: '1', label: '1 - Mínima' }
+                ];
+                prioContainer.innerHTML = prioOptions.map(opt => {
+                    const checked = filterState.prioridades.has(opt.value) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                            <input type="checkbox" data-filter-checkbox="prioridades" value="${escapeHtml(opt.value)}" ${checked}
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                            <span class="text-xs text-gray-800 dark:text-gray-200">${escapeHtml(opt.label)}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+
+            // 7. Tags
+            const tagsContainer = document.getElementById('filterOptions-tags');
+            if (tagsContainer) {
+                const tagSet = new Map();
+                TAGS.forEach(t => tagSet.set(t, t));
+                combinedData.forEach(p => {
+                    (p.tags || []).forEach(t => {
+                        if (t && !tagSet.has(t)) tagSet.set(t, t);
+                    });
+                });
+                const tagOptions = [
+                    { value: 'Novo', label: 'Novo (Não lido)' },
+                    ...Array.from(tagSet.values()).map(t => ({ value: t, label: t }))
+                ];
+                tagsContainer.innerHTML = tagOptions.map(opt => {
+                    const checked = filterState.tags.has(opt.value) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-2 px-1.5 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer select-none">
+                            <input type="checkbox" data-filter-checkbox="tags" value="${escapeHtml(opt.value)}" ${checked}
+                                class="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                            <span class="text-xs text-gray-800 dark:text-gray-200 truncate">${escapeHtml(opt.label)}</span>
+                        </label>
+                    `;
+                }).join('');
+            }
+        }
+
+        function updateFilterButtonsAndShortcutsUI() {
+            // Atualiza o rótulo de cada botão de filtro múltiplo (ex: "2 unidades selecionadas")
+            Object.keys(FILTER_CONFIG).forEach(key => {
+                const cfg = FILTER_CONFIG[key];
+                const count = filterState[key].size;
+                const btn = document.getElementById(`filterBtn-${key}`);
+                if (!btn) return;
+                const labelEl = btn.querySelector('.crm-filter-label');
+                if (count === 0) {
+                    if (labelEl) labelEl.textContent = cfg.defaultLabel;
+                    btn.classList.remove('has-selection');
+                } else {
+                    if (labelEl) labelEl.textContent = `${count} ${count === 1 ? cfg.singular : cfg.plural}`;
+                    btn.classList.add('has-selection');
+                }
+            });
+
+            // Sincroniza os 3 atalhos de responsável com filterState.responsaveis
+            const respSet = filterState.responsaveis;
+            const meKey = getCurrentUserOwnerFilterKey();
+            const isAll = respSet.size === 0;
+            const isUnassigned = respSet.size === 1 && respSet.has('__SEM_RESPONSAVEL__');
+            const isMine = respSet.size === 1 && (respSet.has(meKey) || Array.from(respSet).some(v => isUserMatchingConnected({ name: v })));
+
+            const shortcuts = [
+                { id: 'shortcutAllLeads', active: isAll },
+                { id: 'shortcutMyLeads', active: isMine },
+                { id: 'shortcutUnassignedLeads', active: isUnassigned }
+            ];
+            shortcuts.forEach(s => {
+                const el = document.getElementById(s.id);
+                if (!el) return;
+                el.setAttribute('aria-pressed', s.active ? 'true' : 'false');
+                if (s.active) {
+                    el.className = 'crm-shortcut-btn px-2.5 py-1 rounded-[3px] text-xs font-semibold transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs';
+                } else {
+                    el.className = 'crm-shortcut-btn px-2.5 py-1 rounded-[3px] text-xs font-medium transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white';
+                }
+            });
+        }
+
+        function formatChipDisplayValue(filterKey, val) {
+            if (filterKey === 'unidades') {
+                return val === '__SEM_UNIDADE__' ? 'Sem unidade' : getUnitMetadata(val).cardLabel;
+            }
+            if (filterKey === 'responsaveis') {
+                if (val === '__SEM_RESPONSAVEL__') return 'Sem responsável';
+                if (isUserMatchingConnected({ name: val })) return `${val} (Você)`;
+                return val;
+            }
+            if (filterKey === 'origens' && val === '__SEM_ORIGEM__') return 'Não informado';
+            if (filterKey === 'perfis' && val === '__SEM_PERFIL__') return 'Não informado';
+            if (filterKey === 'instrutores' && val === '__SEM_INSTRUTOR__') return 'Não definido';
+            if (filterKey === 'prioridades') {
+                const prioMap = { '5': '5 - Máxima', '4': '4 - Alta', '3': '3 - Média', '2': '2 - Baixa', '1': '1 - Mínima' };
+                return prioMap[val] || val;
+            }
+            return val;
+        }
+
+        function renderActiveSelectionsChips() {
+            const row = document.getElementById('activeFiltersRow');
+            const chipsContainer = document.getElementById('activeFiltersChips');
+            const resetBtn = document.getElementById('resetFiltersBtn');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            const clearDateBtn = document.getElementById('clearDateFilterBtn');
+
+            const searchVal = (document.getElementById('searchInput')?.value || '').trim();
+            const startDateVal = document.getElementById('startDateFilter')?.value || '';
+            const endDateVal = document.getElementById('endDateFilter')?.value || '';
+            const dateRefVal = document.getElementById('dateReferenceFilter')?.value || 'entrada';
+
+            if (clearSearchBtn) clearSearchBtn.classList.toggle('hidden', !searchVal);
+            if (clearDateBtn) clearDateBtn.classList.toggle('hidden', !startDateVal && !endDateVal);
+
+            const chips = [];
+
+            if (searchVal) {
+                chips.push({
+                    type: 'search',
+                    label: `Busca: "${searchVal}"`
+                });
+            }
+
+            Object.keys(FILTER_CONFIG).forEach(filterKey => {
+                const prefix = FILTER_CONFIG[filterKey].chipPrefix;
+                filterState[filterKey].forEach(val => {
+                    const dotColor = filterKey === 'unidades' ? getUnitMetadata(val).dotColor : null;
+                    chips.push({
+                        type: 'multi',
+                        filterKey,
+                        value: val,
+                        dotColor,
+                        label: `${prefix}: ${formatChipDisplayValue(filterKey, val)}`
+                    });
+                });
+            });
+
+            if (startDateVal || endDateVal) {
+                const refLabel = dateRefVal === 'agendamento' ? 'Agendamento' : 'Entrada';
+                const fmtDate = (iso) => {
+                    const [y, m, d] = iso.split('-');
+                    return (y && m && d) ? `${d}/${m}/${y.slice(-2)}` : iso;
+                };
+                const rangeText = startDateVal && endDateVal
+                    ? `${fmtDate(startDateVal)} a ${fmtDate(endDateVal)}`
+                    : (startDateVal ? `a partir de ${fmtDate(startDateVal)}` : `até ${fmtDate(endDateVal)}`);
+                chips.push({
+                    type: 'date',
+                    label: `${refLabel}: ${rangeText}`
+                });
+            }
+
+            const hasAnyFilter = chips.length > 0;
+            if (resetBtn) {
+                resetBtn.disabled = !hasAnyFilter;
+            }
+
+            if (!row || !chipsContainer) return;
+            if (!hasAnyFilter) {
+                row.classList.add('hidden');
+                row.classList.remove('flex');
+                chipsContainer.innerHTML = '';
+                return;
+            }
+
+            row.classList.remove('hidden');
+            row.classList.add('flex');
+
+            chipsContainer.innerHTML = chips.map((chip, idx) => `
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-[3px] text-[11px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+                    ${chip.dotColor ? `<span class="crm-unit-dot" style="background-color: ${chip.dotColor};"></span>` : ''}
+                    <span>${escapeHtml(chip.label)}</span>
+                    <button type="button"
+                        class="crm-active-chip-remove text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 ml-0.5 px-0.5 rounded cursor-pointer"
+                        data-chip-index="${idx}"
+                        data-chip-type="${chip.type}"
+                        data-chip-key="${escapeHtml(chip.filterKey || '')}"
+                        data-chip-val="${escapeHtml(chip.value || '')}"
+                        aria-label="Remover filtro ${escapeHtml(chip.label)}">
+                        &times;
+                    </button>
+                </span>
+            `).join('');
+        }
+
         function applyFilters() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const priority = document.getElementById('priorityFilter').value;
-            const tag = document.getElementById('tagFilter').value;
-            const unidade = document.getElementById('unidadeFilter').value;
-            const origin = document.getElementById('originFilter').value;
-            const startDateVal = document.getElementById('startDateFilter').value;
-            const endDateVal = document.getElementById('endDateFilter').value;
+            const search = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+            const startDateVal = document.getElementById('startDateFilter')?.value || '';
+            const endDateVal = document.getElementById('endDateFilter')?.value || '';
+            const dateRef = document.getElementById('dateReferenceFilter')?.value || 'entrada';
             const prospectingStatuses = Object.keys(COLUMNS);
 
+            // Impedir intervalo com início posterior ao fim
+            if (startDateVal && endDateVal && startDateVal > endDateVal) {
+                if (typeof showToast === 'function') {
+                    showToast('A data inicial não pode ser posterior à data final.', 'warning');
+                }
+                return;
+            }
+
+            // Dia inicial (00:00:00.000) e final (23:59:59.999) completos em America/Sao_Paulo (-03:00)
+            const startBoundary = startDateVal ? new Date(`${startDateVal}T00:00:00.000-03:00`) : null;
+            const endBoundary = endDateVal ? new Date(`${endDateVal}T23:59:59.999-03:00`) : null;
+
+            const me = currentConnectedUser || refreshConnectedUserFromStorage();
+            const hasUnitPermissionRestriction = Boolean(
+                me && !me.isAdmin && Array.isArray(me.allowedUnits) && me.allowedUnits.length > 0
+            );
+            const allowedUnitKeys = hasUnitPermissionRestriction
+                ? new Set(me.allowedUnits.map(u => getUnitMetadata(u).key))
+                : null;
+
             filteredProspects = combinedData.filter(p => {
-                const isProspecting = prospectingStatuses.includes(p.status);
-                if (!isProspecting) return false;
+                if (!prospectingStatuses.includes(p.status)) return false;
 
-                const searchableName = p.responsavel || p.empresa || '';
-                const matchSearch = !search || searchableName.toLowerCase().includes(search) || (p.setor && p.setor.toLowerCase().includes(search));
-                const matchPriority = !priority || p.prioridade.toString() === priority;
-
-                let matchTag = true;
-                if (tag === 'Novo') {
-                    matchTag = p.unread === true;
-                } else if (tag) {
-                    matchTag = p.tags && p.tags.includes(tag);
+                // Respeitar as permissões de acesso do usuário por unidade (quando aplicável)
+                const unitMeta = getUnitMetadata(p.unidade);
+                if (allowedUnitKeys && !allowedUnitKeys.has(unitMeta.key) && unitMeta.key !== '__SEM_UNIDADE__') {
+                    return false;
                 }
 
-                let matchUnidade = true;
-                if (unidade === '__SEM_UNIDADE__') {
-                    matchUnidade = !p.unidade || p.unidade.trim() === '';
-                } else if (unidade) {
-                    matchUnidade = p.unidade === unidade;
-                }
-
-                // Match Lead Origin
-                let matchOrigin = true;
-                if (origin) {
-                    const siteOrigins = ['Site', 'Formulário', 'Academy', 'Curso Mente Faixa Preta', 'Site - Trabalhe Conosco'];
-                    if (origin === 'miles') {
-                        matchOrigin = p.origemLead === 'Chatbot Miles';
-                    } else if (origin === 'site') {
-                        matchOrigin = siteOrigins.includes(p.origemLead);
-                    } else if (origin === 'outros') {
-                        matchOrigin = p.origemLead !== 'Chatbot Miles' && !siteOrigins.includes(p.origemLead);
+                // 1. Busca por nome do cliente/aluno
+                if (search) {
+                    const clientName = (p.responsavel || p.nome || p.empresa || '').toLowerCase();
+                    const phoneStr = (p.telefone || '').toLowerCase();
+                    if (!clientName.includes(search) && !phoneStr.includes(search)) {
+                        return false;
                     }
                 }
 
-                // Match Date Range
-                let matchDate = true;
-                const createdDate = p.createdAt ? (p.createdAt.toDate ? p.createdAt.toDate() : new Date(p.createdAt)) : null;
-                if (startDateVal) {
-                    const startDate = new Date(startDateVal);
-                    startDate.setHours(0, 0, 0, 0);
-                    if (!createdDate || createdDate < startDate) matchDate = false;
-                }
-                if (endDateVal) {
-                    const endDate = new Date(endDateVal);
-                    endDate.setHours(23, 59, 59, 999);
-                    if (!createdDate || createdDate > endDate) matchDate = false;
+                // 2. Filtro Unidades (OU dentro do mesmo filtro)
+                if (filterState.unidades.size > 0) {
+                    if (!filterState.unidades.has(unitMeta.key)) return false;
                 }
 
-                return matchSearch && matchPriority && matchTag && matchUnidade && matchOrigin && matchDate;
+                // 3. Filtro Responsáveis pelo lead (OU dentro do mesmo filtro)
+                if (filterState.responsaveis.size > 0) {
+                    const ownerInfo = getLeadOwnerInfo(p);
+                    let matchedOwner = false;
+                    if (!ownerInfo.hasOwner) {
+                        matchedOwner = filterState.responsaveis.has('__SEM_RESPONSAVEL__');
+                    } else {
+                        for (const selectedResp of filterState.responsaveis) {
+                            if (selectedResp === '__SEM_RESPONSAVEL__') continue;
+                            if (normalizeKey(selectedResp) === normalizeKey(ownerInfo.name)) {
+                                matchedOwner = true;
+                                break;
+                            }
+                            if (ownerInfo.isCurrentUser && isUserMatchingConnected({ name: selectedResp })) {
+                                matchedOwner = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!matchedOwner) return false;
+                }
+
+                // 4. Filtro Origens do lead (OU dentro do mesmo filtro)
+                if (filterState.origens.size > 0) {
+                    const rawOrigin = (p.origemLead || '').trim();
+                    if (!rawOrigin) {
+                        if (!filterState.origens.has('__SEM_ORIGEM__')) return false;
+                    } else {
+                        const matched = Array.from(filterState.origens).some(o => normalizeKey(o) === normalizeKey(rawOrigin));
+                        if (!matched) return false;
+                    }
+                }
+
+                // 5. Filtro Perfis (OU dentro do mesmo filtro)
+                if (filterState.perfis.size > 0) {
+                    const rawPerfil = (p.setor || '').trim();
+                    if (!rawPerfil) {
+                        if (!filterState.perfis.has('__SEM_PERFIL__')) return false;
+                    } else {
+                        const matched = Array.from(filterState.perfis).some(pf => normalizeKey(pf) === normalizeKey(rawPerfil));
+                        if (!matched) return false;
+                    }
+                }
+
+                // 6. Filtro Instrutores (OU dentro do mesmo filtro)
+                if (filterState.instrutores.size > 0) {
+                    const rawInst = (p.instrutor || p.instructor || '').trim();
+                    if (!rawInst) {
+                        if (!filterState.instrutores.has('__SEM_INSTRUTOR__')) return false;
+                    } else {
+                        const matched = Array.from(filterState.instrutores).some(inst => normalizeKey(inst) === normalizeKey(rawInst));
+                        if (!matched) return false;
+                    }
+                }
+
+                // 7. Filtro Prioridades (OU dentro do mesmo filtro)
+                if (filterState.prioridades.size > 0) {
+                    const prioStr = String(p.prioridade || 3);
+                    if (!filterState.prioridades.has(prioStr)) return false;
+                }
+
+                // 8. Filtro Tags (OU dentro do mesmo filtro)
+                if (filterState.tags.size > 0) {
+                    const pTags = Array.isArray(p.tags) ? p.tags : [];
+                    let matchedTag = false;
+                    for (const t of filterState.tags) {
+                        if (t === 'Novo' && p.unread === true) {
+                            matchedTag = true;
+                            break;
+                        }
+                        if (pTags.includes(t)) {
+                            matchedTag = true;
+                            break;
+                        }
+                    }
+                    if (!matchedTag) return false;
+                }
+
+                // 9. Período de referência (Entrada do lead ou Agendamento) + Data inicial e final
+                if (startBoundary || endBoundary) {
+                    const targetDate = dateRef === 'agendamento'
+                        ? getScheduleInfo(p).dateObj
+                        : parseDateValue(p.createdAt);
+
+                    if (!targetDate) return false;
+                    if (startBoundary && targetDate.getTime() < startBoundary.getTime()) return false;
+                    if (endBoundary && targetDate.getTime() > endBoundary.getTime()) return false;
+                }
+
+                return true;
             });
+
+            // Atualiza contador total de resultados
+            const resultsCountEl = document.getElementById('crmResultsCount');
+            if (resultsCountEl) {
+                const total = filteredProspects.length;
+                resultsCountEl.textContent = `${total} ${total === 1 ? 'resultado' : 'resultados'}`;
+            }
+
+            updateFilterButtonsAndShortcutsUI();
+            renderActiveSelectionsChips();
             renderBoard();
+        }
+
+        function clearAllFilters() {
+            const searchInput = document.getElementById('searchInput');
+            const startDateInput = document.getElementById('startDateFilter');
+            const endDateInput = document.getElementById('endDateFilter');
+            if (searchInput) searchInput.value = '';
+            if (startDateInput) {
+                startDateInput.value = '';
+                startDateInput.removeAttribute('max');
+            }
+            if (endDateInput) {
+                endDateInput.value = '';
+                endDateInput.removeAttribute('min');
+            }
+            Object.keys(filterState).forEach(k => filterState[k].clear());
+            document.querySelectorAll('[data-filter-checkbox]').forEach(cb => { cb.checked = false; });
+            applyFilters();
         }
 
         // --- MODAL HANDLING & CACHING ---
@@ -1820,8 +3195,13 @@
                 setor: document.getElementById('setor'),
                 prioridade: document.getElementById('prioridade'),
                 ticketEstimado: document.getElementById('ticketEstimado'),
+                suggestTicketBtn: document.getElementById('suggestTicketBtn'),
                 origemLead: document.getElementById('origemLead'),
+                agendamentoDataHora: document.getElementById('agendamentoDataHora'),
+                agendamentoStatus: document.getElementById('agendamentoStatus'),
                 instrutor: document.getElementById('instrutor'),
+                responsavelLead: document.getElementById('responsavelLead'),
+                assignToMeBtn: document.getElementById('assignToMeBtn'),
                 dataChegada: document.getElementById('dataChegada'),
                 responsavel: document.getElementById('responsavel'),
                 email: document.getElementById('email'),
@@ -1842,6 +3222,21 @@
             setupModalStaticBindings();
         }
 
+        function updateLeadOwnerModalPreview(ownerName) {
+            const preview = document.getElementById('responsavelLeadAvatarPreview');
+            if (!preview) return;
+            if (!ownerName || !ownerName.trim()) {
+                preview.innerHTML = '--';
+                return;
+            }
+            const info = getLeadOwnerInfo({ responsavelLead: ownerName });
+            if (info.photoURL) {
+                preview.innerHTML = `<img src="${escapeHtml(info.photoURL)}" alt="${escapeHtml(info.name)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.textContent='${escapeHtml(info.initials)}';">`;
+            } else {
+                preview.textContent = info.initials;
+            }
+        }
+
         function setupModalStaticBindings() {
             if (modalBindingsDone || !modalElements) return;
             modalBindingsDone = true;
@@ -1852,15 +3247,39 @@
             if (modalElements.telefone) {
                 modalElements.telefone.addEventListener('input', updateWhatsAppLink);
             }
-            if (modalElements.unidade && modalElements.ticketEstimado) {
-                modalElements.unidade.addEventListener('change', () => {
-                    const currentVal = parseInt(modalElements.ticketEstimado.value, 10) || 0;
-                    if (!currentVal || currentVal === 507 || currentVal === 677) {
-                        const defTicket = getDefaultTicketByUnit(modalElements.unidade.value);
-                        if (defTicket > 0) {
-                            modalElements.ticketEstimado.value = defTicket;
-                        }
+            if (modalElements.suggestTicketBtn && modalElements.ticketEstimado && modalElements.unidade) {
+                modalElements.suggestTicketBtn.addEventListener('click', () => {
+                    if (modalElements.ticketEstimado.disabled) return;
+                    const suggested = getDefaultTicketByUnit(modalElements.unidade.value);
+                    if (suggested > 0) {
+                        modalElements.ticketEstimado.value = suggested;
+                    } else if (typeof showToast === 'function') {
+                        showToast('Selecione uma unidade para sugerir o valor padrão.', 'info');
                     }
+                });
+            }
+            if (modalElements.responsavelLead) {
+                modalElements.responsavelLead.addEventListener('change', (e) => {
+                    updateLeadOwnerModalPreview(e.target.value);
+                });
+            }
+            if (modalElements.assignToMeBtn && modalElements.responsavelLead) {
+                modalElements.assignToMeBtn.addEventListener('click', () => {
+                    if (modalElements.responsavelLead.disabled) return;
+                    const me = currentConnectedUser || refreshConnectedUserFromStorage();
+                    if (!me || !me.name) return;
+                    // Garante que o usuário atual existe nas opções do select
+                    const existingOpt = Array.from(modalElements.responsavelLead.options).find(o => normalizeKey(o.value) === normalizeKey(me.name));
+                    if (existingOpt) {
+                        modalElements.responsavelLead.value = existingOpt.value;
+                    } else {
+                        const opt = document.createElement('option');
+                        opt.value = me.name;
+                        opt.textContent = `${me.name} (Você)`;
+                        modalElements.responsavelLead.appendChild(opt);
+                        modalElements.responsavelLead.value = me.name;
+                    }
+                    updateLeadOwnerModalPreview(modalElements.responsavelLead.value);
                 });
             }
             if (modalElements.whatsappLink) {
@@ -3058,6 +4477,17 @@
             });
         }
 
+        function ensureSelectOption(selectEl, value, label = value) {
+            if (!selectEl || !value) return;
+            const exists = Array.from(selectEl.options).some(opt => opt.value === value);
+            if (!exists) {
+                const opt = document.createElement('option');
+                opt.value = value;
+                opt.textContent = label;
+                selectEl.appendChild(opt);
+            }
+        }
+
         function openFormModal(prospect = null) {
             isModalOpen = true;
             if (!modalElements) initModalElements();
@@ -3101,7 +4531,7 @@
             if (prospect) {
                 modalElements.prospectType.value = prospect.type || 'prospect';
                 modalElements.modalActionButtons.classList.remove('hidden');
-                modalElements.modalTitle.textContent = 'Detalhes do Prospect';
+                modalElements.modalTitle.textContent = 'Detalhes do Lead / Aluno';
                 modalElements.prospectId.value = prospect.id;
 
                 if (prospect.createdBy) {
@@ -3111,36 +4541,63 @@
                     modalElements.createdByContainer.classList.add('hidden');
                 }
 
-                modalElements.unidade.value = prospect.unidade || '';
-                modalElements.setor.value = prospect.setor || '';
-                modalElements.prioridade.value = prospect.prioridade || '';
-                modalElements.ticketEstimado.value = prospect.ticketEstimado || getDefaultTicketByUnit(prospect.unidade) || '';
-                modalElements.origemLead.value = prospect.origemLead || '';
+                // Unidade (usa chave canônica ou vazia para "Sem unidade")
+                const unitMeta = getUnitMetadata(prospect.unidade);
+                const unitVal = unitMeta.key === '__SEM_UNIDADE__' ? '' : unitMeta.key;
+                if (unitVal) ensureSelectOption(modalElements.unidade, unitVal, unitMeta.cardLabel);
+                modalElements.unidade.value = unitVal;
+
+                // Perfil (setor)
+                const perfilVal = (prospect.setor || '').trim();
+                if (perfilVal) ensureSelectOption(modalElements.setor, perfilVal, perfilVal);
+                modalElements.setor.value = perfilVal;
+
+                // Prioridade
+                modalElements.prioridade.value = String(prospect.prioridade || '3');
+
+                // Mensalidade (preserva 0 como "0" e ausente como "")
+                const ticketVal = getTicketNumericValue(prospect);
+                modalElements.ticketEstimado.value = ticketVal !== null ? String(ticketVal) : '';
+
+                // Origem do Lead
+                const origemVal = (prospect.origemLead || '').trim();
+                if (origemVal) ensureSelectOption(modalElements.origemLead, origemVal, origemVal);
+                modalElements.origemLead.value = origemVal;
+
+                // Agendamento (Data/Hora em America/Sao_Paulo + Status do Agendamento)
+                if (modalElements.agendamentoDataHora) {
+                    modalElements.agendamentoDataHora.value = formatDateTimeLocalInputSP(
+                        prospect.agendamentoDataHora || prospect.agendamento || prospect.dataAgendamento || null
+                    );
+                }
+                if (modalElements.agendamentoStatus) {
+                    modalElements.agendamentoStatus.value = normalizeScheduleStatus(prospect.agendamentoStatus || 'Pendente');
+                }
+
+                // Instrutor (separado de Responsável pelo lead)
+                const instVal = (prospect.instrutor || prospect.instructor || '').trim();
                 if (modalElements.instrutor) {
-                    modalElements.instrutor.value = prospect.instrutor || prospect.instructor || '';
+                    if (instVal) ensureSelectOption(modalElements.instrutor, instVal, instVal);
+                    modalElements.instrutor.value = instVal;
                 }
 
-                let dateTimeStr = '';
-                if (prospect.createdAt) {
-                    let dateObj = null;
-                    if (typeof prospect.createdAt.toDate === 'function') {
-                        dateObj = prospect.createdAt.toDate();
-                    } else if (typeof prospect.createdAt.toMillis === 'function') {
-                        dateObj = new Date(prospect.createdAt.toMillis());
-                    } else {
-                        dateObj = new Date(prospect.createdAt);
+                // Responsável pelo lead
+                const ownerInfo = getLeadOwnerInfo(prospect);
+                if (modalElements.responsavelLead) {
+                    const ownerVal = ownerInfo.hasOwner ? ownerInfo.name : '';
+                    if (ownerVal) {
+                        const label = ownerInfo.isCurrentUser ? `${ownerVal} (Você)` : ownerVal;
+                        ensureSelectOption(modalElements.responsavelLead, ownerVal, label);
                     }
-                    if (dateObj && !isNaN(dateObj)) {
-                        const formattedDate = dateObj.toLocaleDateString('pt-BR');
-                        const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                        dateTimeStr = `${formattedDate} às ${formattedTime}`;
-                    }
+                    modalElements.responsavelLead.value = ownerVal;
                 }
+
+                // Entrada do lead (histórica em America/Sao_Paulo)
                 if (modalElements.dataChegada) {
-                    modalElements.dataChegada.value = dateTimeStr || 'N/A';
+                    modalElements.dataChegada.value = formatDateTimeSP(prospect.createdAt) || 'Não informado';
                 }
 
-                modalElements.responsavel.value = prospect.responsavel || '';
+                modalElements.responsavel.value = prospect.responsavel || prospect.nome || prospect.empresa || '';
                 modalElements.telefone.value = prospect.telefone || '';
                 modalElements.email.value = prospect.email || '';
                 modalElements.cpf.value = prospect.cpf || '';
@@ -3157,17 +4614,8 @@
                             modalElements.perdidoNoticeText.textContent = prospect.motivoPerda || 'Motivo não registrado';
                         }
                         if (modalElements.perdidoNoticeDate) {
-                            let perdidoDateStr = '';
-                            if (prospect.perdidoEm) {
-                                let dt = null;
-                                if (typeof prospect.perdidoEm.toDate === 'function') dt = prospect.perdidoEm.toDate();
-                                else if (typeof prospect.perdidoEm.toMillis === 'function') dt = new Date(prospect.perdidoEm.toMillis());
-                                else dt = new Date(prospect.perdidoEm);
-                                if (dt && !isNaN(dt)) {
-                                    perdidoDateStr = `Perdido em ${dt.toLocaleDateString('pt-BR')} às ${dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-                                }
-                            }
-                            modalElements.perdidoNoticeDate.textContent = perdidoDateStr;
+                            const fmtPerdido = formatDateTimeSP(prospect.perdidoEm);
+                            modalElements.perdidoNoticeDate.textContent = fmtPerdido ? `Perdido em ${fmtPerdido}` : '';
                         }
                     } else {
                         modalElements.perdidoNotice.classList.add('hidden');
@@ -3189,10 +4637,18 @@
             } else {
                 modalElements.prospectType.value = 'prospect';
                 modalElements.modalActionButtons.classList.add('hidden');
-                modalElements.modalTitle.textContent = 'Adicionar Novo Prospect';
+                modalElements.modalTitle.textContent = 'Adicionar Novo Lead';
                 modalElements.prospectId.value = '';
+                modalElements.unidade.value = '';
+                modalElements.setor.value = '';
+                modalElements.prioridade.value = '3';
+                modalElements.ticketEstimado.value = '';
+                modalElements.origemLead.value = '';
+                if (modalElements.agendamentoDataHora) modalElements.agendamentoDataHora.value = '';
+                if (modalElements.agendamentoStatus) modalElements.agendamentoStatus.value = 'Pendente';
                 if (modalElements.instrutor) modalElements.instrutor.value = '';
-                if (modalElements.dataChegada) modalElements.dataChegada.value = '';
+                if (modalElements.responsavelLead) modalElements.responsavelLead.value = '';
+                if (modalElements.dataChegada) modalElements.dataChegada.value = 'Automático ao salvar';
                 if (modalElements.createdByContainer) modalElements.createdByContainer.classList.add('hidden');
                 if (modalElements.perdidoNotice) modalElements.perdidoNotice.classList.add('hidden');
                 renderContactLog({ contactLog: [] });
@@ -3200,7 +4656,8 @@
             }
 
             updateWhatsAppLink();
-            updateInstructorModalPreview(prospect ? (prospect.instrutor || prospect.instructor || '') : '');
+            updateInstructorModalPreview(modalElements.instrutor ? modalElements.instrutor.value : '');
+            updateLeadOwnerModalPreview(modalElements.responsavelLead ? modalElements.responsavelLead.value : '');
 
             const isUserAdmin = isCurrentUserAdmin();
             if (modalElements.archiveBtn) {
@@ -3447,15 +4904,14 @@
             e.preventDefault();
 
             const requiredFields = [
-                { id: 'responsavel', name: 'Nome do responsável' },
-                { id: 'setor', name: 'Aluno' },
+                { id: 'responsavel', name: 'Nome do cliente / aluno' },
                 { id: 'prioridade', name: 'Prioridade' }
             ];
             for (const fieldInfo of requiredFields) {
                 const field = document.getElementById(fieldInfo.id);
-                if (!field.value) {
+                if (!field || !field.value.trim()) {
                     alert(`Por favor, preencha o campo obrigatório: ${fieldInfo.name}`);
-                    field.focus();
+                    field?.focus();
                     return;
                 }
             }
@@ -3468,18 +4924,51 @@
             });
 
             const selectedUnidade = document.getElementById('unidade').value;
+            const rawTicketStr = document.getElementById('ticketEstimado').value;
+            const parsedTicket = parseTicketOrNull(rawTicketStr);
+
+            const rawAgendamentoStr = document.getElementById('agendamentoDataHora')?.value || '';
+            const parsedAgendamentoDate = parseDateValue(rawAgendamentoStr);
+            const agendamentoISO = parsedAgendamentoDate ? parsedAgendamentoDate.toISOString() : null;
+            const agendamentoStatusVal = normalizeScheduleStatus(document.getElementById('agendamentoStatus')?.value || 'Pendente');
+
+            const selectedOwnerName = (document.getElementById('responsavelLead')?.value || '').trim();
+            let ownerId = '';
+            let ownerEmail = '';
+            let ownerPhoto = '';
+            if (selectedOwnerName) {
+                const matchedStaff = staffUsersMap.get(`name:${normalizeKey(selectedOwnerName)}`);
+                if (matchedStaff) {
+                    ownerId = matchedStaff.id || '';
+                    ownerEmail = matchedStaff.email || '';
+                    ownerPhoto = matchedStaff.photoURL || '';
+                } else if (isUserMatchingConnected({ name: selectedOwnerName })) {
+                    const me = currentConnectedUser || refreshConnectedUserFromStorage();
+                    ownerId = me?.uid || '';
+                    ownerEmail = me?.email || '';
+                    ownerPhoto = me?.photoURL || '';
+                }
+            }
+
             const data = {
-                responsavel: document.getElementById('responsavel').value,
+                responsavel: document.getElementById('responsavel').value.trim(),
                 unidade: selectedUnidade,
                 setor: document.getElementById('setor').value,
-                prioridade: parseInt(document.getElementById('prioridade').value),
-                ticketEstimado: parseInt(document.getElementById('ticketEstimado').value) || getDefaultTicketByUnit(selectedUnidade),
+                prioridade: parseInt(document.getElementById('prioridade').value, 10) || 3,
+                ticketEstimado: parsedTicket,
+                ticketDefinido: true,
                 origemLead: document.getElementById('origemLead').value,
+                agendamentoDataHora: agendamentoISO,
+                agendamentoStatus: agendamentoStatusVal,
                 instrutor: (document.getElementById('instrutor') ? document.getElementById('instrutor').value : '').trim(),
-                telefone: document.getElementById('telefone').value,
-                email: document.getElementById('email').value,
-                cpf: document.getElementById('cpf').value,
-                redesSociais: document.getElementById('redesSociais').value,
+                responsavelLead: selectedOwnerName,
+                responsavelLeadId: ownerId,
+                responsavelLeadEmail: ownerEmail,
+                responsavelLeadFoto: ownerPhoto,
+                telefone: document.getElementById('telefone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                cpf: document.getElementById('cpf').value.trim(),
+                redesSociais: document.getElementById('redesSociais').value.trim(),
                 observacoes: document.getElementById('observacoes').value,
                 tags: selectedTags,
                 updatedAt: serverTimestamp()
@@ -3518,7 +5007,7 @@
                     generalLog.add(user, 'Update Card', `Card "${data.responsavel}" updated`);
 
                 } else { // Create new prospect
-                    data.status = 'Novo'; // FIX: Was 'Pendente'
+                    data.status = 'Novo';
                     data.pagina = 'Prospecção';
                     data.createdAt = serverTimestamp();
                     data.createdBy = localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
@@ -3572,18 +5061,23 @@
 
             try {
                 if (item.type === 'lead') {
-                    // When archiving a lead, convert it to a prospect with pagina='Arquivo' and delete the original lead.
                     const prospectsCollection = collection(db, 'prospects');
 
-                    // Create a new object for the archived prospect from the lead data
                     const newArchivedProspect = {
                         responsavel: item.responsavel || '',
                         unidade: item.unidade || '',
                         setor: item.setor || '',
                         prioridade: item.prioridade || 3,
-                        ticketEstimado: item.ticketEstimado || 0,
+                        ticketEstimado: getTicketNumericValue(item),
+                        ticketDefinido: true,
                         origemLead: item.origemLead || 'Site',
+                        agendamentoDataHora: item.agendamentoDataHora || null,
+                        agendamentoStatus: item.agendamentoStatus || 'Pendente',
                         instrutor: item.instrutor || '',
+                        responsavelLead: item.responsavelLead || '',
+                        responsavelLeadId: item.responsavelLeadId || '',
+                        responsavelLeadEmail: item.responsavelLeadEmail || '',
+                        responsavelLeadFoto: item.responsavelLeadFoto || '',
                         telefone: item.telefone || '',
                         email: item.email || '',
                         cpf: item.cpf || '',
@@ -3598,18 +5092,13 @@
                     };
 
                     const batch = writeBatch(db);
-
-                    // 1. Create the new archived prospect
                     const newProspectRef = doc(prospectsCollection);
                     batch.set(newProspectRef, newArchivedProspect);
-
-                    // 2. Delete the old lead
                     const oldLeadRef = doc(db, 'leads', itemId);
                     batch.delete(oldLeadRef);
-
                     await batch.commit();
 
-                } else { // It's a prospect, just update it
+                } else {
                     const prospectRef = doc(db, 'prospects', itemId);
                     await updateDoc(prospectRef, {
                         pagina: 'Arquivo',
@@ -3633,7 +5122,7 @@
                 return;
             }
 
-            const rows = csvText.split('\n').slice(1); // Skip header row
+            const rows = csvText.split('\n').slice(1);
             if (rows.length === 0) {
                 alert("Nenhum dado para importar foi encontrado (ignorando a primeira linha como cabeçalho).");
                 return;
@@ -3645,13 +5134,15 @@
 
             rows.forEach(row => {
                 const columns = row.split(',');
-                if (columns.length < 3) return; // Minimum required fields: Empresa, Setor, Prioridade
+                if (columns.length < 3) return;
 
                 const newProspect = {
+                    responsavel: columns[0] || '',
                     empresa: columns[0] || '',
                     setor: columns[1] || '',
                     prioridade: parseInt(columns[2]) || 3,
-                    ticketEstimado: parseInt(columns[3]) || 0,
+                    ticketEstimado: parseTicketOrNull(columns[3]),
+                    ticketDefinido: columns[3] !== undefined && String(columns[3]).trim() !== '',
                     telefone: columns[4] || '',
                     email: columns[5] || '',
                     cpf: columns[6] || '',
@@ -3660,7 +5151,8 @@
                     redesSociais: columns[9] || '',
                     siteAtual: columns[10] || '',
                     observacoes: columns[11] || '',
-                    status: 'Pendente',
+                    status: 'Novo',
+                    pagina: 'Prospecção',
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp()
                 };
@@ -3684,20 +5176,7 @@
 
         // --- TAGS UTILITY ---
         function populateTags() {
-            const tagFilter = document.getElementById('tagFilter');
-
-            // Add "Novo" (Unread) option manually
-            const novoOption = document.createElement('option');
-            novoOption.value = 'Novo';
-            novoOption.textContent = 'Novo (Não lido)';
-            tagFilter.appendChild(novoOption);
-
-            TAGS.forEach(tag => {
-                const option = document.createElement('option');
-                option.value = tag;
-                option.textContent = tag;
-                tagFilter.appendChild(option);
-            });
+            rebuildDynamicFilterMenus();
         }
 
         function populateTagsInModal() {
@@ -3732,65 +5211,54 @@
             return colors[priority] || '#6b7280';
         }
 
-        function stringToColorIndex(str, colorArrayLength) {
-            if (!str) return 0;
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            return Math.abs(hash % colorArrayLength);
-        }
+        function renderUnitSelectOptions(unidadeModalSelect, extraUnits = []) {
+            if (!unidadeModalSelect) return;
+            const currentVal = unidadeModalSelect.value;
+            unidadeModalSelect.innerHTML = '<option value="">Sem unidade</option>';
 
-        function getSectorColor(sector) {
-            const colorPalette = [
-                { bg: 'bg-gray-900/50', text: 'text-gray-200' },
-                { bg: 'bg-purple-900/50', text: 'text-purple-200' },
-                { bg: 'bg-teal-900/50', text: 'text-teal-200' },
-                { bg: 'bg-red-900/50', text: 'text-red-200' },
-                { bg: 'bg-cyan-900/50', text: 'text-cyan-200' },
-                { bg: 'bg-green-900/50', text: 'text-green-200' },
-                { bg: 'bg-amber-900/50', text: 'text-amber-200' },
-                { bg: 'bg-pink-900/50', text: 'text-pink-200' },
-                { bg: 'bg-indigo-900/50', text: 'text-indigo-200' },
-                { bg: 'bg-lime-900/50', text: 'text-lime-200' }
-            ];
+            const knownKeys = new Set();
+            CITY_GROUPS.forEach(group => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = group.city;
+                group.units.forEach(u => {
+                    knownKeys.add(normalizeKey(u.key));
+                    const opt = document.createElement('option');
+                    opt.value = u.key;
+                    opt.textContent = u.cardLabel;
+                    optgroup.appendChild(opt);
+                });
+                unidadeModalSelect.appendChild(optgroup);
+            });
 
-            const index = stringToColorIndex(sector, colorPalette.length);
-            return colorPalette[index] || { bg: 'bg-gray-700', text: 'text-gray-200' };
+            extraUnits.forEach(rawUnit => {
+                const meta = getUnitMetadata(rawUnit);
+                if (meta.key !== '__SEM_UNIDADE__' && !knownKeys.has(normalizeKey(meta.key))) {
+                    knownKeys.add(normalizeKey(meta.key));
+                    const opt = document.createElement('option');
+                    opt.value = meta.key;
+                    opt.textContent = meta.cardLabel;
+                    unidadeModalSelect.appendChild(opt);
+                }
+            });
+
+            if (currentVal) unidadeModalSelect.value = currentVal;
         }
 
         async function populateEvoUnits() {
-            const unidadeFilter = document.getElementById('unidadeFilter');
             const unidadeModalSelect = document.querySelector('#prospectForm #unidade');
+            renderUnitSelectOptions(unidadeModalSelect);
+            rebuildDynamicFilterMenus();
 
             try {
                 const result = await getEvoUnits();
-                evoUnits = result.data.sort();
-
-                // Clear existing options except default ones
-                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option><option value="__SEM_UNIDADE__">⚠️ Sem Unidade Definida</option>';
-                unidadeModalSelect.innerHTML = '<option value="">Selecione a Unidade</option>';
-
-                evoUnits.forEach(unitId => {
-                    const displayName = unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                    // Populate filter dropdown
-                    const filterOption = document.createElement('option');
-                    filterOption.value = displayName;
-                    filterOption.textContent = displayName;
-                    unidadeFilter.appendChild(filterOption);
-
-                    // Populate modal dropdown
-                    const modalOption = document.createElement('option');
-                    modalOption.value = displayName;
-                    modalOption.textContent = displayName;
-                    unidadeModalSelect.appendChild(modalOption);
-                });
-
+                evoUnits = Array.isArray(result?.data) ? result.data.sort() : [];
+                const extraDisplayNames = evoUnits.map(unitId =>
+                    unitId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                );
+                renderUnitSelectOptions(unidadeModalSelect, extraDisplayNames);
+                rebuildDynamicFilterMenus();
             } catch (error) {
-                console.error("Erro ao buscar unidades do EVO:", error);
-                unidadeFilter.innerHTML = '<option value="">Todas as Unidades</option><option value="__SEM_UNIDADE__">⚠️ Sem Unidade Definida</option>';
-                unidadeModalSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+                console.warn("Usando lista canônica de unidades Kihap (EVO indisponível):", error);
             }
         }
 
@@ -3806,7 +5274,7 @@
         const instructorsMap = new Map();
 
         function normalizeInstructorName(name) {
-            return (name || '').trim().toLowerCase();
+            return normalizeKey(name);
         }
 
         function getInstructorInfo(name) {
@@ -3822,7 +5290,7 @@
             if (!preview) return;
             const info = getInstructorInfo(name);
             if (info && info.photoURL) {
-                preview.innerHTML = `<img src="${info.photoURL}" alt="${escapeHtml(info.name)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\'fas fa-user-ninja text-yellow-500 text-sm\\'></i>';">`;
+                preview.innerHTML = `<img src="${escapeHtml(info.photoURL)}" alt="${escapeHtml(info.name)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\'fas fa-user-ninja text-yellow-500 text-sm\\'></i>';">`;
             } else {
                 preview.innerHTML = `<i class="fas fa-user-ninja text-yellow-500 text-sm"></i>`;
             }
@@ -3830,48 +5298,114 @@
 
         async function populateInstructors() {
             const instrutorSelect = document.getElementById('instrutor');
-            if (!instrutorSelect) return;
+            const responsavelLeadSelect = document.getElementById('responsavelLead');
 
             try {
-                const q = query(collection(db, 'users'), where('isInstructor', '==', true));
-                const snap = await getDocs(q);
-                const list = [];
+                const snap = await getDocs(collection(db, 'users'));
+                const instList = [];
+                const allStaff = [];
                 instructorsMap.clear();
+                staffUsersMap.clear();
 
                 snap.forEach(docSnap => {
                     const data = docSnap.data();
-                    const name = data.name || data.nome || data.displayName || docSnap.id;
+                    const name = (data.name || data.nome || data.displayName || '').trim();
+                    const email = (data.email || '').trim();
                     const photoURL = data.photoURL || data.photoUrl || data.profilePicture || data.profilePic || data.avatarUrl || data.foto || '';
-                    if (name && !list.some(item => item.name === name)) {
-                        const item = { id: docSnap.id, name: name, photoURL: photoURL };
-                        list.push(item);
-                        instructorsMap.set(normalizeInstructorName(name), item);
+                    const isInstructor = data.isInstructor === true;
+                    const isStudentOnly = data.role === 'student' || data.isStudent === true;
+
+                    if (!name) return;
+
+                    const userObj = {
+                        id: docSnap.id,
+                        name,
+                        email,
+                        photoURL,
+                        isInstructor,
+                        isAdmin: data.isAdmin === true || data.role === 'admin',
+                        allowedUnits: Array.isArray(data.allowedUnits) ? data.allowedUnits : (Array.isArray(data.unidades) ? data.unidades : null)
+                    };
+
+                    // Registra no mapa de colaboradores/responsáveis
+                    if (!isStudentOnly) {
+                        staffUsersMap.set(`id:${docSnap.id}`, userObj);
+                        if (email) staffUsersMap.set(`email:${normalizeKey(email)}`, userObj);
+                        staffUsersMap.set(`name:${normalizeKey(name)}`, userObj);
+                        if (!allStaff.some(u => normalizeKey(u.name) === normalizeKey(name))) {
+                            allStaff.push(userObj);
+                        }
+                    }
+
+                    // Se for o usuário conectado atual, enriquece os dados locais
+                    if (currentConnectedUser && (
+                        (currentConnectedUser.uid && currentConnectedUser.uid === docSnap.id) ||
+                        (currentConnectedUser.email && email && normalizeKey(currentConnectedUser.email) === normalizeKey(email))
+                    )) {
+                        currentConnectedUser.name = name || currentConnectedUser.name;
+                        currentConnectedUser.photoURL = photoURL || currentConnectedUser.photoURL;
+                        if (userObj.allowedUnits) currentConnectedUser.allowedUnits = userObj.allowedUnits;
+                        if (userObj.isAdmin) currentConnectedUser.isAdmin = true;
+                    }
+
+                    // Registra instrutores separadamente
+                    if (isInstructor && !instList.some(item => normalizeKey(item.name) === normalizeKey(name))) {
+                        instList.push(userObj);
+                        instructorsMap.set(normalizeInstructorName(name), userObj);
                     }
                 });
-                list.sort((a, b) => a.name.localeCompare(b.name));
 
-                const currentVal = instrutorSelect.value;
-                instrutorSelect.innerHTML = '<option value="">Selecione o Instrutor</option>';
-                list.forEach(inst => {
-                    const opt = document.createElement('option');
-                    opt.value = inst.name;
-                    opt.textContent = inst.name;
-                    instrutorSelect.appendChild(opt);
-                });
-                if (currentVal) instrutorSelect.value = currentVal;
+                instList.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+                allStaff.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+                staffUsersList = allStaff;
 
-                if (!instrutorSelect.dataset.hasChangeListener) {
-                    instrutorSelect.dataset.hasChangeListener = 'true';
-                    instrutorSelect.addEventListener('change', (e) => {
-                        updateInstructorModalPreview(e.target.value);
+                if (instrutorSelect) {
+                    const currentVal = instrutorSelect.value;
+                    instrutorSelect.innerHTML = '<option value="">Não definido</option>';
+                    instList.forEach(inst => {
+                        const opt = document.createElement('option');
+                        opt.value = inst.name;
+                        opt.textContent = inst.name;
+                        instrutorSelect.appendChild(opt);
                     });
+                    if (currentVal) {
+                        ensureSelectOption(instrutorSelect, currentVal, currentVal);
+                        instrutorSelect.value = currentVal;
+                    }
+                    if (!instrutorSelect.dataset.hasChangeListener) {
+                        instrutorSelect.dataset.hasChangeListener = 'true';
+                        instrutorSelect.addEventListener('change', (e) => {
+                            updateInstructorModalPreview(e.target.value);
+                        });
+                    }
                 }
 
+                if (responsavelLeadSelect) {
+                    const currentOwnerVal = responsavelLeadSelect.value;
+                    responsavelLeadSelect.innerHTML = '<option value="">Sem responsável</option>';
+                    const me = currentConnectedUser || refreshConnectedUserFromStorage();
+                    allStaff.forEach(staff => {
+                        const opt = document.createElement('option');
+                        opt.value = staff.name;
+                        const isMe = isUserMatchingConnected(staff);
+                        opt.textContent = isMe ? `${staff.name} (Você)` : staff.name;
+                        responsavelLeadSelect.appendChild(opt);
+                    });
+                    if (me && me.name && me.name !== 'Você' && !allStaff.some(s => normalizeKey(s.name) === normalizeKey(me.name))) {
+                        ensureSelectOption(responsavelLeadSelect, me.name, `${me.name} (Você)`);
+                    }
+                    if (currentOwnerVal) {
+                        ensureSelectOption(responsavelLeadSelect, currentOwnerVal, currentOwnerVal);
+                        responsavelLeadSelect.value = currentOwnerVal;
+                    }
+                }
+
+                rebuildDynamicFilterMenus();
                 if (combinedData && combinedData.length > 0) {
-                    renderBoard();
+                    applyFilters();
                 }
             } catch (error) {
-                console.error("Erro ao buscar instrutores:", error);
+                console.error("Erro ao buscar usuários/instrutores:", error);
             }
         }
 
@@ -3880,13 +5414,28 @@
                 alert("Não há dados para exportar.");
                 return;
             }
-            const headers = ['ID', 'Empresa', 'Setor', 'Prioridade', 'Status', 'Ticket Estimado', 'Telefone', 'Email', 'CPF', 'CNPJ', 'Endereço', 'Redes Sociais', 'Site', 'Observações'];
+            const headers = ['ID', 'Cliente/Aluno', 'Unidade', 'Perfil', 'Prioridade', 'Etapa', 'Mensalidade', 'Origem', 'Agendamento', 'Status Agendamento', 'Instrutor', 'Responsável pelo Lead', 'Telefone', 'Email', 'CPF', 'Observações'];
             let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
 
             prospects.forEach(p => {
+                const ticketVal = getTicketNumericValue(p);
                 const row = [
-                    p.id, `"${p.empresa}"`, p.setor, p.prioridade, p.status, p.ticketEstimado,
-                    `"${p.telefone}"`, p.email, p.cpf, p.cnpj, `"${p.endereco}"`, `"${p.redesSociais}"`, p.siteAtual, `"${(p.observacoes || '').replace(/"/g, '""')}"`
+                    p.id,
+                    `"${(p.responsavel || p.empresa || '').replace(/"/g, '""')}"`,
+                    `"${getUnitMetadata(p.unidade).cardLabel}"`,
+                    `"${p.setor || 'Não informado'}"`,
+                    p.prioridade || 3,
+                    `"${p.status || ''}"`,
+                    ticketVal !== null ? ticketVal : 'Não definido',
+                    `"${p.origemLead || ''}"`,
+                    `"${formatDateTimeSP(p.agendamentoDataHora) || 'Não agendado'}"`,
+                    `"${normalizeScheduleStatus(p.agendamentoStatus)}"`,
+                    `"${p.instrutor || 'Não definido'}"`,
+                    `"${getLeadOwnerInfo(p).name}"`,
+                    `"${p.telefone || ''}"`,
+                    p.email || '',
+                    p.cpf || '',
+                    `"${(p.observacoes || '').replace(/"/g, '""')}"`
                 ].join(",");
                 csvContent += row + "\n";
             });
@@ -3894,7 +5443,7 @@
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `prospects_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.setAttribute("download", `leads_kihap_${new Date().toISOString().slice(0, 10)}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -3952,7 +5501,6 @@
         }
 
         async function fetchConfig() {
-            // Default Config (MUST Match Backend Defaults)
             const defaults = {
                 welcome_message: "Olá, você deu o primeiro passo em busca do desenvolvimento pessoal através da arte marcial. Em breve alguém de nosso time irá responder sua mensagem.\n\nNós temos unidades nas seguintes cidade:\n- Brasília\n- Florianópolis\n- Dourados\n\n\nPra qual cidade você deseja?",
                 menu_brasilia: "Em Brasília, temos as unidades:\n\n- Asa Sul\n- Sudoeste\n- Lago Sul\n- Noroeste\n- Pontos de Ensino\n- Jardim Botânico\n\nQual fica melhor para você?",
@@ -3985,7 +5533,6 @@
                 document.getElementById('cfg_menu_bsb').value = data.menu_brasilia;
                 document.getElementById('cfg_menu_floripa').value = data.menu_floripa;
                 document.getElementById('cfg_human_handoff').value = data.human_handoff_message || '';
-                document.getElementById('cfg_human_handoff').value = data.human_handoff_message || '';
                 document.getElementById('cfg_intent_menu').value = data.intent_menu_message;
                 document.getElementById('cfg_ask_name').value = data.ask_name_message;
                 document.getElementById('cfg_welcome_new_student').value = data.welcome_new_student_message;
@@ -4009,14 +5556,12 @@
         async function saveConfig(e) {
             e.preventDefault();
 
-            // Gather extra questions
             const questionInputs = document.querySelectorAll('.extra-question-input');
             const extraQuestions = Array.from(questionInputs).map(input => input.value).filter(v => v.trim() !== '');
 
             const updates = {
                 bot_enabled: document.getElementById('cfg_bot_enabled').checked,
                 welcome_message: document.getElementById('cfg_welcome').value,
-                human_handoff_message: document.getElementById('cfg_human_handoff').value,
                 human_handoff_message: document.getElementById('cfg_human_handoff').value,
                 menu_brasilia: document.getElementById('cfg_menu_bsb').value,
                 menu_floripa: document.getElementById('cfg_menu_floripa').value,
@@ -4050,15 +5595,180 @@
         if (cancelConfigBtn) cancelConfigBtn.addEventListener('click', closeConfigModal);
         if (configForm) configForm.addEventListener('submit', saveConfig);
 
-        // Close on backdrop click
         if (configModal) {
             configModal.addEventListener('click', (e) => {
                 if (e.target === configModal) closeConfigModal();
             });
         }
 
+        // --- CONTROLE DE MENUS DE FILTROS MÚLTIPLOS E ATALHOS ---
+        function closeAllFilterMenus(restoreFocusToTrigger = false) {
+            document.querySelectorAll('.crm-filter-menu.open').forEach(menu => {
+                menu.classList.remove('open');
+                const dropdown = menu.closest('.crm-filter-dropdown');
+                const trigger = dropdown?.querySelector('.crm-filter-trigger');
+                if (trigger) {
+                    trigger.setAttribute('aria-expanded', 'false');
+                    if (restoreFocusToTrigger) trigger.focus();
+                }
+            });
+        }
+
+        function syncCheckboxesForFilterKey(filterKey) {
+            const container = document.getElementById(`filterOptions-${filterKey}`);
+            if (!container || !filterState[filterKey]) return;
+            container.querySelectorAll(`input[data-filter-checkbox="${filterKey}"]`).forEach(cb => {
+                cb.checked = filterState[filterKey].has(cb.value);
+            });
+        }
+
+        function initCrmHeaderAndFiltersListeners() {
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            const dateRefSelect = document.getElementById('dateReferenceFilter');
+            const startDateInput = document.getElementById('startDateFilter');
+            const endDateInput = document.getElementById('endDateFilter');
+            const clearDateBtn = document.getElementById('clearDateFilterBtn');
+            const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    applyFilters();
+                });
+            }
+            if (clearSearchBtn && searchInput) {
+                clearSearchBtn.addEventListener('click', () => {
+                    searchInput.value = '';
+                    searchInput.focus();
+                    applyFilters();
+                });
+            }
+
+            if (dateRefSelect) {
+                dateRefSelect.addEventListener('change', () => {
+                    if (startDateInput?.value || endDateInput?.value) {
+                        applyFilters();
+                    }
+                });
+            }
+
+            if (startDateInput) {
+                startDateInput.addEventListener('change', () => {
+                    if (endDateInput) {
+                        if (startDateInput.value) {
+                            endDateInput.min = startDateInput.value;
+                        } else {
+                            endDateInput.removeAttribute('min');
+                        }
+                        if (startDateInput.value && endDateInput.value && startDateInput.value > endDateInput.value) {
+                            showToast('A data inicial não pode ser posterior à data final.', 'warning');
+                            startDateInput.value = endDateInput.value;
+                        }
+                    }
+                    applyFilters();
+                });
+            }
+
+            if (endDateInput) {
+                endDateInput.addEventListener('change', () => {
+                    if (startDateInput) {
+                        if (endDateInput.value) {
+                            startDateInput.max = endDateInput.value;
+                        } else {
+                            startDateInput.removeAttribute('max');
+                        }
+                        if (startDateInput.value && endDateInput.value && endDateInput.value < startDateInput.value) {
+                            showToast('A data final não pode ser anterior à data inicial.', 'warning');
+                            endDateInput.value = startDateInput.value;
+                        }
+                    }
+                    applyFilters();
+                });
+            }
+
+            if (clearDateBtn) {
+                clearDateBtn.addEventListener('click', () => {
+                    if (startDateInput) {
+                        startDateInput.value = '';
+                        startDateInput.removeAttribute('max');
+                    }
+                    if (endDateInput) {
+                        endDateInput.value = '';
+                        endDateInput.removeAttribute('min');
+                    }
+                    applyFilters();
+                });
+            }
+
+            if (resetFiltersBtn) {
+                resetFiltersBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    clearAllFilters();
+                });
+            }
+
+            // Atalhos por responsável (preservam os demais filtros e sincronizam com o campo de responsáveis)
+            const shortcutAll = document.getElementById('shortcutAllLeads');
+            const shortcutMine = document.getElementById('shortcutMyLeads');
+            const shortcutUnassigned = document.getElementById('shortcutUnassignedLeads');
+
+            if (shortcutAll) {
+                shortcutAll.addEventListener('click', () => {
+                    filterState.responsaveis.clear();
+                    syncCheckboxesForFilterKey('responsaveis');
+                    applyFilters();
+                });
+            }
+            if (shortcutMine) {
+                shortcutMine.addEventListener('click', () => {
+                    const meKey = getCurrentUserOwnerFilterKey();
+                    filterState.responsaveis.clear();
+                    filterState.responsaveis.add(meKey);
+                    rebuildDynamicFilterMenus();
+                    syncCheckboxesForFilterKey('responsaveis');
+                    applyFilters();
+                });
+            }
+            if (shortcutUnassigned) {
+                shortcutUnassigned.addEventListener('click', () => {
+                    filterState.responsaveis.clear();
+                    filterState.responsaveis.add('__SEM_RESPONSAVEL__');
+                    syncCheckboxesForFilterKey('responsaveis');
+                    applyFilters();
+                });
+            }
+
+            // Delegação de mudança nos checkboxes dos filtros múltiplos (mantém o menu aberto e atualiza resultados imediatamente)
+            document.addEventListener('change', (e) => {
+                const cb = e.target.closest('input[data-filter-checkbox]');
+                if (!cb) return;
+                const filterKey = cb.getAttribute('data-filter-checkbox');
+                if (!filterKey || !filterState[filterKey]) return;
+                if (cb.checked) {
+                    filterState[filterKey].add(cb.value);
+                } else {
+                    filterState[filterKey].delete(cb.value);
+                }
+                applyFilters();
+            });
+
+            // Fechar menus de filtro com tecla Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const openMenu = document.querySelector('.crm-filter-menu.open');
+                    if (openMenu) {
+                        e.stopPropagation();
+                        closeAllFilterMenus(true);
+                    }
+                }
+            });
+        }
+
         // --- INITIALIZE APP ---
         document.addEventListener('DOMContentLoaded', () => {
+            refreshConnectedUserFromStorage();
+
             let resizeTimer;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimer);
@@ -4067,6 +5777,7 @@
                 }, 250);
             });
 
+            initCrmHeaderAndFiltersListeners();
             populateTags();
             populateEvoUnits();
             populateInstructors();
@@ -4074,11 +5785,13 @@
             initWhatsAppDrawer();
 
             loadComponents(() => {
-                // This callback runs after header/sidebar are loaded
+                refreshConnectedUserFromStorage();
+                rebuildDynamicFilterMenus();
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const cardIdToOpen = urlParams.get('cardId');
                 if (cardIdToOpen) {
-                    const unsubscribe = onSnapshot(collection(db, 'prospects'), (snapshot) => {
+                    const unsubscribe = onSnapshot(collection(db, 'prospects'), () => {
                         const prospect = prospects.find(p => p.id === cardIdToOpen);
                         if (prospect) {
                             openFormModal(prospect);
@@ -4086,9 +5799,6 @@
                         }
                     });
                 }
-                // Pass handlers to setupUIListeners by calling it again
-                const unidadeFilter = document.getElementById('unidadeFilter');
-                if (unidadeFilter) unidadeFilter.addEventListener('change', applyFilters);
 
                 setupUIListeners({
                     openFormModal,
@@ -4101,20 +5811,6 @@
                     closeConfirmModal
                 });
 
-                // Override reset button to include unit, origin and date range filters
-                const resetBtn = document.getElementById('resetFiltersBtn');
-                if (resetBtn) {
-                    resetBtn.addEventListener('click', () => {
-                        document.getElementById('searchInput').value = '';
-                        document.getElementById('priorityFilter').value = '';
-                        document.getElementById('tagFilter').value = '';
-                        document.getElementById('unidadeFilter').value = '';
-                        document.getElementById('originFilter').value = '';
-                        document.getElementById('startDateFilter').value = '';
-                        document.getElementById('endDateFilter').value = '';
-                        applyFilters();
-                    });
-                }
                 // Perdido Modal Event Listeners
                 const cancelPerdidoBtn = document.getElementById('cancelPerdidoBtn');
                 const closePerdidoModalBtn = document.getElementById('closePerdidoModalBtn');
@@ -4145,66 +5841,106 @@
                     });
                 }
             });
-
         });
 
         // --- GLOBAL EVENT DELEGATION (Reliable UI Handling) ---
         document.addEventListener('click', (e) => {
             const target = e.target;
 
-            // 1. Open Filters Modal
-            const openBtn = target.closest('#openFiltersBtn');
-            if (openBtn) {
+            // 1. Toggle Multi-Select Filter Dropdown Trigger
+            const filterTrigger = target.closest('.crm-filter-trigger');
+            if (filterTrigger) {
                 e.preventDefault();
-                console.log("Click detected: Open Filters");
-                const modal = document.getElementById('filtersModal');
-                if (modal) {
-                    modal.classList.remove('hidden');
-                    modal.classList.add('flex');
-                } else {
-                    console.error("Filters modal element not found!");
+                e.stopPropagation();
+                const filterKey = filterTrigger.getAttribute('data-filter-trigger');
+                const menu = document.getElementById(`filterMenu-${filterKey}`);
+                if (!menu) return;
+                const isOpen = menu.classList.contains('open');
+                closeAllFilterMenus(false);
+                if (!isOpen) {
+                    menu.classList.add('open');
+                    filterTrigger.setAttribute('aria-expanded', 'true');
                 }
+                return;
             }
 
-            // 3. Apply Filters
-            const applyBtn = target.closest('#applyFiltersBtn');
-            if (applyBtn) {
+            // 2. "Selecionar cidade" inside Unidades filter
+            const selectCityBtn = target.closest('[data-select-city]');
+            if (selectCityBtn) {
                 e.preventDefault();
-                const modal = document.getElementById('filtersModal');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }
-                if (typeof applyFilters === 'function') {
+                e.stopPropagation();
+                const cityName = selectCityBtn.getAttribute('data-select-city');
+                const group = CITY_GROUPS.find(g => g.city === cityName);
+                if (group) {
+                    group.units.forEach(u => filterState.unidades.add(u.key));
+                    syncCheckboxesForFilterKey('unidades');
                     applyFilters();
-                } else {
-                    console.error("applyFilters function is not defined or accessible.");
                 }
+                return;
             }
 
-            // 4. Close Filters on Backdrop Click or Close Button Click
-            const closeFiltersBtn = target.closest('#closeFiltersModalBtn');
-            if (closeFiltersBtn || target.id === 'filtersModal') {
-                const modal = document.getElementById('filtersModal');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
+            // 3. "Limpar" inside an individual filter menu
+            const clearSingleFilterBtn = target.closest('[data-clear-filter]');
+            if (clearSingleFilterBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const filterKey = clearSingleFilterBtn.getAttribute('data-clear-filter');
+                if (filterKey && filterState[filterKey]) {
+                    filterState[filterKey].clear();
+                    syncCheckboxesForFilterKey(filterKey);
+                    applyFilters();
                 }
+                return;
             }
 
-            // 5. Open Config Modal
+            // 4. "Concluir" inside an individual filter menu (closes the menu)
+            const closeSingleFilterBtn = target.closest('[data-close-filter]');
+            if (closeSingleFilterBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeAllFilterMenus(true);
+                return;
+            }
+
+            // 5. Removal of individual active filter chip
+            const removeChipBtn = target.closest('.crm-active-chip-remove');
+            if (removeChipBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const chipType = removeChipBtn.getAttribute('data-chip-type');
+                const chipKey = removeChipBtn.getAttribute('data-chip-key');
+                const chipVal = removeChipBtn.getAttribute('data-chip-val');
+
+                if (chipType === 'search') {
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput) searchInput.value = '';
+                } else if (chipType === 'date') {
+                    const sInput = document.getElementById('startDateFilter');
+                    const eInput = document.getElementById('endDateFilter');
+                    if (sInput) { sInput.value = ''; sInput.removeAttribute('max'); }
+                    if (eInput) { eInput.value = ''; eInput.removeAttribute('min'); }
+                } else if (chipType === 'multi' && chipKey && filterState[chipKey]) {
+                    filterState[chipKey].delete(chipVal);
+                    syncCheckboxesForFilterKey(chipKey);
+                }
+                applyFilters();
+                return;
+            }
+
+            // 6. Click outside any .crm-filter-dropdown closes open filter menus
+            if (!target.closest('.crm-filter-dropdown')) {
+                closeAllFilterMenus(false);
+            }
+
+            // 7. Open Config Modal
             const configBtn = target.closest('#configBtn');
             if (configBtn) {
                 e.preventDefault();
-                console.log("Click detected: Open Config");
                 const modal = document.getElementById('configModal');
                 if (modal) {
-                    // Using the openConfigModal function defined in module scope might be tricky if not attached to window
-                    // But we can just call it if it's in scope, similar to applyFilters
                     if (typeof openConfigModal === 'function') {
                         openConfigModal();
                     } else {
-                        // Fallback manual open if function not found
                         modal.classList.remove('hidden');
                         modal.classList.add('flex');
                         if (typeof fetchConfig === 'function') fetchConfig();
@@ -4212,7 +5948,7 @@
                 }
             }
 
-            // 6. Close Config Modal
+            // 8. Close Config Modal
             const closeConfigBtn = target.closest('#closeConfigModalBtn') || target.closest('#cancelConfigBtn');
             if (closeConfigBtn) {
                 e.preventDefault();
@@ -4223,17 +5959,16 @@
                 }
             }
 
-            // 7. Close Config on Backdrop Click
+            // 9. Close Config on Backdrop Click
             if (target.id === 'configModal') {
                 target.classList.add('hidden');
                 target.classList.remove('flex');
             }
 
-            // 8. Close Perdido Modal on Backdrop Click
+            // 10. Close Perdido Modal on Backdrop Click
             if (target.id === 'perdidoModal') {
                 if (typeof closePerdidoModal === 'function') closePerdidoModal();
             }
-
         });
     </script>
     <script src="geral_log.js"></script>
