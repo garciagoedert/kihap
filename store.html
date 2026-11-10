@@ -2,115 +2,89 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
-    
-    
-    
-    
-    
-    
-    
     <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
-    <title>Kihap - Loja</title>
+    <title>Kihap - Loja Exclusiva no App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="antialiased bg-gray-900 text-gray-200">
+<body class="antialiased bg-[#0a0f1d] text-gray-200 min-h-screen flex flex-col justify-between">
 
-    <!-- Custom Store Header -->
-    <header class="bg-black/80 backdrop-blur-md border-b border-gray-800 z-50">
-        <div class="container mx-auto px-6">
-            <!-- Main Row: Logo, Search, Icons -->
-            <div class="flex items-center justify-between py-3 gap-3 md:gap-12">
-                <!-- Logo: Favicon on mobile, full Logo on desktop -->
-                <a href="/" class="shrink-0">
-                    <img src="imgs/logo.png" alt="KIHAP" class="h-8 md:h-10 hidden sm:block">
-                    <img src="imgs/favicon.png" alt="K" class="h-8 sm:hidden">
-                </a>
+    <!-- Header Padrão Kihap -->
+    <div id="header-container"></div>
 
-                <!-- Integrated Search Bar -->
-                <div class="flex-1 max-w-2xl relative group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                        <i class="fas fa-search text-xs md:text-sm"></i>
-                    </div>
-                    <input type="text" id="store-search" 
-                        class="block w-full pl-8 pr-4 py-2 bg-white rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 text-xs md:text-sm"
-                        placeholder="Buscar...">
-                </div>
+    <!-- Conteúdo Principal: Aviso de Loja Exclusiva no App -->
+    <main class="flex-grow flex items-center justify-center px-6 pt-32 pb-20">
+        <section class="max-w-2xl w-full bg-[#121929]/90 backdrop-blur-xl border border-yellow-500/20 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden" aria-labelledby="store-notice-heading">
+            <!-- Brilho Decorativo -->
+            <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true"></div>
 
-                <!-- Icons Row -->
-                <div class="flex items-center gap-4 shrink-0">
-                    <a href="intranet/login.html" class="text-gray-400 hover:text-white transition hidden md:block">
-                        <i class="far fa-user text-xl"></i>
-                    </a>
-                    <!-- Mobile Menu Trigger -->
-                    <button id="mobile-menu-button" class="md:hidden text-white" aria-label="Abrir menu">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-                        </svg>
-                    </button>
-                </div>
+            <!-- Ícone em Destaque -->
+            <div class="relative mx-auto mb-6 w-20 h-20 rounded-2xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-400 shadow-lg">
+                <i class="fas fa-mobile-screen-button text-4xl" aria-hidden="true"></i>
             </div>
 
-            <!-- Bottom Row: Navigation / Categories -->
-            <nav class="flex items-center justify-center gap-6 md:gap-12 py-1 overflow-x-auto no-scrollbar border-t border-gray-800/50" id="category-filters">
-                <!-- Categories will be injected here as text links -->
-                <button class="category-chip active py-3 px-1 text-xs font-bold uppercase tracking-widest text-yellow-500 border-b-2 border-yellow-500 whitespace-nowrap transition-all" data-category="all">
-                    Todos <i class="fas fa-chevron-down ml-1 text-[10px] opacity-50"></i>
-                </button>
-            </nav>
-        </div>
-    </header>
+            <!-- Badge -->
+            <p class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-extrabold uppercase tracking-widest mb-4">
+                <i class="fas fa-shield-halved" aria-hidden="true"></i> Comunicado Oficial
+            </p>
 
+            <!-- Título Principal -->
+            <h1 id="store-notice-heading" class="text-3xl md:text-4xl font-black uppercase text-white font-title tracking-tight mb-4">
+                Loja Exclusiva no App Kihap
+            </h1>
 
+            <!-- Texto Explicativo -->
+            <p class="text-gray-300 text-base md:text-lg leading-relaxed mb-8">
+                Para oferecer mais segurança, praticidade e integração direta com a matrícula do aluno, todas as compras de <strong class="text-white">uniformes, equipamentos, exames de faixa, eventos e ingressos</strong> agora são realizadas exclusivamente pelo <strong class="text-yellow-400">Aplicativo Oficial Kihap</strong>.
+            </p>
 
-    <main class="py-12">
-        <section class="container mx-auto px-6">
-            <div id="banner-container" class="mb-12 hidden md:block"></div>
+            <!-- Instruções Rápidas -->
+            <div class="bg-black/40 border border-white/10 rounded-2xl p-5 mb-8 text-left space-y-3 text-sm text-gray-300">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-yellow-500 mb-2">Como acessar a Kihap Store:</h2>
+                <ol class="space-y-2.5 list-decimal list-inside">
+                    <li>Baixe ou atualize o aplicativo <strong class="text-white">Kihap</strong> no seu celular (iOS ou Android).</li>
+                    <li>Faça login com o seu e-mail de aluno ou acesse a aba <strong class="text-white">Store</strong> no menu inferior.</li>
+                    <li>Escolha seus produtos ou ingressos e finalize sua compra com confirmação imediata.</li>
+                </ol>
+            </div>
 
-            <h1 class="text-4xl md:text-5xl font-black uppercase text-center font-title mb-12">Nossos Produtos</h1>
-            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Products will be loaded here by JS -->
+            <!-- Botões das Lojas de Aplicativos -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                <a href="https://apps.apple.com/br/app/kihap/id6761770657" target="_blank" rel="noopener noreferrer"
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-black font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg hover:scale-[1.02]">
+                    <i class="fab fa-apple text-2xl" aria-hidden="true"></i>
+                    <span class="text-left leading-tight">
+                        <span class="block text-[10px] uppercase tracking-wider font-semibold text-gray-600">Baixar na</span>
+                        <span class="block text-base font-black">App Store</span>
+                    </span>
+                </a>
+
+                <a href="https://play.google.com/store/apps/details?id=com.kihap.app" target="_blank" rel="noopener noreferrer"
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg hover:scale-[1.02]">
+                    <i class="fab fa-google-play text-xl" aria-hidden="true"></i>
+                    <span class="text-left leading-tight">
+                        <span class="block text-[10px] uppercase tracking-wider font-semibold text-black/70">Disponível no</span>
+                        <span class="block text-base font-black">Google Play</span>
+                    </span>
+                </a>
+            </div>
+
+            <!-- Voltar para o site -->
+            <div class="pt-4 border-t border-white/10">
+                <a href="/" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-yellow-400 transition-colors">
+                    <i class="fas fa-arrow-left text-xs" aria-hidden="true"></i> Voltar para a Página Inicial
+                </a>
             </div>
         </section>
     </main>
 
-    <!-- Footer -->
+    <!-- Footer Padrão Kihap -->
     <div id="footer-container"></div>
 
-    <!-- Mobile Menu Components -->
-    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
-    <div id="mobile-menu" class="mobile-menu">
-        <div class="p-6 flex flex-col justify-between h-full">
-            <div>
-                <div class="flex justify-between items-center mb-8">
-                    <img src="imgs/favicon.png" alt="Kihap Logo" class="h-8">
-                    <button id="mobile-menu-close-button" class="text-white" aria-label="Fechar menu">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <nav class="flex flex-col space-y-6 text-xl">
-                    <a href="artes-marciais.html" class="text-gray-300 hover:text-yellow-500 transition">Artes Marciais</a>
-                    <a href="desenvolvimento-pessoal.html" class="text-gray-300 hover:text-yellow-500 transition">Desenvolvimento Pessoal</a>
-                    <a href="store.html" class="text-gray-300 hover:text-yellow-500 transition">Store</a>
-                </nav>
-            </div>
-            <div>
-                <a href="intranet/login.html" class="w-full block btn-gradient text-black text-center font-bold py-3 px-8 rounded-lg">
-                    Área do Aluno
-                </a>
-            </div>
-        </div>
-    </div>
-
     <script src="js/script.js"></script>
-    <script type="module" src="js/cart.js"></script>
-    <script type="module" src="js/store.js"></script>
 </body>
 </html>
