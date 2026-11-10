@@ -2664,15 +2664,6 @@
                         ownersSet.set(nKey, { value: u.name, label: isMe ? `${u.name} (Você)` : u.name, isMe });
                     }
                 });
-                combinedData.forEach(p => {
-                    const info = getLeadOwnerInfo(p);
-                    if (info.hasOwner) {
-                        const nKey = normalizeKey(info.name);
-                        if (!ownersSet.has(nKey)) {
-                            ownersSet.set(nKey, { value: info.name, label: info.isCurrentUser ? `${info.name} (Você)` : info.name, isMe: info.isCurrentUser });
-                        }
-                    }
-                });
 
                 const sortedOwners = Array.from(ownersSet.values()).sort((a, b) => {
                     if (a.isMe && !b.isMe) return -1;
@@ -5322,9 +5313,10 @@
                     const email = (data.email || '').trim();
                     const photoURL = data.photoURL || data.photoUrl || data.profilePicture || data.profilePic || data.avatarUrl || data.foto || '';
                     const isInstructor = data.isInstructor === true;
-                    const isStudentOnly = data.role === 'student' || data.isStudent === true;
+                    const hasEvoMemberId = data.evoMemberId !== undefined && data.evoMemberId !== null && data.evoMemberId !== '';
+                    const isIntranetStaff = !hasEvoMemberId && data.role !== 'student' && data.isStudent !== true;
 
-                    if (!name) return;
+                    if (!name || name.startsWith('***')) return;
 
                     const userObj = {
                         id: docSnap.id,
@@ -5336,8 +5328,8 @@
                         allowedUnits: Array.isArray(data.allowedUnits) ? data.allowedUnits : (Array.isArray(data.unidades) ? data.unidades : null)
                     };
 
-                    // Registra no mapa de colaboradores/responsáveis
-                    if (!isStudentOnly) {
+                    // Registra no mapa de colaboradores/responsáveis (apenas staff da intranet, sem evoMemberId)
+                    if (isIntranetStaff) {
                         staffUsersMap.set(`id:${docSnap.id}`, userObj);
                         if (email) staffUsersMap.set(`email:${normalizeKey(email)}`, userObj);
                         staffUsersMap.set(`name:${normalizeKey(name)}`, userObj);
