@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import {
-    collection, getDocs, query, orderBy, where,
+    collection, getDocs, query, orderBy, where, limit,
     addDoc, doc, setDoc, updateDoc, deleteDoc, serverTimestamp, getDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import {
@@ -9,13 +9,37 @@ import {
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { getCurrentUser, checkAdminStatus } from './auth.js';
 
-// Global cache variables for performance
-let allSales = [];
-let allProducts = [];
-let allBanners = [];
-let allCoupons = [];
-let allCheckins = [];
-let searchTimeout = null;
+    // Global cache variables for performance
+    let allSales = [];
+    let isFullHistoryLoaded = false;
+    let currentRenderedSalesCount = 60;
+    const SALES_PAGE_SIZE = 60;
+    let lastFilteredSalesList = [];
+
+    let allProducts = [];
+    let allBanners = [];
+    let allCoupons = [];
+    let allCheckins = [];
+    let searchTimeout = null;
+
+    const parseSaleCreatedTime = (val) => {
+        if (!val) return 0;
+        if (typeof val === 'number') return val;
+        if (typeof val.toDate === 'function') return val.toDate().getTime();
+        if (val.seconds) return val.seconds * 1000;
+        const d = new Date(val);
+        const t = d.getTime();
+        return isNaN(t) ? 0 : t;
+    };
+
+    const normalizeSaleForSearch = (sale) => {
+        const uName = (sale.userName || '').toLowerCase();
+        const pName = (sale.payerName || '').toLowerCase();
+        const uEmail = (sale.userEmail || '').toLowerCase();
+        sale._searchStr = `${uName} ${pName} ${uEmail}`;
+        sale._createdMs = parseSaleCreatedTime(sale.created);
+        return sale;
+    };
 
 const debounce = (func, delay) => {
     return (...args) => {
@@ -537,8 +561,8 @@ export async function setupStorePage() {
 
         if (activeTab === 'dashboard' && contentDashboard) {
             contentDashboard.classList.remove('hidden');
-            if (allSales.length === 0) {
-                fetchSales().then(() => {
+            if (allSales.length === 0 || !isFullHistoryLoaded) {
+                fetchSales(true).then(() => {
                     populateBIFilters();
                     updateBIDashboard();
                 });
@@ -549,14 +573,16 @@ export async function setupStorePage() {
         } else if (activeTab === 'sales' && contentSalesLog) {
             contentSalesLog.classList.remove('hidden');
             if (allSales.length === 0) {
-                fetchSales().then(() => applyFilters());
+                fetchSales(false).then(() => applyFilters());
             } else {
                 applyFilters();
             }
         } else if (activeTab === 'products' && contentManageProducts) {
             contentManageProducts.classList.remove('hidden');
+            if (allProducts.length === 0) fetchProducts();
         } else if (activeTab === 'marketing' && contentMarketing) {
             contentMarketing.classList.remove('hidden');
+            if (allBanners.length === 0) fetchBanners();
         } else if (activeTab === 'events' && contentEvents) {
             populateEventFilter();
             fetchEventSubscribers();
@@ -879,30 +905,36 @@ export async function setupStorePage() {
     };
 
     // --- Sales Log Logic ---
-    const fetchSales = async () => {
+    const fetchSales = async (loadAllHistory = false) => {
+        if (isFullHistoryLoaded && !loadAllHistory) {
+            return;
+        }
+
         if (salesTableBody) {
             salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando vendas...</td></tr>';
         }
         try {
             let querySnapshot;
             try {
-                const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
-                querySnapshot = await getDocs(q);
+                if (loadAllHistory) {
+                    const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'));
+                    querySnapshot = await getDocs(q);
+                    isFullHistoryLoaded = true;
+                } else {
+                    // Fast initial load: last 350 sales (instantly fast and covers recent activity)
+                    const q = query(collection(db, 'inscricoesFaixaPreta'), orderBy('created', 'desc'), limit(350));
+                    querySnapshot = await getDocs(q);
+                }
             } catch (errOrderBy) {
                 console.warn('[Store] Fallback to simple query for sales:', errOrderBy);
                 querySnapshot = await getDocs(collection(db, 'inscricoesFaixaPreta'));
+                isFullHistoryLoaded = true;
             }
-            allSales = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            allSales = querySnapshot.docs.map(doc => normalizeSaleForSearch({ id: doc.id, ...doc.data() }));
             window.allSales = allSales;
-            allSales.sort((a, b) => {
-                const getTime = (val) => {
-                    if (!val) return 0;
-                    if (typeof val.toDate === 'function') return val.toDate().getTime();
-                    if (val.seconds) return val.seconds * 1000;
-                    return new Date(val).getTime() || 0;
-                };
-                return getTime(b.created) - getTime(a.created);
-            });
+            allSales.sort((a, b) => (b._createdMs || 0) - (a._createdMs || 0));
+
             applyFilters();
         } catch (error) {
             console.error('Error fetching sales:', error);
@@ -912,22 +944,28 @@ export async function setupStorePage() {
         }
     };
 
-    const displaySales = (salesToDisplay) => {
+    const renderSalesRows = (salesToDisplay, limitCount) => {
         if (!salesTableBody) return;
         
         if (salesToDisplay.length === 0) {
             salesTableBody.innerHTML = '<tr><td colspan="8" class="text-center p-8 text-gray-500 italic">Nenhuma venda encontrada com os filtros atuais.</td></tr>';
+            const loadMoreContainer = document.getElementById('sales-load-more-container');
+            if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
             return;
         }
 
+        const visibleSales = salesToDisplay.slice(0, limitCount);
         const fragment = document.createDocumentFragment();
-        salesToDisplay.forEach(sale => {
+
+        visibleSales.forEach((sale, index) => {
             const row = document.createElement('tr');
-            row.className = 'border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-all duration-200 group';
+            // Apply store-deferred-row to rows below initial fold (index >= 15) for smooth scrolling
+            const deferredClass = index >= 15 ? 'store-deferred-row' : '';
+            row.className = `border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer transition-colors group ${deferredClass}`;
             row.dataset.saleId = sale.id;
 
-            const date = sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A';
-            const amount = (sale.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
+            const date = sale._createdMs ? new Date(sale._createdMs).toLocaleString('pt-BR') : (sale.created ? (sale.created.toDate ? sale.created.toDate().toLocaleString('pt-BR') : new Date(sale.created).toLocaleString('pt-BR')) : 'N/A');
+            const amount = ((sale.amountTotal || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: sale.currency || 'BRL' });
 
             let nameDisplay = `<div class="text-gray-900 dark:text-white font-bold">${sale.userName || 'N/A'}</div>`;
             if (sale.payerName && sale.payerName !== sale.userName) {
@@ -967,7 +1005,7 @@ export async function setupStorePage() {
                 <td class="p-4" data-label="Entrega">${renderFulfillmentStatusTag(sale.fulfillmentStatus)}</td>
                 <td class="p-4 text-gray-400 text-[10px] font-medium" data-label="Data da Compra">${date}</td>
                 <td class="p-4" data-label="Ações">
-                    <button class="update-status-btn w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all shadow-sm" 
+                    <button class="update-status-btn w-8 h-8 flex items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors shadow-sm" 
                         data-sale-id="${sale.id}" title="Ver Detalhes">
                         <i class="fas fa-eye text-xs"></i>
                     </button>
@@ -978,75 +1016,113 @@ export async function setupStorePage() {
 
         salesTableBody.innerHTML = '';
         salesTableBody.appendChild(fragment);
+
+        // Update load more button
+        const loadMoreContainer = document.getElementById('sales-load-more-container');
+        const loadedCountSpan = document.getElementById('sales-loaded-count');
+        const totalCountSpan = document.getElementById('sales-total-count');
+
+        if (loadMoreContainer && loadedCountSpan && totalCountSpan) {
+            if (salesToDisplay.length > limitCount) {
+                loadedCountSpan.textContent = limitCount;
+                totalCountSpan.textContent = salesToDisplay.length;
+                loadMoreContainer.classList.remove('hidden');
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
+        }
     };
 
+    const displaySales = (salesToDisplay) => {
+        lastFilteredSalesList = salesToDisplay;
+        currentRenderedSalesCount = SALES_PAGE_SIZE;
+        renderSalesRows(lastFilteredSalesList, currentRenderedSalesCount);
+    };
+
+    const loadMoreSales = () => {
+        currentRenderedSalesCount += SALES_PAGE_SIZE;
+        renderSalesRows(lastFilteredSalesList, currentRenderedSalesCount);
+    };
+
+    const salesLoadMoreBtn = document.getElementById('sales-load-more-btn');
+    if (salesLoadMoreBtn) {
+        salesLoadMoreBtn.addEventListener('click', loadMoreSales);
+    }
+
     const applyFilters = () => {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedUnit = unitFilter.value;
-        const selectedProduct = productFilter.value;
+        const searchTerm = (searchInput ? searchInput.value.toLowerCase().trim() : '');
+        const selectedUnit = unitFilter ? unitFilter.value : '';
+        const selectedProduct = productFilter ? productFilter.value : '';
         const selectedPeriod = periodFilter ? periodFilter.value : 'all';
         const customStart = filterStartDate ? filterStartDate.value : '';
         const customEnd = filterEndDate ? filterEndDate.value : '';
-        const selectedStatus = statusFilter.value;
+        const selectedStatus = statusFilter ? statusFilter.value : '';
         const selectedFulfillment = fulfillmentFilter ? fulfillmentFilter.value : '';
 
+        // If user wants full period or custom date beyond initial window, ensure full history is loaded
+        if ((selectedPeriod === 'all' || selectedPeriod === 'custom' || selectedPeriod === '30' || selectedPeriod === 'month') && !isFullHistoryLoaded) {
+            fetchSales(true);
+            return;
+        }
+
+        const now = new Date();
+        now.setHours(23, 59, 59, 999);
+        const nowTime = now.getTime();
+        let startTimeLimit = 0;
+        let endTimeLimit = nowTime;
+
+        if (selectedPeriod === 'custom') {
+            if (customStart) {
+                const startStr = customStart.split('-');
+                const startObj = new Date(startStr[0], startStr[1]-1, startStr[2]);
+                startObj.setHours(0,0,0,0);
+                startTimeLimit = startObj.getTime();
+            }
+            if (customEnd) {
+                const endStr = customEnd.split('-');
+                const endObj = new Date(endStr[0], endStr[1]-1, endStr[2]);
+                endObj.setHours(23,59,59,999);
+                endTimeLimit = endObj.getTime();
+            }
+        } else if (selectedPeriod === '7' || selectedPeriod === '15' || selectedPeriod === '30' || selectedPeriod === 'month') {
+            const startObj = new Date();
+            startObj.setHours(0, 0, 0, 0);
+            if (selectedPeriod === '7') {
+                startObj.setDate(startObj.getDate() - 7);
+            } else if (selectedPeriod === '15') {
+                startObj.setDate(startObj.getDate() - 15);
+            } else if (selectedPeriod === '30') {
+                startObj.setDate(startObj.getDate() - 30);
+            } else if (selectedPeriod === 'month') {
+                startObj.setDate(1);
+            }
+            startTimeLimit = startObj.getTime();
+        }
+
         let filteredSales = allSales.filter(sale => {
-            const nameMatch = !searchTerm || 
-                (sale.userName && sale.userName.toLowerCase().includes(searchTerm)) ||
-                (sale.payerName && sale.payerName.toLowerCase().includes(searchTerm));
-            const emailMatch = !searchTerm || (sale.userEmail && sale.userEmail.toLowerCase().includes(searchTerm));
-            const unitMatch = !selectedUnit || sale.userUnit === selectedUnit;
-            const mainProductMatch = sale.productId === selectedProduct;
-            const recommendedProductMatch = sale.recommendedItems && sale.recommendedItems.some(item => item.productId === selectedProduct);
-            const productMatch = !selectedProduct || mainProductMatch || recommendedProductMatch;
-            const statusMatch = !selectedStatus || sale.paymentStatus === selectedStatus;
-            const fulfillmentMatch = !selectedFulfillment || sale.fulfillmentStatus === selectedFulfillment || (selectedFulfillment === 'pending' && !sale.fulfillmentStatus);
-
-            let dateMatch = true;
-            if (sale.created && selectedPeriod) {
-                const saleDateObj = sale.created.toDate();
-                const saleTime = saleDateObj.getTime();
-                
-                if (selectedPeriod === 'all') {
-                    dateMatch = true;
-                } else if (selectedPeriod === 'custom') {
-                    if (customStart) {
-                        const startStr = customStart.split('-');
-                        const startObj = new Date(startStr[0], startStr[1]-1, startStr[2]);
-                        startObj.setHours(0,0,0,0);
-                        if (saleTime < startObj.getTime()) dateMatch = false;
-                    }
-                    if (customEnd) {
-                        const endStr = customEnd.split('-');
-                        const endObj = new Date(endStr[0], endStr[1]-1, endStr[2]);
-                        endObj.setHours(23,59,59,999);
-                        if (saleTime > endObj.getTime()) dateMatch = false;
-                    }
-                } else {
-                    const now = new Date();
-                    now.setHours(23, 59, 59, 999);
-                    let startObj = new Date();
-                    startObj.setHours(0, 0, 0, 0);
-                    
-                    if (selectedPeriod === '7') {
-                        startObj.setDate(startObj.getDate() - 7);
-                    } else if (selectedPeriod === '15') {
-                        startObj.setDate(startObj.getDate() - 15);
-                    } else if (selectedPeriod === '30') {
-                        startObj.setDate(startObj.getDate() - 30);
-                    } else if (selectedPeriod === 'month') {
-                        startObj.setDate(1);
-                    }
-
-                    if (saleTime < startObj.getTime() || saleTime > now.getTime()) {
-                        dateMatch = false;
-                    }
-                }
-            } else if (!sale.created && selectedPeriod !== 'all') {
-                dateMatch = false;
+            if (searchTerm && sale._searchStr && !sale._searchStr.includes(searchTerm)) {
+                return false;
+            }
+            if (selectedUnit && sale.userUnit !== selectedUnit) return false;
+            if (selectedProduct) {
+                const mainProductMatch = sale.productId === selectedProduct;
+                const recProductMatch = sale.recommendedItems && sale.recommendedItems.some(i => i.productId === selectedProduct);
+                if (!mainProductMatch && !recProductMatch) return false;
+            }
+            if (selectedStatus && sale.paymentStatus !== selectedStatus) return false;
+            if (selectedFulfillment) {
+                const matchFulfillment = sale.fulfillmentStatus === selectedFulfillment || (selectedFulfillment === 'pending' && !sale.fulfillmentStatus);
+                if (!matchFulfillment) return false;
             }
 
-            return (nameMatch || emailMatch) && unitMatch && productMatch && dateMatch && statusMatch && fulfillmentMatch;
+            if (selectedPeriod !== 'all') {
+                const sTime = sale._createdMs || 0;
+                if (!sTime) return false;
+                if (startTimeLimit && sTime < startTimeLimit) return false;
+                if (endTimeLimit && sTime > endTimeLimit) return false;
+            }
+
+            return true;
         });
 
         const noFiltersApplied = !searchTerm && !selectedUnit && !selectedProduct && selectedPeriod === 'all' && !selectedStatus;
@@ -1054,11 +1130,9 @@ export async function setupStorePage() {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
             sevenDaysAgo.setHours(0, 0, 0, 0);
+            const sevenDaysAgoMs = sevenDaysAgo.getTime();
 
-            filteredSales = filteredSales.filter(sale => {
-                if (!sale.created) return false;
-                return sale.created.toDate() >= sevenDaysAgo;
-            });
+            filteredSales = filteredSales.filter(sale => (sale._createdMs || 0) >= sevenDaysAgoMs);
         }
 
         displaySales(filteredSales);
@@ -4366,17 +4440,18 @@ Requisitos:
 
     // --- Initial Load ---
     const initialLoad = async () => {
-        await fetchMpAccounts(); // Fetch MP Accounts for product forms
-        await fetchProducts(); // Fetch products first to populate filter
-        await fetchSales();   // Fetch sales (must await so allSales is ready)
-        populateFilters();    // Then populate filters with data from both
-        populateEventFilter(); // Populate the events tab filter as well
-        populateBIFilters();   // Populate BI filters (Units, Instructors)
-        updateBIDashboard();   // Render BI Dashboard
-        await fetchBanners();
-        await fetchCoupons();
-        // fetchCheckins() is now called when switching to the tab
+        // 1. Critical path for Sales Log view (default tab)
+        await fetchSales(false);   // Fetch recent sales (fast initial window)
+        await fetchProducts();     // Fetch products to populate filters
+        populateFilters();        // Populate filters with units and products
         applyFilters();
+
+        // 2. Secondary non-blocking data (deferred so page is immediately responsive)
+        setTimeout(async () => {
+            await fetchMpAccounts();
+            populateEventFilter();
+            populateBIFilters();
+        }, 150);
     };
 
     // --- Events Tab Logic (Upgraded) ---

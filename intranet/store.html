@@ -32,11 +32,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="log.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
+        }
+
+        /* Performance: Remove expensive GPU backdrop-blur repaints during scroll */
+        .glass-card {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background-color: #ffffff !important;
+        }
+
+        .dark .glass-card {
+            background-color: #1a1a1a !important;
+        }
+
+        /* Off-screen row rendering optimization (below initial fold) */
+        .store-deferred-row {
+            content-visibility: auto;
+            contain-intrinsic-size: auto none auto 68px;
+        }
+
+        @supports not (content-visibility: auto) {
+            .store-deferred-row {
+                contain: layout style paint;
+            }
         }
 
         /* Toggle Switch */
@@ -921,6 +944,11 @@
                             </tr>
                         </tbody>
                     </table>
+                    <div id="sales-load-more-container" class="hidden p-4 border-t border-gray-100 dark:border-gray-800/80 text-center bg-gray-50/50 dark:bg-gray-800/20">
+                        <button type="button" id="sales-load-more-btn" class="px-6 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-xl transition-all shadow-sm border border-blue-200 dark:border-blue-800/40">
+                            Carregar mais vendas (<span id="sales-loaded-count">0</span> de <span id="sales-total-count">0</span>)
+                        </button>
+                    </div>
                 </div>
             </div>
 
