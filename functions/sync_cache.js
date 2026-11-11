@@ -57,11 +57,12 @@ async function syncUnit(unitId) {
             let hasMorePages = true;
             let members = [];
 
-            while (hasMorePages) {
+            while (hasMorePages && currentPage <= 20) {
                 try {
+                    const skip = (currentPage - 1) * PAGE_SIZE;
                     const response = await apiClient.get('/members', {
                         params: {
-                            page: currentPage,
+                            skip: skip,
                             take: PAGE_SIZE,
                             showMemberships: true,
                             status: status

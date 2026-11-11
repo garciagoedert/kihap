@@ -81,17 +81,20 @@ async function getActiveStudentsFromUnit(unitId) {
     const PAGE_SIZE = 500;
     let allMembers = [];
 
-    // Função auxiliar para buscar páginas
+    // Função auxiliar para buscar páginas (API v2 do EVO usa skip + take, não page)
     const fetchAllPages = async (status) => {
+        const MAX_PAGES = 20;
         let currentPage = 1;
         let hasMorePages = true;
         let members = [];
+        let lastFirstId = null;
 
-        while (hasMorePages) {
+        while (hasMorePages && currentPage <= MAX_PAGES) {
             try {
+                const skip = (currentPage - 1) * PAGE_SIZE;
                 const response = await apiClientV2.get("/members", {
                     params: {
-                        page: currentPage,
+                        skip: skip,
                         take: PAGE_SIZE,
                         status: status, // 1 = Ativo
                         showMemberships: false, // Não precisamos de detalhes de contrato para essa sync, economiza banda
@@ -101,6 +104,11 @@ async function getActiveStudentsFromUnit(unitId) {
                 const pageMembers = response.data || [];
 
                 if (pageMembers.length > 0) {
+                    const firstId = pageMembers[0]?.idMember;
+                    if (firstId !== undefined && firstId === lastFirstId) {
+                        break;
+                    }
+                    lastFirstId = firstId;
                     members = members.concat(pageMembers);
                 }
 
@@ -347,20 +355,29 @@ async function _syncUnitData(currentUnitId) { // Added internal helper
 
     const fetchPages = async (status, showMemberships) => {
         const TAKE = 500;
+        const MAX_PAGES = 20;
         let page = 1;
         let hasMore = true;
         let accumulated = [];
+        let lastFirstId = null;
 
-        while (hasMore) {
-            functions.logger.info(`[SYNC] Fetching: Unit=${currentUnitId}, Status=${status}, Page=${page}`);
+        while (hasMore && page <= MAX_PAGES) {
+            const skip = (page - 1) * TAKE;
+            functions.logger.info(`[SYNC] Fetching: Unit=${currentUnitId}, Status=${status}, Page=${page} (skip=${skip})`);
             const response = await apiClient.get("/members", {
-                params: { page, take: TAKE, status, showMemberships }
+                params: { skip, take: TAKE, status, showMemberships }
             });
 
             const rawData = response.data || [];
             const membersArray = Array.isArray(rawData) ? rawData : (rawData.members || rawData.results || rawData.data || []);
 
             if (membersArray.length > 0) {
+                const firstId = membersArray[0]?.idMember;
+                if (firstId !== undefined && firstId === lastFirstId) {
+                    functions.logger.warn(`[SYNC] Duplicate page detected on Unit=${currentUnitId}, Status=${status}, Page=${page}. Breaking loop.`);
+                    break;
+                }
+                lastFirstId = firstId;
                 accumulated = accumulated.concat(membersArray);
                 functions.logger.info(`[SYNC]   - Received ${membersArray.length} items. Total: ${accumulated.length}`);
             }
@@ -541,7 +558,8 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
 
                     const fetchAllPagesForStatus = async (status) => {
                         const PAGE_SIZE = 500;
-                        const apiParams = { page: 1, take: PAGE_SIZE, showMemberships: false, status };
+                        const MAX_PAGES = 20;
+                        const apiParams = { skip: 0, take: PAGE_SIZE, showMemberships: false, status };
                         if (name && name.trim() !== '') {
                             apiParams.name = name.trim();
                         }
@@ -549,14 +567,20 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                         let currentPage = 1;
                         let hasMorePages = true;
                         let statusMembers = [];
+                        let lastFirstId = null;
 
-                        while (hasMorePages) {
-                            apiParams.page = currentPage;
+                        while (hasMorePages && currentPage <= MAX_PAGES) {
+                            apiParams.skip = (currentPage - 1) * PAGE_SIZE;
                             const response = await apiClientV2.get("/members", { params: apiParams });
                             const members = response.data || [];
 
                             if (Array.isArray(members)) {
                                 if (members.length > 0) {
+                                    const firstId = members[0]?.idMember;
+                                    if (firstId !== undefined && firstId === lastFirstId) {
+                                        break;
+                                    }
+                                    lastFirstId = firstId;
                                     statusMembers = statusMembers.concat(members);
                                 }
                                 if (members.length < PAGE_SIZE) hasMorePages = false;
@@ -602,12 +626,14 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                         await batch.commit();
                     }
 
-                    // Registra sucesso do sync
-                    await db.collection('evo_sync_status').doc(currentUnitId).set({
-                        lastSync: admin.firestore.FieldValue.serverTimestamp(),
-                        status: 'success',
-                        totalStudents: unitMembers.length
-                    });
+                    // Registra sucesso do sync apenas quando foi sincronização completa da unidade (sem filtro de nome)
+                    if (!name || name.trim() === '') {
+                        await db.collection('evo_sync_status').doc(currentUnitId).set({
+                            lastSync: admin.firestore.FieldValue.serverTimestamp(),
+                            status: 'success',
+                            totalStudents: unitMembers.length
+                        }, { merge: true });
+                    }
 
                     allMembers = allMembers.concat(unitMembers);
                     await new Promise(resolve => setTimeout(resolve, 500));
@@ -1159,8 +1185,9 @@ async function findStudentByEmail(normalizedEmail) {
             let hasMorePages = true;
 
             while (hasMorePages) {
+                const skip = (currentPage - 1) * PAGE_SIZE;
                 const response = await apiClientV2.get("/members", {
-                    params: { page: currentPage, take: PAGE_SIZE, status: 0 }
+                    params: { skip: skip, take: PAGE_SIZE, status: 0 }
                 });
                 const members = response.data || [];
 
@@ -1508,9 +1535,10 @@ exports.getStudentDataByEmail = functions.https.onCall(async (data, context) => 
             let currentPage = 1;
             let hasMorePages = true;
 
-            while (hasMorePages) {
+            while (hasMorePages && currentPage <= 10) {
+                const skip = (currentPage - 1) * PAGE_SIZE;
                 const response = await apiClientV2.get("/members", {
-                    params: { page: currentPage, take: PAGE_SIZE, status: 0 } // status 0 = todos
+                    params: { skip: skip, take: PAGE_SIZE, status: 0 } // status 0 = todos
                 });
                 const members = response.data || [];
 
