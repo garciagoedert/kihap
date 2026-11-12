@@ -47,29 +47,34 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* High-Performance Fluid Modal Animation */
+        /* High-Performance Fluid Modal & Scroll Container */
         #formModal {
             opacity: 0;
-            transition: opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.08s ease-out;
         }
         #formModal.modal-open {
             opacity: 1;
         }
         #formModalContent {
-            transform: scale(0.97) translateY(8px);
-            opacity: 0;
-            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        #formModal.modal-open #formModalContent {
-            transform: none;
             opacity: 1;
+            transform: none;
+            contain: layout style paint;
         }
-
-        /* Dedicated hardware-accelerated scrolling layer for modal form */
-        #prospectForm {
+        #tabDetailsContent,
+        #whatsappChatArea {
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
-            transform: translateZ(0);
+            contain: content;
+        }
+        /* Em modo leitura, desativa hit-testing nos campos desabilitados para rolagem imediata sem interceptação */
+        #prospectForm.form-readonly input:disabled,
+        #prospectForm.form-readonly select:disabled,
+        #prospectForm.form-readonly textarea:disabled {
+            pointer-events: none;
+        }
+        /* Pausa eventos de ponteiro no quadro Kanban enquanto o modal está aberto */
+        body.crm-modal-open #kanban-container {
+            pointer-events: none;
         }
 
         /* Dragging styles */
@@ -260,6 +265,13 @@
                 width: 315px;
                 min-width: 315px;
                 max-width: 380px;
+                content-visibility: auto;
+                contain-intrinsic-size: auto 315px auto 720px;
+            }
+            @supports not (content-visibility: auto) {
+                .kanban-column {
+                    contain: layout style paint;
+                }
             }
 
             .prospect-card {
@@ -272,7 +284,8 @@
                 height: auto;
                 color: #1f2937;
                 box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-                transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+                contain: layout style paint;
+                transition: border-color 0.12s ease;
             }
             .dark .prospect-card {
                 background-color: #18191c;
@@ -948,33 +961,33 @@
             </form>
         </div>
     </div>
-    <div id="formModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center sm:p-4 backdrop-blur-sm">
+    <div id="formModal" class="fixed inset-0 bg-black/65 z-50 hidden items-center justify-center sm:p-4">
         <div id="formModalContent" class="bg-white dark:bg-[#151515] w-full h-full sm:h-auto sm:rounded-2xl shadow-2xl sm:max-w-3xl sm:max-h-[92vh] flex flex-col border border-gray-150 dark:border-gray-800/80 overflow-hidden">
             <!-- Modal Header -->
-            <div class="flex justify-between items-center p-4 md:px-6 border-b border-gray-150 dark:border-gray-800 gap-4">
+            <div class="shrink-0 flex justify-between items-center p-4 md:px-6 border-b border-gray-150 dark:border-gray-800 gap-4">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
                     <h2 id="modalTitle" class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Adicionar Novo Prospect</h2>
                 </div>
-                <button id="closeFormModalBtn" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-lg transition-all duration-200" aria-label="Fechar">&times;</button>
+                <button id="closeFormModalBtn" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 text-lg transition-colors" aria-label="Fechar">&times;</button>
             </div>
             
             <!-- Modal Tabs -->
-            <div class="flex border-b border-gray-150 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10">
+            <div class="shrink-0 flex border-b border-gray-150 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/10">
                 <button type="button" id="tabDetailsBtn"
-                    class="flex-1 py-3.5 text-xs font-bold text-primary border-b-2 border-primary focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                    class="flex-1 py-3.5 text-xs font-bold text-primary border-b-2 border-primary focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2">
                     <i class="fas fa-info-circle text-xs"></i>
                     <span>Detalhes</span>
                 </button>
                 <button type="button" id="tabWhatsAppBtn"
-                    class="flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-all uppercase tracking-wider flex items-center justify-center gap-2">
+                    class="flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2">
                     <i class="fab fa-whatsapp text-xs"></i>
                     <span>WhatsApp</span>
                 </button>
             </div>
 
-            <form id="prospectForm" class="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-5">
-                <div id="tabDetailsContent" class="space-y-5">
+            <form id="prospectForm" class="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div id="tabDetailsContent" class="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 custom-scrollbar space-y-5">
                     <input type="hidden" id="prospectId">
                     <input type="hidden" id="prospectType">
                     
@@ -1004,19 +1017,19 @@
                             <div class="form-group">
                                 <label for="responsavel" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Nome do cliente / aluno *</label>
                                 <input type="text" id="responsavel" placeholder="Nome completo do cliente ou aluno" required
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                             </div>
                             <div class="form-group">
                                 <label for="unidade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Unidade</label>
                                 <select id="unidade"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                     <option value="">Sem unidade</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label for="setor" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Perfil (Programa)</label>
                                 <input type="text" id="setor" list="perfisSuggestions" placeholder="Ex: Littles, Kids, Adults (ou deixe vazio)"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                 <datalist id="perfisSuggestions">
                                     <option value="Littles"></option>
                                     <option value="Kids"></option>
@@ -1029,7 +1042,7 @@
                             <div class="form-group">
                                 <label for="prioridade" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Prioridade *</label>
                                 <select id="prioridade"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm"
                                     required>
                                     <option value="5">5 - Máxima 🚀</option>
                                     <option value="4">4 - Alta 🔥</option>
@@ -1044,12 +1057,12 @@
                                     <button type="button" id="suggestTicketBtn" class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">Sugerir valor da unidade</button>
                                 </div>
                                 <input type="number" step="0.01" min="0" id="ticketEstimado" placeholder="Não definido (ex: 507.00 ou 0)"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                             </div>
                             <div class="form-group">
                                 <label for="origemLead" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Origem do Lead</label>
                                 <input type="text" id="origemLead" list="origensSuggestions" placeholder="Ex: Site, Chatbot Miles, WhatsApp Web"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                 <datalist id="origensSuggestions">
                                     <option value="Site"></option>
                                     <option value="Chatbot Miles"></option>
@@ -1064,12 +1077,12 @@
                             <div class="form-group">
                                 <label for="agendamentoDataHora" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Data e Hora do Agendamento</label>
                                 <input type="datetime-local" id="agendamentoDataHora"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                             </div>
                             <div class="form-group">
                                 <label for="agendamentoStatus" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Status do Agendamento</label>
                                 <select id="agendamentoStatus"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                     <option value="Pendente">Pendente</option>
                                     <option value="Concluído">Concluído</option>
                                     <option value="Cancelado">Cancelado</option>
@@ -1083,7 +1096,7 @@
                                         <i class="fas fa-user-ninja text-yellow-500 text-sm"></i>
                                     </div>
                                     <select id="instrutor"
-                                        class="flex-1 bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                        class="flex-1 bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                         <option value="">Não definido</option>
                                     </select>
                                 </div>
@@ -1099,7 +1112,7 @@
                                         --
                                     </div>
                                     <select id="responsavelLead"
-                                        class="flex-1 bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                        class="flex-1 bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                         <option value="">Sem responsável</option>
                                     </select>
                                 </div>
@@ -1107,7 +1120,7 @@
                             <div class="form-group md:col-span-2">
                                 <label for="dataChegada" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Entrada do Lead (América/São Paulo)</label>
                                 <input type="text" id="dataChegada" placeholder="N/A" disabled
-                                    class="w-full bg-gray-100 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm focus:outline-none cursor-not-allowed select-none transition-all">
+                                    class="w-full bg-gray-100 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm focus:outline-none cursor-not-allowed select-none">
                             </div>
                         </div>
                     </div>
@@ -1123,10 +1136,10 @@
                                 <div>
                                     <label for="telefone" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Telefone</label>
                                     <input type="text" id="telefone" placeholder="(48) 99999-9999"
-                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                 </div>
                                 <a id="whatsappLink" href="#" target="_blank"
-                                    class="hidden w-full mt-3 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl text-sm items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all duration-200 cursor-pointer">
+                                    class="hidden w-full mt-3 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl text-sm items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-colors cursor-pointer">
                                     <i class="fab fa-whatsapp text-lg"></i>
                                     <span>Chamar no WhatsApp</span>
                                 </a>
@@ -1135,18 +1148,18 @@
                                 <div>
                                     <label for="email" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Email</label>
                                     <input type="email" id="email" placeholder="contato@empresa.com"
-                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                 </div>
                                 <div class="mt-4 md:mt-2">
                                     <label for="cpf" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">CPF</label>
                                     <input type="text" id="cpf" placeholder="000.000.000-00"
-                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm">
+                                        class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm">
                                 </div>
                             </div>
                             <div class="form-group md:col-span-2">
                                 <label for="redesSociais" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Redes Sociais</label>
                                 <textarea id="redesSociais" rows="2" placeholder="Links do Instagram, Facebook, etc."
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm"></textarea>
                             </div>
                         </div>
                     </div>
@@ -1161,7 +1174,7 @@
                             <div class="form-group">
                                 <label for="observacoes" class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-1.5">Observações</label>
                                 <textarea id="observacoes" rows="3"
-                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                                    class="w-full bg-white dark:bg-gray-850 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm"></textarea>
                             </div>
 
                             <div class="form-group">
@@ -1174,14 +1187,14 @@
                             <div class="form-group">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">Log de Contatos (Timeline)</label>
                                 <div id="contactLogContainer"
-                                    class="max-h-60 overflow-y-auto bg-gray-50/40 dark:bg-gray-900/20 p-4 rounded-xl space-y-4 mb-3 border border-gray-200 dark:border-gray-800 custom-scrollbar shadow-inner min-h-[70px]">
+                                    class="bg-gray-50/40 dark:bg-gray-900/20 p-4 rounded-xl space-y-4 mb-3 border border-gray-200 dark:border-gray-800 shadow-inner min-h-[70px]">
                                     <!-- Log entries will be injected here -->
                                 </div>
                                 <div class="flex flex-col gap-2 mt-3">
                                     <textarea id="newContactLog" rows="2" placeholder="Adicionar nota interna..."
-                                        class="w-full bg-white dark:bg-gray-855 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all duration-200 shadow-sm"></textarea>
+                                        class="w-full bg-white dark:bg-gray-855 border border-gray-250 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-colors shadow-sm"></textarea>
                                     <button type="button" id="addContactLogBtn"
-                                        class="bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-bold py-2 px-5 rounded-xl text-xs flex items-center gap-1.5 self-start shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 transition-all duration-200">
+                                        class="bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white font-bold py-2 px-5 rounded-xl text-xs flex items-center gap-1.5 self-start shadow-md shadow-indigo-600/10 hover:shadow-indigo-600/20 transition-colors">
                                         <i class="fas fa-plus"></i>
                                         Adicionar Nota
                                     </button>
@@ -1193,60 +1206,60 @@
                     <div id="createdByContainer" class="hidden text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 border border-gray-150 dark:border-gray-800/80 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm">
                         <span>Criado por: <span id="createdByInfo" class="font-semibold text-gray-700 dark:text-gray-300"></span></span>
                     </div>
-
-                    <!-- Footer Action Buttons inside Details tab -->
-                    <div class="flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-150 dark:border-gray-800">
-                        <div id="modalActionButtons" class="flex gap-3 w-full sm:w-auto">
-                            <button type="button" id="sendCapiBtn"
-                                class="bg-blue-600/10 hover:bg-blue-600 text-blue-700 dark:text-blue-400 hover:text-white border border-blue-600/20 hover:border-blue-600 font-bold py-2 px-4 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5"
-                                title="Enviar evento de conversão manualmente para a Meta Conversions API">
-                                <i class="fab fa-facebook"></i>
-                                <span>Meta CAPI</span>
-                            </button>
-                            <button type="button" id="markLostBtn"
-                                class="bg-rose-600/10 hover:bg-rose-600 text-rose-700 dark:text-rose-400 hover:text-white border border-rose-600/20 hover:border-rose-600 font-bold py-2 px-4 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5"
-                                title="Marcar este lead como Perdido e registrar o motivo obrigatório">
-                                <i class="fas fa-times-circle"></i>
-                                <span>Perdido</span>
-                            </button>
-                            <button type="button" id="archiveBtn"
-                                class="bg-amber-600/10 hover:bg-amber-600 text-amber-700 dark:text-amber-400 hover:text-white border border-amber-600/20 hover:border-amber-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
-                                <i class="fas fa-archive"></i>
-                                <span>Arquivar</span>
-                            </button>
-                            <button type="button" id="deleteBtn"
-                                class="bg-rose-600/10 hover:bg-rose-600 text-rose-700 dark:text-rose-400 hover:text-white border border-rose-600/20 hover:border-rose-600 font-bold py-2 px-5 rounded-xl text-sm transition-all duration-200 w-full sm:w-auto active:scale-95 flex items-center justify-center gap-1.5">
-                                <i class="fas fa-trash-alt"></i>
-                                <span>Excluir</span>
-                            </button>
-                        </div>
-                        <div id="formControls" class="flex gap-3 w-full sm:w-auto">
-                            <button type="button" id="editBtn"
-                                class="bg-primary hover:bg-primary-dark font-bold py-2.5 px-6 rounded-xl text-sm active:scale-95 transition-all duration-200 w-full sm:w-auto flex items-center justify-center gap-1.5">
-                                <i class="fas fa-edit"></i>
-                                <span>Editar</span>
-                            </button>
-                            <button type="button" id="cancelFormBtn"
-                                class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold py-2.5 px-6 rounded-xl text-sm active:scale-95 transition-all duration-200 hidden w-full sm:w-auto flex items-center justify-center gap-1.5">
-                                <i class="fas fa-times"></i>
-                                <span>Cancelar</span>
-                            </button>
-                            <button type="submit" id="saveBtn"
-                                class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold py-2.5 px-6 rounded-xl text-sm transition-all duration-200 hidden w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20">
-                                <i class="fas fa-save"></i>
-                                <span>Salvar</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
                 <!-- End Details Tab Content -->
+
+                <!-- Pinned Footer Action Bar for Details Tab -->
+                <div id="modalFooterBar" class="shrink-0 px-4 md:px-6 py-3.5 bg-white dark:bg-[#151515] border-t border-gray-150 dark:border-gray-800 flex flex-col-reverse sm:flex-row sm:justify-between items-center gap-3">
+                    <div id="modalActionButtons" class="flex flex-wrap gap-2.5 w-full sm:w-auto">
+                        <button type="button" id="sendCapiBtn"
+                            class="bg-blue-600/10 hover:bg-blue-600 text-blue-700 dark:text-blue-400 hover:text-white border border-blue-600/20 hover:border-blue-600 font-bold py-2 px-3.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                            title="Enviar evento de conversão manualmente para a Meta Conversions API">
+                            <i class="fab fa-facebook"></i>
+                            <span>Meta CAPI</span>
+                        </button>
+                        <button type="button" id="markLostBtn"
+                            class="bg-rose-600/10 hover:bg-rose-600 text-rose-700 dark:text-rose-400 hover:text-white border border-rose-600/20 hover:border-rose-600 font-bold py-2 px-3.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                            title="Marcar este lead como Perdido e registrar o motivo obrigatório">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Perdido</span>
+                        </button>
+                        <button type="button" id="archiveBtn"
+                            class="bg-amber-600/10 hover:bg-amber-600 text-amber-700 dark:text-amber-400 hover:text-white border border-amber-600/20 hover:border-amber-600 font-bold py-2 px-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fas fa-archive"></i>
+                            <span>Arquivar</span>
+                        </button>
+                        <button type="button" id="deleteBtn"
+                            class="bg-rose-600/10 hover:bg-rose-600 text-rose-700 dark:text-rose-400 hover:text-white border border-rose-600/20 hover:border-rose-600 font-bold py-2 px-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+                            <i class="fas fa-trash-alt"></i>
+                            <span>Excluir</span>
+                        </button>
+                    </div>
+                    <div id="formControls" class="flex gap-2.5 w-full sm:w-auto justify-end">
+                        <button type="button" id="editBtn"
+                            class="bg-primary hover:bg-primary-dark font-bold py-2 px-5 rounded-xl text-sm transition-colors w-full sm:w-auto flex items-center justify-center gap-1.5">
+                            <i class="fas fa-edit"></i>
+                            <span>Editar</span>
+                        </button>
+                        <button type="button" id="cancelFormBtn"
+                            class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold py-2 px-5 rounded-xl text-sm transition-colors hidden w-full sm:w-auto flex items-center justify-center gap-1.5">
+                            <i class="fas fa-times"></i>
+                            <span>Cancelar</span>
+                        </button>
+                        <button type="submit" id="saveBtn"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-5 rounded-xl text-sm transition-colors hidden w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-sm">
+                            <i class="fas fa-save"></i>
+                            <span>Salvar</span>
+                        </button>
+                    </div>
+                </div>
  
                 <!-- WhatsApp Tab Content -->
-                <div id="tabWhatsAppContent" class="hidden flex flex-col h-full bg-gray-50 dark:bg-[#111] rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm" style="min-height: 480px;">
+                <div id="tabWhatsAppContent" class="hidden flex-1 min-h-0 flex flex-col m-4 bg-gray-50 dark:bg-[#111] rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm" style="min-height: 480px;">
                     <div class="flex items-center justify-between p-4 bg-white dark:bg-[#181818] border-b border-gray-150 dark:border-gray-800">
                         <div class="flex items-center gap-2.5">
                             <div class="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                                <i class="fab fa-whatsapp text-emerald-500 text-lg animate-pulse"></i>
+                                <i class="fab fa-whatsapp text-emerald-500 text-lg"></i>
                             </div>
                             <div>
                                 <h3 class="text-xs font-bold text-gray-800 dark:text-gray-250 uppercase tracking-wider">Conversa WhatsApp</h3>
@@ -3180,6 +3193,7 @@
                 prospectType: document.getElementById('prospectType'),
                 whatsappLink: document.getElementById('whatsappLink'),
                 telefone: document.getElementById('telefone'),
+                modalFooterBar: document.getElementById('modalFooterBar'),
                 modalActionButtons: document.getElementById('modalActionButtons'),
                 formControls: document.getElementById('formControls'),
                 archiveBtn: document.getElementById('archiveBtn'),
@@ -3246,6 +3260,13 @@
 
             if (modalElements.telefone) {
                 modalElements.telefone.addEventListener('input', updateWhatsAppLink);
+            }
+            if (modalElements.ticketEstimado) {
+                modalElements.ticketEstimado.addEventListener('wheel', () => {
+                    if (document.activeElement === modalElements.ticketEstimado) {
+                        modalElements.ticketEstimado.blur();
+                    }
+                }, { passive: true });
             }
             if (modalElements.suggestTicketBtn && modalElements.ticketEstimado && modalElements.unidade) {
                 modalElements.suggestTicketBtn.addEventListener('click', () => {
@@ -3450,6 +3471,9 @@
 
         function setFormEditable(isEditable) {
             if (!modalElements) return;
+            if (modalElements.prospectForm) {
+                modalElements.prospectForm.classList.toggle('form-readonly', !isEditable);
+            }
             modalFields.forEach(field => {
                 if (field.id !== 'prospectId' && field.id !== 'prospectType') {
                     field.disabled = !isEditable;
@@ -3486,6 +3510,7 @@
                 modalElements.tabWhatsAppBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
                 modalElements.tabDetailsContent.classList.remove('hidden');
                 modalElements.tabWhatsAppContent.classList.add('hidden');
+                if (modalElements.modalFooterBar) modalElements.modalFooterBar.classList.remove('hidden');
                 modalElements.modalActionButtons.classList.remove('hidden');
                 modalElements.formControls.classList.remove('hidden');
                 stopPolling();
@@ -3494,6 +3519,7 @@
                 modalElements.tabDetailsBtn.className = 'flex-1 py-3.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 border-b-2 border-transparent focus:outline-none transition-colors uppercase tracking-wider flex items-center justify-center gap-2';
                 modalElements.tabWhatsAppContent.classList.remove('hidden');
                 modalElements.tabDetailsContent.classList.add('hidden');
+                if (modalElements.modalFooterBar) modalElements.modalFooterBar.classList.add('hidden');
                 modalElements.modalActionButtons.classList.add('hidden');
                 modalElements.formControls.classList.add('hidden');
 
@@ -4478,14 +4504,19 @@
         }
 
         function ensureSelectOption(selectEl, value, label = value) {
-            if (!selectEl || !value) return;
-            const exists = Array.from(selectEl.options).some(opt => opt.value === value);
-            if (!exists) {
-                const opt = document.createElement('option');
-                opt.value = value;
-                opt.textContent = label;
-                selectEl.appendChild(opt);
+            if (!selectEl || !selectEl.options || !value) return;
+            const norm = normalizeKey(value);
+            const existing = Array.from(selectEl.options).find(opt => opt.value === value || (norm && normalizeKey(opt.value) === norm));
+            if (existing) {
+                selectEl.value = existing.value;
+                return existing.value;
             }
+            const opt = document.createElement('option');
+            opt.value = value;
+            opt.textContent = label;
+            selectEl.appendChild(opt);
+            selectEl.value = value;
+            return value;
         }
 
         function openFormModal(prospect = null) {
@@ -4495,13 +4526,11 @@
             activeProspect = prospect;
             currentProspectId = prospect ? prospect.id : null;
 
-            // 1. Instantly display modal with hardware-accelerated transition
+            // 1. Instantly display modal without delayed transform/compositor lock
+            document.body.classList.add('crm-modal-open');
             const modal = modalElements.formModal;
             modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            requestAnimationFrame(() => {
-                modal.classList.add('modal-open');
-            });
+            modal.classList.add('flex', 'modal-open');
 
             // 2. Non-blocking optimistic unread update
             if (prospect && prospect.unread) {
@@ -4517,9 +4546,12 @@
                 });
             }
 
-            // 3. Reset to default tab (Details)
+            // 3. Reset to default tab (Details) and scroll position
             switchTab('details');
             modalElements.prospectForm.reset();
+            if (modalElements.tabDetailsContent) {
+                modalElements.tabDetailsContent.scrollTop = 0;
+            }
 
             // 4. Update tags
             const activeTags = new Set(prospect?.tags || []);
@@ -4541,33 +4573,46 @@
                     modalElements.createdByContainer.classList.add('hidden');
                 }
 
+                // Nome do cliente / aluno
+                modalElements.responsavel.value = (prospect.responsavel || prospect.nome || prospect.empresa || '').trim();
+
                 // Unidade (usa chave canônica ou vazia para "Sem unidade")
                 const unitMeta = getUnitMetadata(prospect.unidade);
                 const unitVal = unitMeta.key === '__SEM_UNIDADE__' ? '' : unitMeta.key;
-                if (unitVal) ensureSelectOption(modalElements.unidade, unitVal, unitMeta.cardLabel);
-                modalElements.unidade.value = unitVal;
+                if (unitVal) {
+                    ensureSelectOption(modalElements.unidade, unitVal, unitMeta.cardLabel);
+                } else if (modalElements.unidade) {
+                    modalElements.unidade.value = '';
+                }
 
-                // Perfil (setor)
-                const perfilVal = (prospect.setor || '').trim();
-                if (perfilVal) ensureSelectOption(modalElements.setor, perfilVal, perfilVal);
-                modalElements.setor.value = perfilVal;
+                // Perfil (setor — input com datalist)
+                const rawPerfil = (prospect.setor || prospect.perfil || '').trim();
+                const perfilVal = (rawPerfil && !/^[.\-_/\\]+$/.test(rawPerfil)) ? rawPerfil : '';
+                if (modalElements.setor) {
+                    modalElements.setor.value = perfilVal;
+                }
 
                 // Prioridade
-                modalElements.prioridade.value = String(prospect.prioridade || '3');
+                if (modalElements.prioridade) {
+                    modalElements.prioridade.value = String(prospect.prioridade || '3');
+                }
 
                 // Mensalidade (preserva 0 como "0" e ausente como "")
                 const ticketVal = getTicketNumericValue(prospect);
-                modalElements.ticketEstimado.value = ticketVal !== null ? String(ticketVal) : '';
+                if (modalElements.ticketEstimado) {
+                    modalElements.ticketEstimado.value = ticketVal !== null ? String(ticketVal) : '';
+                }
 
-                // Origem do Lead
-                const origemVal = (prospect.origemLead || '').trim();
-                if (origemVal) ensureSelectOption(modalElements.origemLead, origemVal, origemVal);
-                modalElements.origemLead.value = origemVal;
+                // Origem do Lead (input com datalist)
+                const origemVal = (prospect.origemLead || prospect.origem || '').trim();
+                if (modalElements.origemLead) {
+                    modalElements.origemLead.value = origemVal;
+                }
 
                 // Agendamento (Data/Hora em America/Sao_Paulo + Status do Agendamento)
                 if (modalElements.agendamentoDataHora) {
                     modalElements.agendamentoDataHora.value = formatDateTimeLocalInputSP(
-                        prospect.agendamentoDataHora || prospect.agendamento || prospect.dataAgendamento || null
+                        prospect.agendamentoDataHora || prospect.agendamento || prospect.dataAgendamento || prospect.experimentalDate || null
                     );
                 }
                 if (modalElements.agendamentoStatus) {
@@ -4575,10 +4620,15 @@
                 }
 
                 // Instrutor (separado de Responsável pelo lead)
-                const instVal = (prospect.instrutor || prospect.instructor || '').trim();
+                const rawInstVal = (prospect.instrutor || prospect.instructor || '').trim();
+                const instInfo = rawInstVal ? getInstructorInfo(rawInstVal) : null;
+                const instVal = instInfo?.name || rawInstVal;
                 if (modalElements.instrutor) {
-                    if (instVal) ensureSelectOption(modalElements.instrutor, instVal, instVal);
-                    modalElements.instrutor.value = instVal;
+                    if (instVal) {
+                        ensureSelectOption(modalElements.instrutor, instVal, instVal);
+                    } else {
+                        modalElements.instrutor.value = '';
+                    }
                 }
 
                 // Responsável pelo lead
@@ -4588,8 +4638,9 @@
                     if (ownerVal) {
                         const label = ownerInfo.isCurrentUser ? `${ownerVal} (Você)` : ownerVal;
                         ensureSelectOption(modalElements.responsavelLead, ownerVal, label);
+                    } else {
+                        modalElements.responsavelLead.value = '';
                     }
-                    modalElements.responsavelLead.value = ownerVal;
                 }
 
                 // Entrada do lead (histórica em America/Sao_Paulo)
@@ -4597,7 +4648,6 @@
                     modalElements.dataChegada.value = formatDateTimeSP(prospect.createdAt) || 'Não informado';
                 }
 
-                modalElements.responsavel.value = prospect.responsavel || prospect.nome || prospect.empresa || '';
                 modalElements.telefone.value = prospect.telefone || '';
                 modalElements.email.value = prospect.email || '';
                 modalElements.cpf.value = prospect.cpf || '';
@@ -4670,6 +4720,7 @@
 
         function closeFormModal() {
             isModalOpen = false;
+            document.body.classList.remove('crm-modal-open');
             stopPolling();
             const modal = modalElements?.formModal || formModal;
             if (modal) {
@@ -4683,7 +4734,7 @@
                         pendingBoardRender = false;
                         combineAndRender();
                     }
-                }, 160);
+                }, 80);
             } else if (pendingBoardRender) {
                 pendingBoardRender = false;
                 combineAndRender();

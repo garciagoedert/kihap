@@ -410,19 +410,38 @@ export function setupAlunosPage() {
                 syncEvoBtn.addEventListener('click', async () => {
                     const icon = document.getElementById('sync-icon');
                     const text = document.getElementById('sync-text');
+                    const targetUnit = (unitFilter && unitFilter.value) ? unitFilter.value : 'all';
 
                     syncEvoBtn.disabled = true;
                     if (icon) icon.classList.add('fa-spin');
                     if (text) text.textContent = 'Sincronizando...';
 
                     try {
-                        const result = await syncEvoStudentsToCache({ unitId: 'all' });
-                        const data = result.data;
+                        let data;
+                        try {
+                            const result = await syncEvoStudentsToCache({ unitId: targetUnit });
+                            data = result.data;
+                        } catch (syncErr) {
+                            console.warn('Fallback de sincronização por lotes (EVO API):', syncErr);
+                            const unitsToSync = (targetUnit && targetUnit !== 'all')
+                                ? [targetUnit]
+                                : ['centro', 'coqueiros', 'asa-sul', 'sudoeste', 'lago-sul', 'pontos-de-ensino', 'jardim-botanico', 'dourados', 'santa-monica', 'noroeste'];
+                            let syncedTotal = 0;
+                            for (const uid of unitsToSync) {
+                                const seenIds = new Set();
+                                for (const vowel of ['a', 'e', 'i', 'o', 'u']) {
+                                    const res = await listAllMembers({ unitId: uid, name: vowel, forceRefresh: true });
+                                    (res.data || []).forEach(m => seenIds.add(m.idMember));
+                                }
+                                syncedTotal += seenIds.size;
+                            }
+                            data = { success: unitsToSync, failed: [], totalStudents: syncedTotal };
+                        }
 
                         alert(`✅ Sincronização concluída!\n\n` +
                             `✓ Unidades sincronizadas: ${data.success.length}\n` +
                             `✗ Unidades com erro: ${data.failed.length}\n` +
-                            `📊 Total de alunos: ${data.totalStudents}\n\n` +
+                            `📊 Total de alunos sincronizados: ${data.totalStudents}\n\n` +
                             `Os dados estão agora no cache e serão carregados muito mais rápido!`);
 
                         await loadStudents();
@@ -535,13 +554,39 @@ async function loadStudents() {
             });
         }
 
-        // Search logic local no frontend
+        // Search logic local no frontend (ignorando acentos)
+        const normalizeStr = (str) => (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
         if (searchTerm) {
-            const lowerSearchTerm = searchTerm.toLowerCase();
+            const lowerSearchTerm = normalizeStr(searchTerm);
             studentList = studentList.filter(s => {
-                const fullName = ((s.firstName || '') + " " + (s.lastName || '')).toLowerCase();
-                return fullName.includes(lowerSearchTerm);
+                const fullName = normalizeStr(`${s.firstName || ''} ${s.lastName || ''}`);
+                const idStr = String(s.idMember || s.id || '');
+                return fullName.includes(lowerSearchTerm) || idStr === lowerSearchTerm;
             });
+
+            // Fallback em tempo real na API do EVO caso o aluno seja recém-cadastrado e ainda não esteja no cache local
+            if (studentList.length === 0 && searchTerm.trim().length >= 2) {
+                console.log(`🔎 Aluno "${searchTerm}" não encontrado no cache local. Consultando API do EVO em tempo real...`);
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center p-8"><i class="fas fa-circle-notch fa-spin text-primary mr-2"></i>Buscando diretamente no EVO e atualizando cache...</td></tr>';
+                try {
+                    const evoLiveResult = await listAllMembers({
+                        unitId: selectedUnit || 'all',
+                        name: searchTerm.trim(),
+                        forceRefresh: true
+                    });
+                    const liveMatches = (evoLiveResult.data || []).filter(s => {
+                        const fullName = normalizeStr(`${s.firstName || ''} ${s.lastName || ''}`);
+                        const idStr = String(s.idMember || s.id || '');
+                        return fullName.includes(lowerSearchTerm) || idStr === lowerSearchTerm;
+                    });
+                    if (liveMatches.length > 0) {
+                        console.log(`✅ Encontrado(s) ${liveMatches.length} aluno(s) diretamente na API do EVO e salvos no cache!`);
+                        studentList = liveMatches;
+                    }
+                } catch (liveErr) {
+                    console.warn("⚠️ Erro ao consultar API do EVO em tempo real:", liveErr);
+                }
+            }
         }
 
         console.log(`✅ Busca concluída em ${Date.now() - startTime}ms`);

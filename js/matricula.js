@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Elements
     const form = document.getElementById('matricula-form');
+    if (!form) return;
     const unitCards = document.querySelectorAll('.unit-card');
     const selectedUnitInput = document.getElementById('selected-unit-input');
     const cityFilterBtns = document.querySelectorAll('.city-filter-btn');
@@ -119,15 +120,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SELEÇÃO DE PROGRAMA ---
+    function selectProgram(card) {
+        programPills.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        const prog = card.dataset.program;
+        selectedProgramInput.value = prog;
+        summaryProgram.textContent = prog;
+    }
+
     programPills.forEach(card => {
-        card.addEventListener('click', () => {
-            programPills.forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            const prog = card.dataset.program;
-            selectedProgramInput.value = prog;
-            summaryProgram.textContent = prog;
-        });
+        card.addEventListener('click', () => selectProgram(card));
     });
+
+    // --- PRÉ-SELEÇÃO POR QUERY STRING (?programa=... & ?unidade=...) ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramUnidade = urlParams.get('unidade');
+    const paramPrograma = urlParams.get('programa');
+
+    if (paramUnidade) {
+        const matchedUnit = Array.from(unitCards).find(
+            c => c.dataset.unit.toLowerCase() === paramUnidade.trim().toLowerCase()
+        );
+        if (matchedUnit) {
+            selectUnit(matchedUnit);
+        }
+    }
+
+    if (paramPrograma) {
+        const matchedProgram = Array.from(programPills).find(
+            c => c.dataset.program.toLowerCase() === paramPrograma.trim().toLowerCase() ||
+                 c.dataset.program.toLowerCase().includes(paramPrograma.trim().toLowerCase())
+        );
+        if (matchedProgram) {
+            selectProgram(matchedProgram);
+        }
+    }
 
     // --- TOGGLE MENOR / ADULTO ---
     enrollmentTypeRadios.forEach(radio => {
