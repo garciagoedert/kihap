@@ -135,7 +135,7 @@ function setupDesktopSidebarCollapse(sidebar) {
             collapseToggleBtn.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
         }
         if (edgeIcon) {
-            edgeIcon.className = collapsed ? 'fas fa-chevron-right text-[10px]' : 'fas fa-chevron-left text-[10px]';
+            edgeIcon.className = collapsed ? 'fas fa-chevron-right text-[8px]' : 'fas fa-chevron-left text-[8px]';
         }
         if (edgeToggleBtn) {
             edgeToggleBtn.title = collapsed
@@ -928,7 +928,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.1.8'; 
+    const CACHE_VERSION = '1.1.9'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {

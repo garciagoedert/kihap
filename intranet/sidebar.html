@@ -1,40 +1,45 @@
 <style>
-    /* Estilos para ocultar a barra de rolagem por padrão e mostrar no hover */
+    /* Oculta barras de rolagem em todo o menu lateral (navegação e rodapé) */
     #sidebar-nav {
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none;  /* IE/Edge */
-        transition: scrollbar-color 0.3s;
+        scrollbar-width: none !important; /* Firefox, Chrome 121+, Safari 18.2+ */
+        -ms-overflow-style: none !important;  /* IE/Edge */
     }
     
     #sidebar-nav::-webkit-scrollbar {
-        width: 5px;
-        display: none; /* Chrome/Safari */
+        width: 0 !important;
+        height: 0 !important;
+        display: none !important; /* Chrome/Safari */
     }
 
     #sidebar-nav:hover {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+        scrollbar-width: none !important;
     }
 
     #sidebar-nav:hover::-webkit-scrollbar {
-        display: block;
+        display: none !important;
     }
 
-    #sidebar-nav::-webkit-scrollbar-track {
-        background: transparent;
+    .sidebar-footer {
+        flex-shrink: 0 !important;
+        overflow: hidden !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
     }
 
-    #sidebar-nav::-webkit-scrollbar-thumb {
-        background-color: rgba(156, 163, 175, 0.3);
-        border-radius: 20px;
+    .sidebar-footer::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
 
-    #sidebar-nav:hover::-webkit-scrollbar-thumb {
-        background-color: rgba(156, 163, 175, 0.5);
+    /* Estilo sutil e discreto para o botão de alternar/abrir a sidebar */
+    #sidebar-edge-toggle {
+        opacity: 0.45;
+        transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
     }
-    
-    .dark #sidebar-nav:hover::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.1);
+    #sidebar:hover #sidebar-edge-toggle,
+    #sidebar-edge-toggle:hover {
+        opacity: 1;
     }
 
     @media (min-width: 768px) {
@@ -65,6 +70,7 @@
         body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-header {
             padding: 1.25rem 0.5rem !important;
             justify-content: center !important;
+            flex-shrink: 0 !important;
         }
         body.sidebar-collapsed #sidebar:not(:hover) .sidebar-header img,
         body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-header img {
@@ -77,12 +83,16 @@
             display: none !important;
         }
         body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav,
-        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav,
-        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-footer,
-        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-footer {
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav {
             padding-left: 0.5rem !important;
             padding-right: 0.5rem !important;
             overflow-x: hidden !important;
+        }
+        body.sidebar-collapsed #sidebar:not(:hover) .sidebar-footer,
+        body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-footer {
+            padding: 0.75rem 0.5rem !important;
+            overflow: hidden !important;
+            flex-shrink: 0 !important;
         }
         body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav > a,
         body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav > a,
@@ -126,10 +136,10 @@
 <aside id="sidebar"
     class="bg-white dark:bg-[#18191c] w-72 h-screen flex flex-col fixed top-0 left-0 z-40 shadow-2xl border-r border-gray-200 dark:border-gray-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
     <button id="sidebar-edge-toggle" type="button"
-        class="hidden md:flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-[#222] border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white shadow-md absolute top-7 -right-3 z-50 cursor-pointer transition-colors"
+        class="hidden md:flex items-center justify-center w-5 h-5 rounded-full bg-white/90 dark:bg-[#1e1f23]/90 backdrop-blur-sm border border-gray-200/80 dark:border-gray-700/80 text-gray-400 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-white dark:hover:bg-[#28292d] shadow-sm hover:shadow absolute top-7 -right-2.5 z-50 cursor-pointer"
         title="Recolher menu lateral (mostrar apenas ícones)"
         aria-label="Alternar recolhimento do menu lateral">
-        <i id="sidebar-edge-icon" class="fas fa-chevron-left text-[10px]"></i>
+        <i id="sidebar-edge-icon" class="fas fa-chevron-left text-[8px]"></i>
     </button>
     <div class="sidebar-header flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-800">
         <img src="/imgs/favicon.png" alt="Kihap Icon" class="h-11 invert dark:invert-0 drop-shadow-xl">
