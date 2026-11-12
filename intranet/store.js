@@ -4516,12 +4516,16 @@ Requisitos:
             // Extrai sessões do produto
             let sessions = [];
             if (currentTransferProduct.hasLocations && Array.isArray(currentTransferProduct.locations)) {
-                // Se o produto tiver múltiplos locais, busca as sessões do local da venda ou agrupa todas
+                // Se o produto tiver múltiplos locais, busca as sessões de cada local mapeando suas respectivas configs de mapa
                 currentTransferProduct.locations.forEach(loc => {
                     const locSessions = loc.sessions || [];
+                    const locConfig = loc.seatMapConfig || currentTransferProduct.seatMapConfig || {};
                     locSessions.forEach(s => {
                         sessions.push({
                             ...s,
+                            locationId: loc.id,
+                            locationName: loc.name,
+                            locationSeatMapConfig: locConfig,
                             id: s.id || `${loc.name}_${s.name}`,
                             label: `${loc.name ? `[${loc.name}] ` : ''}${s.name || 'Sessão'} ${s.date ? `(${s.date} ${s.time || ''})` : (s.time || '')}`.trim()
                         });
@@ -4532,12 +4536,21 @@ Requisitos:
             if (sessions.length === 0 && Array.isArray(currentTransferProduct.eventSessions)) {
                 sessions = currentTransferProduct.eventSessions.map(s => ({
                     ...s,
+                    locationSeatMapConfig: currentTransferProduct.seatMapConfig,
+                    label: `${s.name || 'Sessão'} ${s.date ? `(${s.date} ${s.time || ''})` : (s.time || '')}`.trim()
+                }));
+            }
+
+            if (sessions.length === 0 && Array.isArray(currentTransferProduct.sessions)) {
+                sessions = currentTransferProduct.sessions.map(s => ({
+                    ...s,
+                    locationSeatMapConfig: currentTransferProduct.seatMapConfig,
                     label: `${s.name || 'Sessão'} ${s.date ? `(${s.date} ${s.time || ''})` : (s.time || '')}`.trim()
                 }));
             }
 
             if (sessions.length === 0) {
-                sessions = [{ id: 'default', name: 'Sessão Única / Padrão', label: 'Sessão Única / Padrão' }];
+                sessions = [{ id: 'default', name: 'Sessão Única / Padrão', label: 'Sessão Única / Padrão', locationSeatMapConfig: currentTransferProduct.seatMapConfig }];
             }
 
             // Popula o select de sessões de destino
@@ -4588,97 +4601,265 @@ Requisitos:
         if (!transferSeatGridContainer) return;
         transferSeatGridContainer.innerHTML = '';
 
-        const seatConfig = product.seatMapConfig || {};
-        const rows = Math.min(26, Math.max(1, parseInt(seatConfig.rows || 8, 10)));
-        const cols = Math.min(50, Math.max(1, parseInt(seatConfig.cols || seatConfig.seatsPerRow || 16, 10)));
-        const disabledSeatsSet = new Set(seatConfig.disabledSeats || []);
-        const stageLabel = seatConfig.stageLabel || 'PALCO / TATAME';
+        const activeConfig = (currentTransferTargetSession && currentTransferTargetSession.locationSeatMapConfig)
+            ? currentTransferTargetSession.locationSeatMapConfig
+            : (product.seatMapConfig || {});
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'flex flex-col items-center gap-3 w-full';
+        const layoutType = activeConfig.layoutType || 'theater';
+        const rows = Math.min(26, Math.max(1, parseInt(activeConfig.rows || 8, 10)));
+        const cols = Math.min(50, Math.max(1, parseInt(activeConfig.cols || activeConfig.seatsPerRow || 16, 10)));
+        const disabledSeatsSet = new Set(activeConfig.disabledSeats || []);
+        const stageLabel = (activeConfig.stageLabel || 'PALCO / TATAME').toUpperCase();
 
-        // Indicador de Palco
-        const stageDiv = document.createElement('div');
-        stageDiv.className = 'py-1.5 px-6 bg-amber-500/10 border border-dashed border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-xl text-center max-w-xs';
-        stageDiv.textContent = stageLabel;
-        wrapper.appendChild(stageDiv);
+        const createTransferSeatBtn = (seatId, c, sectorName) => {
+            const reservation = currentTransferReservedSeats[seatId];
+            const isDisabled = disabledSeatsSet.has(seatId) || (reservation && (reservation.status === 'disabled' || reservation.status === 'blocked_admin'));
+            
+            // Se for a mesma cadeira do aluno na sessão de origem, consideramos que ela ficará livre
+            const isCurrentSaleSeat = (currentTransferSale && currentTransferSale.seatId === seatId && currentTransferSale.sessionId === sessionId);
+            const isBooked = !isCurrentSaleSeat && reservation && (reservation.status === 'booked' || (reservation.status === 'locked' && reservation.lockedUntil > Date.now()));
+            const isSelected = (currentTransferSelectedSeatId === seatId);
 
-        const rowsContainer = document.createElement('div');
-        rowsContainer.className = 'space-y-1.5 p-2';
+            const seatBtn = document.createElement('button');
+            seatBtn.type = 'button';
+            seatBtn.dataset.seatId = seatId;
 
-        for (let r = 0; r < rows; r++) {
-            const rowLetter = String.fromCharCode(65 + r);
-            const rDiv = document.createElement('div');
-            rDiv.className = 'flex items-center gap-1.5 justify-center';
+            let btnClass = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
 
-            const lblLeft = document.createElement('span');
-            lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
-            lblLeft.textContent = rowLetter;
-            rDiv.appendChild(lblLeft);
-
-            for (let c = 1; c <= cols; c++) {
-                const seatId = `${rowLetter}-${c}`;
-                const reservation = currentTransferReservedSeats[seatId];
-                const isDisabled = disabledSeatsSet.has(seatId) || (reservation && (reservation.status === 'disabled' || reservation.status === 'blocked_admin'));
-                
-                // Se for a mesma cadeira do aluno na sessão de origem, consideramos que ela ficará livre
-                const isCurrentSaleSeat = (currentTransferSale && currentTransferSale.seatId === seatId && currentTransferSale.sessionId === sessionId);
-                const isBooked = !isCurrentSaleSeat && reservation && (reservation.status === 'booked' || (reservation.status === 'locked' && reservation.lockedUntil > Date.now()));
-                const isSelected = (currentTransferSelectedSeatId === seatId);
-
-                const seatBtn = document.createElement('button');
-                seatBtn.type = 'button';
-                seatBtn.dataset.seatId = seatId;
-
-                let btnClass = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
-
-                if (isSelected) {
-                    btnClass += 'bg-amber-400 text-black border-2 border-amber-500 font-black shadow-lg scale-110 ring-2 ring-amber-400/50';
-                    seatBtn.title = `Cadeira ${seatId} - Selecionada para transferência`;
-                } else if (isCurrentSaleSeat) {
-                    btnClass += 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-400 font-black cursor-pointer';
-                    seatBtn.title = `Cadeira ${seatId} - Assento atual deste aluno`;
-                } else if (isBooked) {
-                    btnClass += 'bg-red-500/10 text-red-500 border border-red-500/30 cursor-not-allowed opacity-60';
-                    seatBtn.disabled = true;
-                    seatBtn.title = `Cadeira ${seatId} - Já ocupada por: ${reservation.buyerName || 'Outro cliente'}`;
-                } else if (isDisabled) {
-                    btnClass += 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 border border-dashed border-gray-200 dark:border-gray-800 cursor-not-allowed opacity-30';
-                    seatBtn.disabled = true;
-                    seatBtn.title = `Cadeira ${seatId} - Desativada / Corredor`;
-                } else {
-                    btnClass += 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 cursor-pointer shadow-sm';
-                    seatBtn.title = `Cadeira ${seatId} - Disponível para escolha`;
-                }
-
-                seatBtn.className = btnClass;
-                seatBtn.innerHTML = `<span>${c}</span>`;
-
-                if (!isBooked && !isDisabled) {
-                    seatBtn.addEventListener('click', () => {
-                        currentTransferSelectedSeatId = seatId;
-                        if (transferSelectedSeatLabel) {
-                            const sessName = currentTransferTargetSession?.label || currentTransferTargetSession?.name || 'Sessão Selecionada';
-                            transferSelectedSeatLabel.innerHTML = `<span class="text-amber-600 dark:text-amber-400 font-black">${seatId}</span> na sessão <span class="font-bold text-gray-900 dark:text-white">${sessName}</span>`;
-                        }
-                        if (confirmTransferSeatBtn) confirmTransferSeatBtn.disabled = false;
-                        renderTransferSeatGrid(product, sessionId);
-                    });
-                }
-
-                rDiv.appendChild(seatBtn);
+            if (isSelected) {
+                btnClass += 'bg-amber-400 text-black border-2 border-amber-500 font-black shadow-lg scale-110 ring-2 ring-amber-400/50';
+                seatBtn.title = `Cadeira ${seatId}${sectorName ? ` (${sectorName})` : ''} - Selecionada para transferência`;
+            } else if (isCurrentSaleSeat) {
+                btnClass += 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-400 font-black cursor-pointer';
+                seatBtn.title = `Cadeira ${seatId}${sectorName ? ` (${sectorName})` : ''} - Assento atual deste aluno`;
+            } else if (isBooked) {
+                btnClass += 'bg-red-500/10 text-red-500 border border-red-500/30 cursor-not-allowed opacity-60';
+                seatBtn.disabled = true;
+                seatBtn.title = `Cadeira ${seatId}${sectorName ? ` (${sectorName})` : ''} - Já ocupada por: ${reservation.buyerName || 'Outro cliente'}`;
+            } else if (isDisabled) {
+                btnClass += 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 border border-dashed border-gray-200 dark:border-gray-800 cursor-not-allowed opacity-30';
+                seatBtn.disabled = true;
+                seatBtn.title = `Cadeira ${seatId}${sectorName ? ` (${sectorName})` : ''} - Desativada / Corredor`;
+            } else {
+                btnClass += 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 cursor-pointer shadow-sm';
+                seatBtn.title = `Cadeira ${seatId}${sectorName ? ` (${sectorName})` : ''} - Disponível para escolha`;
             }
 
-            const lblRight = document.createElement('span');
-            lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
-            lblRight.textContent = rowLetter;
-            rDiv.appendChild(lblRight);
+            seatBtn.className = btnClass;
+            seatBtn.innerHTML = `<span>${c}</span>`;
 
-            rowsContainer.appendChild(rDiv);
+            if (!isBooked && !isDisabled) {
+                seatBtn.addEventListener('click', () => {
+                    currentTransferSelectedSeatId = seatId;
+                    if (transferSelectedSeatLabel) {
+                        const sessName = currentTransferTargetSession?.label || currentTransferTargetSession?.name || 'Sessão Selecionada';
+                        transferSelectedSeatLabel.innerHTML = `<span class="text-amber-600 dark:text-amber-400 font-black">${seatId}</span> na sessão <span class="font-bold text-gray-900 dark:text-white">${sessName}</span>`;
+                    }
+                    if (confirmTransferSeatBtn) confirmTransferSeatBtn.disabled = false;
+                    renderTransferSeatGrid(product, sessionId);
+                });
+            }
+
+            return seatBtn;
+        };
+
+        if (layoutType === 'arena_4_sides' || layoutType === 'arena_u_shape') {
+            const isUShape = (layoutType === 'arena_u_shape');
+            const topRows = isUShape ? 0 : Math.min(Math.max(1, parseInt(activeConfig.topRows || 2, 10) || 2), Math.max(1, Math.floor((rows - 1) / 2)));
+            const bottomRows = Math.min(Math.max(1, parseInt(activeConfig.bottomRows || activeConfig.topRows || 2, 10) || 2), Math.max(1, isUShape ? rows - 1 : Math.floor((rows - 1) / 2)));
+            const sideCols = Math.min(Math.max(1, parseInt(activeConfig.sideCols || 4, 10) || 4), Math.max(1, Math.floor((cols - 2) / 2)));
+
+            const arenaWrapper = document.createElement('div');
+            arenaWrapper.className = 'flex flex-col items-center gap-4 p-2 w-full';
+
+            // 1. Setor Superior (Norte) - Se não for em U
+            if (!isUShape && topRows > 0) {
+                const topSectorDiv = document.createElement('div');
+                topSectorDiv.className = 'flex flex-col items-center';
+                topSectorDiv.innerHTML = `
+                    <div class="px-2.5 py-0.5 mb-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-lg text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fas fa-arrow-up text-[8px]"></i> Setor Superior / Norte
+                    </div>
+                `;
+                const topRowsDiv = document.createElement('div');
+                topRowsDiv.className = 'space-y-1';
+                for (let r = 0; r < topRows; r++) {
+                    const rowLetter = String.fromCharCode(65 + r);
+                    const rDiv = document.createElement('div');
+                    rDiv.className = 'flex items-center gap-1 justify-center';
+
+                    const lblLeft = document.createElement('span');
+                    lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                    lblLeft.textContent = rowLetter;
+                    rDiv.appendChild(lblLeft);
+
+                    for (let c = 1; c <= cols; c++) {
+                        const seatId = `${rowLetter}-${c}`;
+                        rDiv.appendChild(createTransferSeatBtn(seatId, c, 'Setor Superior'));
+                    }
+
+                    const lblRight = document.createElement('span');
+                    lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                    lblRight.textContent = rowLetter;
+                    rDiv.appendChild(lblRight);
+
+                    topRowsDiv.appendChild(rDiv);
+                }
+                topSectorDiv.appendChild(topRowsDiv);
+                arenaWrapper.appendChild(topSectorDiv);
+            }
+
+            // 2. Miolo: Setor Oeste + Tatame Central + Setor Leste
+            const midRowDiv = document.createElement('div');
+            midRowDiv.className = 'flex flex-row items-stretch justify-center gap-3 sm:gap-5 w-full';
+
+            // 2a. Setor Oeste (Esquerda)
+            const leftSectorDiv = document.createElement('div');
+            leftSectorDiv.className = 'flex flex-col items-center';
+            leftSectorDiv.innerHTML = `
+                <div class="px-2 py-0.5 mb-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-arrow-left text-[8px]"></i> Setor Oeste (Lateral)
+                </div>
+            `;
+            const leftRowsDiv = document.createElement('div');
+            leftRowsDiv.className = 'space-y-1';
+            for (let r = topRows; r < rows - bottomRows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1 justify-end';
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                for (let c = 1; c <= sideCols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createTransferSeatBtn(seatId, c, 'Setor Oeste'));
+                }
+                leftRowsDiv.appendChild(rDiv);
+            }
+            leftSectorDiv.appendChild(leftRowsDiv);
+            midRowDiv.appendChild(leftSectorDiv);
+
+            // 2b. Tatame Central
+            const arenaCenterTatame = document.createElement('div');
+            arenaCenterTatame.className = 'flex-1 self-stretch min-w-[140px] sm:min-w-[200px] max-w-sm flex flex-col items-center justify-center p-4 bg-gradient-to-b from-amber-500/15 via-yellow-500/10 to-amber-500/15 border-2 border-dashed border-amber-500/60 rounded-3xl shadow-inner text-center select-none relative';
+            arenaCenterTatame.innerHTML = `
+                <span class="font-black text-xs sm:text-sm text-amber-600 dark:text-amber-300 tracking-widest uppercase">
+                    ${stageLabel}
+                </span>
+            `;
+            midRowDiv.appendChild(arenaCenterTatame);
+
+            // 2c. Setor Leste (Direita)
+            const rightSectorDiv = document.createElement('div');
+            rightSectorDiv.className = 'flex flex-col items-center';
+            rightSectorDiv.innerHTML = `
+                <div class="px-2 py-0.5 mb-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    Setor Leste (Lateral) <i class="fas fa-arrow-right text-[8px]"></i>
+                </div>
+            `;
+            const rightRowsDiv = document.createElement('div');
+            rightRowsDiv.className = 'space-y-1';
+            for (let r = topRows; r < rows - bottomRows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1 justify-start';
+
+                for (let c = cols - sideCols + 1; c <= cols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createTransferSeatBtn(seatId, c, 'Setor Leste'));
+                }
+
+                const lbl = document.createElement('span');
+                lbl.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lbl.textContent = rowLetter;
+                rDiv.appendChild(lbl);
+
+                rightRowsDiv.appendChild(rDiv);
+            }
+            rightSectorDiv.appendChild(rightRowsDiv);
+            midRowDiv.appendChild(rightSectorDiv);
+
+            arenaWrapper.appendChild(midRowDiv);
+
+            // 3. Setor Inferior (Sul)
+            const bottomSectorDiv = document.createElement('div');
+            bottomSectorDiv.className = 'flex flex-col items-center';
+            bottomSectorDiv.innerHTML = `
+                <div class="px-2.5 py-0.5 mb-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-arrow-down text-[8px]"></i> Setor Sul (Frontal)
+                </div>
+            `;
+            const bottomRowsDiv = document.createElement('div');
+            bottomRowsDiv.className = 'space-y-1';
+            for (let r = rows - bottomRows; r < rows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1 justify-center';
+
+                const lblLeft = document.createElement('span');
+                lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblLeft.textContent = rowLetter;
+                rDiv.appendChild(lblLeft);
+
+                for (let c = 1; c <= cols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createTransferSeatBtn(seatId, c, 'Setor Sul'));
+                }
+
+                const lblRight = document.createElement('span');
+                lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblRight.textContent = rowLetter;
+                rDiv.appendChild(lblRight);
+
+                bottomRowsDiv.appendChild(rDiv);
+            }
+            bottomSectorDiv.appendChild(bottomRowsDiv);
+            arenaWrapper.appendChild(bottomSectorDiv);
+
+            transferSeatGridContainer.appendChild(arenaWrapper);
+
+        } else {
+            // Layout Teatro / Convencional (ex: Florianópolis)
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex flex-col items-center gap-3 w-full';
+
+            const stageDiv = document.createElement('div');
+            stageDiv.className = 'py-1.5 px-6 bg-amber-500/10 border border-dashed border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-xl text-center max-w-xs';
+            stageDiv.textContent = stageLabel;
+            wrapper.appendChild(stageDiv);
+
+            const rowsContainer = document.createElement('div');
+            rowsContainer.className = 'space-y-1.5 p-2';
+
+            for (let r = 0; r < rows; r++) {
+                const rowLetter = String.fromCharCode(65 + r);
+                const rDiv = document.createElement('div');
+                rDiv.className = 'flex items-center gap-1.5 justify-center';
+
+                const lblLeft = document.createElement('span');
+                lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblLeft.textContent = rowLetter;
+                rDiv.appendChild(lblLeft);
+
+                for (let c = 1; c <= cols; c++) {
+                    const seatId = `${rowLetter}-${c}`;
+                    rDiv.appendChild(createTransferSeatBtn(seatId, c, ''));
+                }
+
+                const lblRight = document.createElement('span');
+                lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+                lblRight.textContent = rowLetter;
+                rDiv.appendChild(lblRight);
+
+                rowsContainer.appendChild(rDiv);
+            }
+
+            wrapper.appendChild(rowsContainer);
+            transferSeatGridContainer.appendChild(wrapper);
         }
-
-        wrapper.appendChild(rowsContainer);
-        transferSeatGridContainer.appendChild(wrapper);
     };
 
     if (confirmTransferSeatBtn) {
@@ -4752,22 +4933,32 @@ Requisitos:
 
                 // 3. Atualiza o documento da venda em inscricoesFaixaPreta
                 const saleRef = doc(db, 'inscricoesFaixaPreta', saleId);
+                const existingHistory = Array.isArray(currentTransferSale.transferHistory) ? [...currentTransferSale.transferHistory] : [];
+                existingHistory.push({
+                    transferredAt: new Date().toISOString(),
+                    fromSession: oldSessionId,
+                    fromSessionLabel: currentTransferSale.sessionLabel || null,
+                    fromSeat: oldSeatId || null,
+                    toSession: newSessionId,
+                    toSessionLabel: newSessionLabel,
+                    toSeat: newSeatId
+                });
+
                 const updateSaleData = {
                     sessionId: newSessionId,
                     sessionLabel: newSessionLabel,
                     seatId: newSeatId,
                     selectedSeats: [newSeatId],
                     lastModifiedAt: serverTimestamp(),
-                    transferHistory: [{
-                        transferredAt: new Date().toISOString(),
-                        fromSession: oldSessionId,
-                        fromSessionLabel: currentTransferSale.sessionLabel || null,
-                        fromSeat: oldSeatId || null,
-                        toSession: newSessionId,
-                        toSessionLabel: newSessionLabel,
-                        toSeat: newSeatId
-                    }]
+                    transferHistory: existingHistory
                 };
+
+                if (currentTransferTargetSession.locationId) {
+                    updateSaleData.locationId = currentTransferTargetSession.locationId;
+                }
+                if (currentTransferTargetSession.locationName) {
+                    updateSaleData.locationName = currentTransferTargetSession.locationName;
+                }
 
                 await updateDoc(saleRef, updateSaleData);
 
@@ -4776,6 +4967,9 @@ Requisitos:
                 currentTransferSale.sessionLabel = newSessionLabel;
                 currentTransferSale.seatId = newSeatId;
                 currentTransferSale.selectedSeats = [newSeatId];
+                currentTransferSale.transferHistory = existingHistory;
+                if (currentTransferTargetSession.locationId) currentTransferSale.locationId = currentTransferTargetSession.locationId;
+                if (currentTransferTargetSession.locationName) currentTransferSale.locationName = currentTransferTargetSession.locationName;
 
                 // 4. Reenvia email com o novo ingresso se marcado
                 let emailSentOk = false;
