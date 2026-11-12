@@ -533,6 +533,26 @@ export async function setupStorePage() {
 
 
     let currentOpenSaleId = null;
+    let currentTransferSale = null;
+    let currentTransferProduct = null;
+    let currentTransferSelectedSeatId = null;
+    let currentTransferTargetSession = null;
+    let currentTransferReservedSeats = {};
+
+    // Transfer Seat Modal Elements
+    const transferSeatBtnModal = document.getElementById('transfer-seat-btn-modal');
+    const transferSeatDialog = document.getElementById('transfer-seat-dialog');
+    const closeTransferSeatBtn = document.getElementById('close-transfer-seat-btn');
+    const cancelTransferSeatBtn = document.getElementById('cancel-transfer-seat-btn');
+    const confirmTransferSeatBtn = document.getElementById('confirm-transfer-seat-btn');
+    const transferTargetSessionSelect = document.getElementById('transfer-target-session-select');
+    const transferSeatGridContainer = document.getElementById('transfer-seat-grid-container');
+    const transferSelectedSeatLabel = document.getElementById('transfer-selected-seat-label');
+    const transferAutoResendEmail = document.getElementById('transfer-auto-resend-email');
+    const transferModalStudentName = document.getElementById('transfer-modal-student-name');
+    const transferModalStudentEmail = document.getElementById('transfer-modal-student-email');
+    const transferModalCurrentInfo = document.getElementById('transfer-modal-current-info');
+    const transferModalProductName = document.getElementById('transfer-modal-product-name');
 
     // --- Tab Switching Logic ---
     function switchTab(activeTab) {
@@ -4299,6 +4319,18 @@ Requisitos:
                 }
             };
         }
+
+        // Transfer Seat button logic (Espetáculo / Ingressos com cadeira)
+        if (transferSeatBtnModal) {
+            const hasSeat = !!(sale.seatId || (Array.isArray(sale.selectedSeats) && sale.selectedSeats.length > 0));
+            if (hasSeat && (isAdmin || isStore)) {
+                transferSeatBtnModal.classList.remove('hidden');
+                transferSeatBtnModal.onclick = () => openTransferSeatDialog(sale);
+            } else {
+                transferSeatBtnModal.classList.add('hidden');
+                transferSeatBtnModal.onclick = null;
+            }
+        }
     };
 
     // --- Email Logs Logic ---
@@ -4411,6 +4443,373 @@ Requisitos:
             closeModal();
         }
     });
+
+    // --- Transferência de Sessão e Cadeira (Lógica Completa) ---
+    const closeTransferSeatDialog = () => {
+        if (!transferSeatDialog) return;
+        if (typeof transferSeatDialog.close === 'function') {
+            transferSeatDialog.close();
+        } else {
+            transferSeatDialog.removeAttribute('open');
+        }
+        currentTransferSale = null;
+        currentTransferProduct = null;
+        currentTransferSelectedSeatId = null;
+        currentTransferTargetSession = null;
+        currentTransferReservedSeats = {};
+    };
+
+    if (closeTransferSeatBtn) closeTransferSeatBtn.addEventListener('click', closeTransferSeatDialog);
+    if (cancelTransferSeatBtn) cancelTransferSeatBtn.addEventListener('click', closeTransferSeatDialog);
+
+    const openTransferSeatDialog = async (sale) => {
+        if (!transferSeatDialog) return;
+        currentTransferSale = sale;
+        currentTransferSelectedSeatId = null;
+        currentTransferTargetSession = null;
+        currentTransferReservedSeats = {};
+
+        // 1. Preenche dados do aluno e assento atual
+        if (transferModalStudentName) transferModalStudentName.textContent = sale.userName || sale.payerName || 'Aluno';
+        if (transferModalStudentEmail) transferModalStudentEmail.textContent = sale.userEmail || 'Email não informado';
+        if (transferModalProductName) transferModalProductName.textContent = sale.productName || 'Ingresso / Espetáculo';
+
+        const currSeat = sale.seatId || (Array.isArray(sale.selectedSeats) ? sale.selectedSeats.join(', ') : 'N/A');
+        const currSess = sale.sessionLabel || sale.sessionId || 'Sessão Padrão';
+        if (transferModalCurrentInfo) {
+            transferModalCurrentInfo.innerHTML = `Sessão: <strong>${currSess}</strong> | Cadeira: <span class="px-2 py-0.5 bg-amber-200 dark:bg-amber-900/60 rounded text-amber-900 dark:text-amber-200 font-black">${currSeat}</span>`;
+        }
+
+        if (transferSelectedSeatLabel) {
+            transferSelectedSeatLabel.textContent = 'Nenhuma cadeira selecionada';
+        }
+        if (confirmTransferSeatBtn) {
+            confirmTransferSeatBtn.disabled = true;
+        }
+
+        // 2. Abre o <dialog> nativamente
+        if (typeof transferSeatDialog.showModal === 'function') {
+            transferSeatDialog.showModal();
+        } else {
+            transferSeatDialog.setAttribute('open', '');
+        }
+
+        // 3. Busca o produto completo para obter configurações do mapa e sessões
+        try {
+            if (transferTargetSessionSelect) {
+                transferTargetSessionSelect.innerHTML = '<option value="">Carregando produto e sessões...</option>';
+            }
+            if (transferSeatGridContainer) {
+                transferSeatGridContainer.innerHTML = '<div class="p-6 text-center text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando configurações de assentos...</div>';
+            }
+
+            const pRef = doc(db, 'products', sale.productId);
+            const pSnap = await getDoc(pRef);
+            if (!pSnap.exists()) {
+                alert('Produto vinculado à venda não foi encontrado.');
+                closeTransferSeatDialog();
+                return;
+            }
+
+            currentTransferProduct = { id: pSnap.id, ...pSnap.data() };
+
+            // Extrai sessões do produto
+            let sessions = [];
+            if (currentTransferProduct.hasLocations && Array.isArray(currentTransferProduct.locations)) {
+                // Se o produto tiver múltiplos locais, busca as sessões do local da venda ou agrupa todas
+                currentTransferProduct.locations.forEach(loc => {
+                    const locSessions = loc.sessions || [];
+                    locSessions.forEach(s => {
+                        sessions.push({
+                            ...s,
+                            id: s.id || `${loc.name}_${s.name}`,
+                            label: `${loc.name ? `[${loc.name}] ` : ''}${s.name || 'Sessão'} ${s.date ? `(${s.date} ${s.time || ''})` : (s.time || '')}`.trim()
+                        });
+                    });
+                });
+            }
+
+            if (sessions.length === 0 && Array.isArray(currentTransferProduct.eventSessions)) {
+                sessions = currentTransferProduct.eventSessions.map(s => ({
+                    ...s,
+                    label: `${s.name || 'Sessão'} ${s.date ? `(${s.date} ${s.time || ''})` : (s.time || '')}`.trim()
+                }));
+            }
+
+            if (sessions.length === 0) {
+                sessions = [{ id: 'default', name: 'Sessão Única / Padrão', label: 'Sessão Única / Padrão' }];
+            }
+
+            // Popula o select de sessões de destino
+            if (transferTargetSessionSelect) {
+                transferTargetSessionSelect.innerHTML = sessions.map(sess => {
+                    const isCurrent = (sess.id === sale.sessionId) || (sess.label === sale.sessionLabel);
+                    return `<option value="${sess.id}" ${isCurrent ? 'selected' : ''}>${sess.label}${isCurrent ? ' (Sessão Atual)' : ''}</option>`;
+                }).join('');
+
+                transferTargetSessionSelect.onchange = () => {
+                    const selectedId = transferTargetSessionSelect.value;
+                    currentTransferTargetSession = sessions.find(s => s.id === selectedId) || { id: selectedId, label: selectedId };
+                    currentTransferSelectedSeatId = null;
+                    if (transferSelectedSeatLabel) transferSelectedSeatLabel.textContent = 'Nenhuma cadeira selecionada';
+                    if (confirmTransferSeatBtn) confirmTransferSeatBtn.disabled = true;
+                    loadTransferTargetSeatMap(currentTransferProduct, currentTransferTargetSession.id);
+                };
+
+                const initialSessId = transferTargetSessionSelect.value;
+                currentTransferTargetSession = sessions.find(s => s.id === initialSessId) || sessions[0];
+                await loadTransferTargetSeatMap(currentTransferProduct, currentTransferTargetSession.id);
+            }
+
+        } catch (err) {
+            console.error('Erro ao carregar produto para transferência:', err);
+            alert('Erro ao carregar dados do mapa de assentos: ' + (err.message || err));
+            closeTransferSeatDialog();
+        }
+    };
+
+    const loadTransferTargetSeatMap = async (product, sessionId) => {
+        if (!transferSeatGridContainer) return;
+        transferSeatGridContainer.innerHTML = '<div class="p-6 text-center text-xs text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando mapa da sessão...</div>';
+
+        try {
+            const docId = `${product.id}_${sessionId || 'default'}`;
+            const snap = await getDoc(doc(db, 'productSeatReservations', docId));
+            currentTransferReservedSeats = snap.exists() ? (snap.data().seats || {}) : {};
+
+            renderTransferSeatGrid(product, sessionId);
+        } catch (e) {
+            console.error('Erro ao carregar reservas da sessão:', e);
+            transferSeatGridContainer.innerHTML = '<div class="p-6 text-center text-xs text-red-500">Erro ao carregar assentos reservados desta sessão.</div>';
+        }
+    };
+
+    const renderTransferSeatGrid = (product, sessionId) => {
+        if (!transferSeatGridContainer) return;
+        transferSeatGridContainer.innerHTML = '';
+
+        const seatConfig = product.seatMapConfig || {};
+        const rows = Math.min(26, Math.max(1, parseInt(seatConfig.rows || 8, 10)));
+        const cols = Math.min(50, Math.max(1, parseInt(seatConfig.cols || seatConfig.seatsPerRow || 16, 10)));
+        const disabledSeatsSet = new Set(seatConfig.disabledSeats || []);
+        const stageLabel = seatConfig.stageLabel || 'PALCO / TATAME';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex flex-col items-center gap-3 w-full';
+
+        // Indicador de Palco
+        const stageDiv = document.createElement('div');
+        stageDiv.className = 'py-1.5 px-6 bg-amber-500/10 border border-dashed border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-xl text-center max-w-xs';
+        stageDiv.textContent = stageLabel;
+        wrapper.appendChild(stageDiv);
+
+        const rowsContainer = document.createElement('div');
+        rowsContainer.className = 'space-y-1.5 p-2';
+
+        for (let r = 0; r < rows; r++) {
+            const rowLetter = String.fromCharCode(65 + r);
+            const rDiv = document.createElement('div');
+            rDiv.className = 'flex items-center gap-1.5 justify-center';
+
+            const lblLeft = document.createElement('span');
+            lblLeft.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+            lblLeft.textContent = rowLetter;
+            rDiv.appendChild(lblLeft);
+
+            for (let c = 1; c <= cols; c++) {
+                const seatId = `${rowLetter}-${c}`;
+                const reservation = currentTransferReservedSeats[seatId];
+                const isDisabled = disabledSeatsSet.has(seatId) || (reservation && (reservation.status === 'disabled' || reservation.status === 'blocked_admin'));
+                
+                // Se for a mesma cadeira do aluno na sessão de origem, consideramos que ela ficará livre
+                const isCurrentSaleSeat = (currentTransferSale && currentTransferSale.seatId === seatId && currentTransferSale.sessionId === sessionId);
+                const isBooked = !isCurrentSaleSeat && reservation && (reservation.status === 'booked' || (reservation.status === 'locked' && reservation.lockedUntil > Date.now()));
+                const isSelected = (currentTransferSelectedSeatId === seatId);
+
+                const seatBtn = document.createElement('button');
+                seatBtn.type = 'button';
+                seatBtn.dataset.seatId = seatId;
+
+                let btnClass = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
+
+                if (isSelected) {
+                    btnClass += 'bg-amber-400 text-black border-2 border-amber-500 font-black shadow-lg scale-110 ring-2 ring-amber-400/50';
+                    seatBtn.title = `Cadeira ${seatId} - Selecionada para transferência`;
+                } else if (isCurrentSaleSeat) {
+                    btnClass += 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-400 font-black cursor-pointer';
+                    seatBtn.title = `Cadeira ${seatId} - Assento atual deste aluno`;
+                } else if (isBooked) {
+                    btnClass += 'bg-red-500/10 text-red-500 border border-red-500/30 cursor-not-allowed opacity-60';
+                    seatBtn.disabled = true;
+                    seatBtn.title = `Cadeira ${seatId} - Já ocupada por: ${reservation.buyerName || 'Outro cliente'}`;
+                } else if (isDisabled) {
+                    btnClass += 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600 border border-dashed border-gray-200 dark:border-gray-800 cursor-not-allowed opacity-30';
+                    seatBtn.disabled = true;
+                    seatBtn.title = `Cadeira ${seatId} - Desativada / Corredor`;
+                } else {
+                    btnClass += 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 cursor-pointer shadow-sm';
+                    seatBtn.title = `Cadeira ${seatId} - Disponível para escolha`;
+                }
+
+                seatBtn.className = btnClass;
+                seatBtn.innerHTML = `<span>${c}</span>`;
+
+                if (!isBooked && !isDisabled) {
+                    seatBtn.addEventListener('click', () => {
+                        currentTransferSelectedSeatId = seatId;
+                        if (transferSelectedSeatLabel) {
+                            const sessName = currentTransferTargetSession?.label || currentTransferTargetSession?.name || 'Sessão Selecionada';
+                            transferSelectedSeatLabel.innerHTML = `<span class="text-amber-600 dark:text-amber-400 font-black">${seatId}</span> na sessão <span class="font-bold text-gray-900 dark:text-white">${sessName}</span>`;
+                        }
+                        if (confirmTransferSeatBtn) confirmTransferSeatBtn.disabled = false;
+                        renderTransferSeatGrid(product, sessionId);
+                    });
+                }
+
+                rDiv.appendChild(seatBtn);
+            }
+
+            const lblRight = document.createElement('span');
+            lblRight.className = 'w-5 text-center text-xs font-black text-gray-400 select-none';
+            lblRight.textContent = rowLetter;
+            rDiv.appendChild(lblRight);
+
+            rowsContainer.appendChild(rDiv);
+        }
+
+        wrapper.appendChild(rowsContainer);
+        transferSeatGridContainer.appendChild(wrapper);
+    };
+
+    if (confirmTransferSeatBtn) {
+        confirmTransferSeatBtn.addEventListener('click', async () => {
+            if (!currentTransferSale || !currentTransferProduct || !currentTransferSelectedSeatId || !currentTransferTargetSession) {
+                alert('Selecione uma cadeira disponível no mapa para transferir.');
+                return;
+            }
+
+            const oldSessionId = currentTransferSale.sessionId || 'default';
+            const oldSeatId = currentTransferSale.seatId;
+            const newSessionId = currentTransferTargetSession.id;
+            const newSessionLabel = currentTransferTargetSession.label || currentTransferTargetSession.name || 'Sessão';
+            const newSeatId = currentTransferSelectedSeatId;
+            const saleId = currentTransferSale.id;
+
+            if (oldSessionId === newSessionId && oldSeatId === newSeatId) {
+                alert('A cadeira e sessão selecionadas são as mesmas da venda atual.');
+                return;
+            }
+
+            const confirmMsg = `Confirmar transferência do ingresso?\n\n` +
+                `Aluno: ${currentTransferSale.userName || currentTransferSale.payerName}\n` +
+                `DE: Sessão ${currentTransferSale.sessionLabel || oldSessionId} (Cadeira ${oldSeatId})\n` +
+                `PARA: ${newSessionLabel} (Cadeira ${newSeatId})\n\n` +
+                `A cadeira antiga será liberada imediatamente no mapa.`;
+
+            if (!confirm(confirmMsg)) return;
+
+            confirmTransferSeatBtn.disabled = true;
+            const originalBtnHtml = confirmTransferSeatBtn.innerHTML;
+            confirmTransferSeatBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Transferindo...';
+
+            try {
+                // 1. Libera o assento antigo na coleção productSeatReservations da sessão de origem
+                if (oldSeatId) {
+                    const oldDocId = `${currentTransferProduct.id}_${oldSessionId}`;
+                    const oldDocRef = doc(db, 'productSeatReservations', oldDocId);
+                    const oldSnap = await getDoc(oldDocRef);
+                    if (oldSnap.exists()) {
+                        const oldSeats = oldSnap.data().seats || {};
+                        delete oldSeats[oldSeatId];
+                        await updateDoc(oldDocRef, { seats: oldSeats });
+                    }
+                }
+
+                // 2. Reserva o novo assento na coleção productSeatReservations da nova sessão
+                const newDocId = `${currentTransferProduct.id}_${newSessionId}`;
+                const newDocRef = doc(db, 'productSeatReservations', newDocId);
+                const newSnap = await getDoc(newDocRef);
+                const newSeats = newSnap.exists() ? (newSnap.data().seats || {}) : {};
+
+                newSeats[newSeatId] = {
+                    status: 'booked',
+                    buyerName: currentTransferSale.userName || currentTransferSale.payerName || 'Cliente Kihap',
+                    buyerEmail: currentTransferSale.userEmail || null,
+                    buyerPhone: currentTransferSale.userPhone || null,
+                    saleId: saleId,
+                    bookedAt: Date.now(),
+                    transferredAt: Date.now(),
+                    previousSeat: oldSeatId || null,
+                    previousSession: oldSessionId || null
+                };
+
+                await setDoc(newDocRef, {
+                    productId: currentTransferProduct.id,
+                    sessionId: newSessionId,
+                    seats: newSeats,
+                    lastUpdated: serverTimestamp()
+                }, { merge: true });
+
+                // 3. Atualiza o documento da venda em inscricoesFaixaPreta
+                const saleRef = doc(db, 'inscricoesFaixaPreta', saleId);
+                const updateSaleData = {
+                    sessionId: newSessionId,
+                    sessionLabel: newSessionLabel,
+                    seatId: newSeatId,
+                    selectedSeats: [newSeatId],
+                    lastModifiedAt: serverTimestamp(),
+                    transferHistory: [{
+                        transferredAt: new Date().toISOString(),
+                        fromSession: oldSessionId,
+                        fromSessionLabel: currentTransferSale.sessionLabel || null,
+                        fromSeat: oldSeatId || null,
+                        toSession: newSessionId,
+                        toSessionLabel: newSessionLabel,
+                        toSeat: newSeatId
+                    }]
+                };
+
+                await updateDoc(saleRef, updateSaleData);
+
+                // Atualiza o objeto da venda em memória
+                currentTransferSale.sessionId = newSessionId;
+                currentTransferSale.sessionLabel = newSessionLabel;
+                currentTransferSale.seatId = newSeatId;
+                currentTransferSale.selectedSeats = [newSeatId];
+
+                // 4. Reenvia email com o novo ingresso se marcado
+                let emailSentOk = false;
+                if (transferAutoResendEmail && transferAutoResendEmail.checked) {
+                    try {
+                        const functions = getFunctions();
+                        const resendEmail = httpsCallable(functions, 'resendEmail');
+                        await resendEmail({ saleId: saleId });
+                        emailSentOk = true;
+                    } catch (mailErr) {
+                        console.warn('Erro ao disparar reenvio de e-mail automático pós-transferência:', mailErr);
+                    }
+                }
+
+                alert(`Transferência concluída com sucesso!\n\n` +
+                    `Nova Sessão: ${newSessionLabel}\n` +
+                    `Nova Cadeira: ${newSeatId}` +
+                    (emailSentOk ? '\n\nO ingresso atualizado foi reenviado para o e-mail do aluno.' : ''));
+
+                closeTransferSeatDialog();
+
+                // Recarrega detalhes no modal de venda e na listagem
+                await openModalWithSaleDetails(saleId);
+                await fetchSales(false);
+
+            } catch (err) {
+                console.error('Erro na transferência:', err);
+                alert('Erro ao transferir assento: ' + (err.message || err));
+            } finally {
+                confirmTransferSeatBtn.disabled = false;
+                confirmTransferSeatBtn.innerHTML = originalBtnHtml;
+            }
+        });
+    }
 
     const populateFilters = () => {
         // Populate units
