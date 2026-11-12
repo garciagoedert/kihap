@@ -37,6 +37,36 @@
     .dark #sidebar {
         background-color: #18191c !important;
     }
+    /* Oculta barras de rolagem no menu lateral */
+    #sidebar-nav {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    #sidebar-nav::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    .sidebar-footer {
+        flex-shrink: 0 !important;
+        overflow: hidden !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    .sidebar-footer::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    /* Botão discreto de alternar menu */
+    #sidebar-edge-toggle {
+        opacity: 0.45;
+        transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    #sidebar:hover #sidebar-edge-toggle,
+    #sidebar-edge-toggle:hover {
+        opacity: 1;
+    }
     body.sidebar-collapsed #sidebar:not(:hover),
     body.sidebar-collapsed #sidebar.sidebar-just-collapsed {
         width: 72px !important;
@@ -49,6 +79,7 @@
     body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-header {
         padding: 1.25rem 0.5rem !important;
         justify-content: center !important;
+        flex-shrink: 0 !important;
     }
     body.sidebar-collapsed #sidebar:not(:hover) .sidebar-header img,
     body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-header img {
@@ -61,12 +92,16 @@
         display: none !important;
     }
     body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav,
-    body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav,
-    body.sidebar-collapsed #sidebar:not(:hover) .sidebar-footer,
-    body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-footer {
+    body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav {
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
         overflow-x: hidden !important;
+    }
+    body.sidebar-collapsed #sidebar:not(:hover) .sidebar-footer,
+    body.sidebar-collapsed #sidebar.sidebar-just-collapsed .sidebar-footer {
+        padding: 0.75rem 0.5rem !important;
+        overflow: hidden !important;
+        flex-shrink: 0 !important;
     }
     body.sidebar-collapsed #sidebar:not(:hover) #sidebar-nav > a,
     body.sidebar-collapsed #sidebar.sidebar-just-collapsed #sidebar-nav > a,
