@@ -4540,7 +4540,8 @@
                     const badge = card.querySelector('.animate-pulse');
                     if (badge) badge.remove();
                 }
-                const prospectRef = doc(db, 'prospects', prospect.id);
+                const targetCollection = prospect.type === 'lead' ? 'leads' : 'prospects';
+                const prospectRef = doc(db, targetCollection, prospect.id);
                 updateDoc(prospectRef, { unread: false }).catch(err => {
                     console.error("Error marking prospect as read:", err);
                 });
@@ -5030,24 +5031,10 @@
                 const prospectsCollection = collection(db, 'prospects');
 
                 if (prospectId && prospectType === 'lead') {
-                    // Convert lead to prospect
-                    data.status = 'Novo';
-                    data.pagina = 'Prospecção';
-                    data.createdAt = serverTimestamp();
-                    data.createdBy = localStorage.getItem('userName') || (auth.currentUser ? auth.currentUser.email : 'Desconhecido');
-
-                    const batch = writeBatch(db);
-
-                    // 1. Create new prospect
-                    const newProspectRef = doc(prospectsCollection);
-                    batch.set(newProspectRef, data);
-
-                    // 2. Delete old lead
-                    const oldLeadRef = doc(db, 'leads', prospectId);
-                    batch.delete(oldLeadRef);
-
-                    await batch.commit();
-                    generalLog.add(user, 'Convert Lead', `Lead "${data.responsavel}" converted to prospect`);
+                    // Atualiza o lead diretamente na coleção 'leads', preservando data original (createdAt) e coluna atual (status)
+                    const leadRef = doc(db, 'leads', prospectId);
+                    await updateDoc(leadRef, data);
+                    generalLog.add(user, 'Update Lead', `Lead "${data.responsavel}" updated`);
 
                 } else if (prospectId) { // Update existing prospect
                     if (data.pagina === 'Produção') {
