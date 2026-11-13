@@ -273,8 +273,8 @@
 
             <!-- Add/Edit User Modal -->
             <div id="user-modal"
-                class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden glass-blur-heavy p-4 sm:p-6 overflow-y-auto">
-                <div class="bg-white dark:bg-[#1a1a1a] p-6 sm:p-8 md:p-10 rounded-3xl shadow-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-800 transform transition-all my-auto max-h-[94vh] flex flex-col">
+                class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden glass-blur-heavy p-3 sm:p-6 overflow-y-auto">
+                <div class="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 rounded-3xl shadow-2xl w-full max-w-6xl border border-gray-200 dark:border-gray-800 transform transition-all my-auto max-h-[94vh] flex flex-col">
                     <div class="flex justify-between items-center mb-6 shrink-0">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
@@ -291,9 +291,9 @@
                     <form id="user-form" class="space-y-6 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar flex-1">
                         <input type="hidden" id="user-email-hidden">
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                             <!-- Basic Info Section -->
-                            <div class="space-y-5">
+                            <div class="lg:col-span-4 space-y-5">
                                 <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Informações de Acesso</h3>
                                 <div class="space-y-4">
                                     <!-- Profile Photo Upload -->
@@ -429,46 +429,45 @@
                             </div>
 
                             <!-- Roles Section -->
-                            <div class="space-y-5">
+                            <div class="lg:col-span-8 space-y-5">
                                 <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Atribuições & Permissões</h3>
-                                <div class="space-y-4">
+                                <div class="space-y-5">
                                     <!-- Atribuições Globais -->
                                     <div class="bg-gray-50/50 dark:bg-gray-900/30 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-800">
-                                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-200/60 dark:border-gray-800">
+                                        <div class="flex items-center justify-between pb-3 mb-3.5 border-b border-gray-200/60 dark:border-gray-800">
                                             <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Perfis & Papéis Globais</span>
-                                            <span class="text-[10px] text-gray-400">Permissões de sistema</span>
+                                            <span class="text-[11px] text-gray-400">Permissões de sistema</span>
                                         </div>
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                                            <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isAdmin" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
-                                                <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">👑 Admin</span>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                            <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
+                                                <input type="checkbox" id="isAdmin" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
+                                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">👑 Admin</span>
                                             </label>
-                                            <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isInstructor" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
-                                                <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">🥋 Instrutor</span>
+                                            <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
+                                                <input type="checkbox" id="isInstructor" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
+                                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">🥋 Instrutor</span>
                                             </label>
-                                            <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isColarinhoPreto" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
-                                                <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">🥋 Colarinho Preto</span>
+                                            <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
+                                                <input type="checkbox" id="isColarinhoPreto" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
+                                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">🥋 Colarinho Preto</span>
                                             </label>
-                                            <label class="flex items-center gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isFinanceiro" class="peer h-5 w-5 rounded-lg border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer">
-                                                <span class="text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:text-primary transition-colors">💼 Financeiro</span>
+                                            <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
+                                                <input type="checkbox" id="isFinanceiro" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
+                                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">💼 Financeiro</span>
                                             </label>
                                         </div>
                                     </div>
 
                                     <!-- Permissões Granulares por Módulo & Página -->
-                                    <div class="space-y-3">
-                                        <div class="flex items-center justify-between pb-1">
+                                    <div class="space-y-3.5">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
                                             <div>
                                                 <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Permissões por Módulo e Página</h4>
                                                 <p class="text-[11px] text-gray-400 dark:text-gray-500">Selecione exatamente quais telas cada usuário pode visualizar e acessar.</p>
                                             </div>
-                                            <div class="flex items-center gap-2 text-xs">
-                                                <button type="button" id="perm-select-all-modules" class="text-primary hover:underline font-bold text-[11px]">Marcar Tudo</button>
-                                                <span class="text-gray-300 dark:text-gray-700">|</span>
-                                                <button type="button" id="perm-unselect-all-modules" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-medium text-[11px]">Desmarcar Tudo</button>
+                                            <div class="flex items-center gap-2 text-xs shrink-0 whitespace-nowrap">
+                                                <button type="button" id="perm-select-all-modules" class="px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 font-bold text-[11px] transition-colors cursor-pointer">Marcar Tudo</button>
+                                                <button type="button" id="perm-unselect-all-modules" class="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 font-semibold text-[11px] transition-colors cursor-pointer">Desmarcar Tudo</button>
                                             </div>
                                         </div>
 
@@ -492,42 +491,42 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-marketing" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="prospeccao.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-tachometer-alt text-gray-400 mr-1.5 text-[11px]"></i>CRM</span>
+                                            <div id="perm-content-marketing" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="prospeccao.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-tachometer-alt text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">CRM</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="trello.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fab fa-trello text-gray-400 mr-1.5 text-[11px]"></i>Trello</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="trello.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fab fa-trello text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Trello</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="marketing.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-paper-plane text-gray-400 mr-1.5 text-[11px]"></i>Disparos</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="marketing.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-paper-plane text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Disparos</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="newsletter.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-envelope-open-text text-gray-400 mr-1.5 text-[11px]"></i>Newsletter</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="newsletter.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-envelope-open-text text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Newsletter</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="comunicados.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-bullhorn text-gray-400 mr-1.5 text-[11px]"></i>Comunicados</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="comunicados.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-bullhorn text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Comunicados</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="leads-analysis.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-chart-bar text-gray-400 mr-1.5 text-[11px]"></i>Análise de Leads</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="leads-analysis.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-chart-bar text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Análise de Leads</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="marketing-social.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fab fa-instagram text-gray-400 mr-1.5 text-[11px]"></i>Redes Sociais</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="marketing-social.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fab fa-instagram text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Redes Sociais</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="marketing-google.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fab fa-google text-gray-400 mr-1.5 text-[11px]"></i>Google Ads</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="marketing-google.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fab fa-google text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Google Ads</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="marketing" value="arquivo.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-box-archive text-gray-400 mr-1.5 text-[11px]"></i>Arquivo</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="marketing" value="arquivo.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-box-archive text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Arquivo</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -552,62 +551,62 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-administrativo" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="analysis.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-chart-line text-gray-400 mr-1.5 text-[11px]"></i>Análise</span>
+                                            <div id="perm-content-administrativo" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="analysis.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-chart-line text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Análise</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="app-analytics.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-mobile-screen text-gray-400 mr-1.5 text-[11px]"></i>App Analytics</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="app-analytics.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-mobile-screen text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">App Analytics</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="unidades-planos.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-cog text-gray-400 mr-1.5 text-[11px]"></i>Unidades e Planos</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="unidades-planos.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-cog text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Unidades e Planos</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="expansao.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-rocket text-gray-400 mr-1.5 text-[11px]"></i>Expansão</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="expansao.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-rocket text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Expansão</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="analise.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-chart-line text-gray-400 mr-1.5 text-[11px]"></i>Análise Global</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="analise.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-chart-line text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Análise Global</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="tarefas.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-check-circle text-gray-400 mr-1.5 text-[11px]"></i>Tarefas</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="tarefas.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-check-circle text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Tarefas</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="calendario.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-calendar-alt text-gray-400 mr-1.5 text-[11px]"></i>Calendário</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="calendario.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-calendar-alt text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Calendário</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="relatorios.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-chart-pie text-gray-400 mr-1.5 text-[11px]"></i>Relatórios</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="relatorios.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-chart-pie text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Relatórios</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="projetos.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-sitemap text-gray-400 mr-1.5 text-[11px]"></i>Projetos</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="projetos.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-sitemap text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Projetos</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="processos.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-book-open text-gray-400 mr-1.5 text-[11px]"></i>Processos</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="processos.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-book-open text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Processos</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="scripts.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-scroll text-gray-400 mr-1.5 text-[11px]"></i>Scripts</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="scripts.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-scroll text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Scripts</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="fornecedores.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-handshake text-gray-400 mr-1.5 text-[11px]"></i>Fornecedores</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="fornecedores.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-handshake text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Fornecedores</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="contas-mp.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-money-check-alt text-gray-400 mr-1.5 text-[11px]"></i>Contas MP</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="contas-mp.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-money-check-alt text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Contas MP</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="administrativo" value="nps.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-star text-yellow-500 mr-1.5 text-[11px]"></i>NPS</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="administrativo" value="nps.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-star text-yellow-500 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">NPS</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -632,22 +631,22 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-store" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" id="isStoreLoja" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer" data-module="store" value="store.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-shopping-bag text-amber-500 mr-1.5 text-[11px]"></i>Loja (Catálogo)</span>
+                                            <div id="perm-content-store" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-amber-500/40 has-[:checked]:bg-amber-500/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" id="isStoreLoja" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="store" value="store.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-shopping-bag text-amber-500 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Loja (Catálogo)</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" id="isStorePedidos" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer" data-module="store" value="pedidos.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-ribbon text-amber-500 mr-1.5 text-[11px]"></i>Pedidos</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-amber-500/40 has-[:checked]:bg-amber-500/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" id="isStorePedidos" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="store" value="pedidos.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-ribbon text-amber-500 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Pedidos</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" id="isStoreAssinaturas" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer" data-module="store" value="assinaturas.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-sync-alt text-amber-500 mr-1.5 text-[11px]"></i>Assinaturas</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-amber-500/40 has-[:checked]:bg-amber-500/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" id="isStoreAssinaturas" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="store" value="assinaturas.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-sync-alt text-amber-500 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Assinaturas</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" id="isStoreEstoque" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer" data-module="store" value="estoque.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-box-open text-amber-500 mr-1.5 text-[11px]"></i>Estoque</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-amber-500/40 has-[:checked]:bg-amber-500/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" id="isStoreEstoque" class="page-perm-checkbox h-4 w-4 rounded text-amber-500 focus:ring-amber-400 border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="store" value="estoque.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-box-open text-amber-500 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Estoque</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -672,14 +671,14 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-tatame" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="tatame" value="tatame.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-user-ninja text-gray-400 mr-1.5 text-[11px]"></i>Tatame (Presenças)</span>
+                                            <div id="perm-content-tatame" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="tatame" value="tatame.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-user-ninja text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Tatame (Presenças)</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="tatame" value="planificador.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-calendar-alt text-gray-400 mr-1.5 text-[11px]"></i>Planificador</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="tatame" value="planificador.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-calendar-alt text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Planificador</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -704,14 +703,14 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-rh" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="rh" value="rh.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-tachometer-alt text-gray-400 mr-1.5 text-[11px]"></i>CRM RH</span>
+                                            <div id="perm-content-rh" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="rh" value="rh.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-tachometer-alt text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">CRM RH</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="rh" value="organograma.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-sitemap text-gray-400 mr-1.5 text-[11px]"></i>Organograma</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="rh" value="organograma.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-sitemap text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Organograma</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -736,10 +735,10 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-juridico" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="juridico" value="juridico-trello.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fab fa-trello text-gray-400 mr-1.5 text-[11px]"></i>Trello Jurídico</span>
+                                            <div id="perm-content-juridico" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="juridico" value="juridico-trello.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fab fa-trello text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Trello Jurídico</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -764,18 +763,18 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-social" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="social" value="chat.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-comments text-gray-400 mr-1.5 text-[11px]"></i>Chat</span>
+                                            <div id="perm-content-social" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="social" value="chat.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-comments text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Chat</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="social" value="feed.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-newspaper text-gray-400 mr-1.5 text-[11px]"></i>Feed</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="social" value="feed.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-newspaper text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Feed</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="social" value="gerenciar-emblemas.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-award text-gray-400 mr-1.5 text-[11px]"></i>Emblemas</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="social" value="gerenciar-emblemas.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-award text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Emblemas</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -800,26 +799,26 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div id="perm-content-geral" class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="geral" value="alunos.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-users text-gray-400 mr-1.5 text-[11px]"></i>Alunos</span>
+                                            <div id="perm-content-geral" class="p-3.5 sm:p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="geral" value="alunos.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-users text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Alunos</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="geral" value="grade.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-th text-gray-400 mr-1.5 text-[11px]"></i>Grade</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="geral" value="grade.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-th text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Grade</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" id="isAcademy" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="geral" value="cursos.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-graduation-cap text-gray-400 mr-1.5 text-[11px]"></i>Cursos</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" id="isAcademy" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="geral" value="cursos.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-graduation-cap text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Cursos</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" id="isSuporte" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="geral" value="suporte.html">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-question-circle text-gray-400 mr-1.5 text-[11px]"></i>Suporte</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" id="isSuporte" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="geral" value="suporte.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-question-circle text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Suporte</span></span>
                                                 </label>
-                                                <label class="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer transition-colors">
-                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer" data-module="geral" value="gestao-suporte">
-                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300"><i class="fas fa-headset text-gray-400 mr-1.5 text-[11px]"></i>Gestão de Suporte</span>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="geral" value="gestao-suporte">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-headset text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Gestão de Suporte</span></span>
                                                 </label>
                                             </div>
                                         </div>
