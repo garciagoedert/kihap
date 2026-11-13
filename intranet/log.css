@@ -366,9 +366,13 @@
 
 /* Modern Badges */
 .badge-soft {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    line-height: 1.25;
     font-weight: 600;
     letter-spacing: 0.025em;
-    padding: 0.25rem 0.625rem;
+    padding: 0.25rem 0.65rem;
     border-radius: 9999px;
     font-size: 0.7rem;
 }
