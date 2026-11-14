@@ -2,7 +2,7 @@ import { onAuthReady, checkAdminStatus } from './auth.js';
 import { showConfirm, showInviteLinkModal } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, auth } from './firebase-config.js'; // Import auth
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, doc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDoc, getDocs, query, orderBy, addDoc, Timestamp, where, doc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // Cloud Functions
 const inviteStudent = httpsCallable(functions, 'inviteStudent');
@@ -70,6 +70,29 @@ export function setupAlunoPage() {
     document.getElementById('closeEditModalBtn').onclick = closeEditModal;
     document.getElementById('cancelEditBtn').onclick = closeEditModal;
     document.getElementById('editStudentForm').onsubmit = handleEditSubmit;
+}
+
+function extractStudentPhone(student) {
+    if (!student) return '';
+    if (student.phone && String(student.phone).trim()) {
+        return String(student.phone).trim();
+    }
+    if (!Array.isArray(student.contacts)) return '';
+
+    const phoneContact =
+        student.contacts.find(c =>
+            c?.description &&
+            (c.idContactType === 1 ||
+                c.idContactType === 2 ||
+                /celular|telefone|whatsapp|fone/i.test(c.contactType || ''))
+        ) ||
+        student.contacts.find(c =>
+            c?.description &&
+            c.idContactType !== 4 &&
+            !/e-?mail/i.test(c.contactType || '')
+        );
+
+    return phoneContact?.description ? String(phoneContact.description).trim() : '';
 }
 
 function parseEvoMemberLevel(memberLevel) {
@@ -146,6 +169,25 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
             }
         }
 
+        // --- MERGE LOCAL EVO_STUDENTS OVERRIDES ---
+        try {
+            const localStudentSnap = await getDoc(doc(db, 'evo_students', String(studentId)));
+            if (localStudentSnap.exists()) {
+                const localData = localStudentSnap.data();
+                ['phone', 'responsible', 'origin', 'address', 'cpf'].forEach(field => {
+                    if (!currentStudent[field] && localData[field]) {
+                        currentStudent[field] = localData[field];
+                    }
+                });
+                if (!currentStudent.phone) {
+                    const localPhone = extractStudentPhone(localData);
+                    if (localPhone) currentStudent.phone = localPhone;
+                }
+            }
+        } catch (e) {
+            console.warn("Aviso: Falha ao mesclar dados locais de evo_students:", e);
+        }
+
         // --- MERGE & SYNC FIRESTORE DATA (APP KIHAP) ---
         try {
             const studentUser = await findUserByEvoId(parseInt(studentId));
@@ -155,6 +197,7 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
 
                 if (studentUser.partials !== undefined) currentStudent.partials = studentUser.partials;
                 if (studentUser.photoURL) currentStudent.photoURL = studentUser.photoURL;
+                if (!currentStudent.phone && studentUser.phone) currentStudent.phone = studentUser.phone;
 
                 if (evoLevel) {
                     // Sincroniza o nível vindo do EVO para o documento do aluno no App (users)
@@ -183,6 +226,7 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
         } catch (e) {
             console.warn("Aviso: Falha ao mesclar dados do Firestore:", e);
         }
+        currentStudent.phone = extractStudentPhone(currentStudent) || '';
         // ----------------------------
 
         renderStudentProfile();
@@ -202,12 +246,23 @@ async function loadStudentData(studentId, unitId) { // Receber o ID da unidade
 async function renderStudentProfile() {
     const fullName = `${currentStudent.firstName || ''} ${currentStudent.lastName || ''}`;
     const email = currentStudent.contacts?.find(c => c.contactType === 'E-mail' || c.idContactType === 4)?.description || 'N/A';
+    const phone = extractStudentPhone(currentStudent);
     const initials = (currentStudent.firstName?.[0] || '') + (currentStudent.lastName?.[0] || '');
 
     document.getElementById('student-name-header').textContent = fullName;
     document.getElementById('student-name-sidebar').textContent = fullName;
     const emailEl = document.getElementById('student-email');
     if (emailEl) emailEl.textContent = email;
+    const phoneEl = document.getElementById('student-phone');
+    if (phoneEl) {
+        if (phone) {
+            phoneEl.textContent = phone;
+            phoneEl.classList.remove('hidden');
+        } else {
+            phoneEl.textContent = '';
+            phoneEl.classList.add('hidden');
+        }
+    }
 
     const studentPhoto = document.getElementById('student-photo');
     const photoContainer = document.getElementById('student-photo-container');
@@ -254,6 +309,7 @@ function renderDetailsTab() {
         branchName: "Unidade",
         accessBlocked: "Acesso Bloqueado",
         document: "Documento (CPF/RG)",
+        phone: "Telefone",
         gender: "Gênero",
         birthDate: "Data de Nascimento",
         updateDate: "Última Atualização",
@@ -284,7 +340,7 @@ function renderDetailsTab() {
     let html = '<dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">';
     for (const key in translations) {
         if (key === 'collar' && !currentStudent.collar) continue;
-        if (currentStudent.hasOwnProperty(key) || ['responsible', 'origin', 'rankType', 'belt', 'partials'].includes(key)) {
+        if (currentStudent.hasOwnProperty(key) || ['phone', 'responsible', 'origin', 'rankType', 'belt', 'partials'].includes(key)) {
             html += `
                 <div class="flex flex-col gap-1 group">
                     <dt class="text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-primary transition-colors">${translations[key]}</dt>
@@ -576,7 +632,7 @@ function openEditModal() {
     form.firstName.value = currentStudent.firstName || '';
     form.lastName.value = currentStudent.lastName || '';
     form.email.value = currentStudent.contacts?.find(c => c.idContactType === 4)?.description || '';
-    form.phone.value = currentStudent.phone || currentStudent.contacts?.find(c => c.idContactType === 1)?.description || '';
+    form.phone.value = extractStudentPhone(currentStudent);
     form.cpf.value = currentStudent.cpf || currentStudent.document || '';
     form.address.value = currentStudent.address || '';
     form.responsible.value = currentStudent.responsible || '';

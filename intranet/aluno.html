@@ -80,6 +80,7 @@
                         </div>
                         <h2 id="student-name-sidebar" class="text-xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Carregando...</h2>
                         <p id="student-email" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">...</p>
+                        <p id="student-phone" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 hidden"></p>
                         <div id="student-status-badge"
                             class="mt-4 inline-flex items-center px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm">
                             ...
@@ -309,7 +310,7 @@
     <script type="module" src="auth.js"></script>
     <script type="module">
         import { loadComponents } from './common-ui.js';
-        import { setupAlunoPage } from './aluno.js?v=1.1';
+        import { setupAlunoPage } from './aluno.js?v=1.2';
 
         document.addEventListener('DOMContentLoaded', () => {
             loadComponents(() => {
