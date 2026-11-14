@@ -158,8 +158,18 @@ export function getEffectiveProductPrice(product: any, userData: any): Effective
     };
   }
 
-  const basePrice = typeof product.price === 'number' ? product.price : 0;
-  const promoPrice = typeof product.promoPrice === 'number' && product.promoPrice > 0 ? product.promoPrice : null;
+  const rawPrice = product.priceType === 'kit'
+    ? (typeof product.kitBasePrice === 'number' ? product.kitBasePrice : (typeof product.price === 'number' ? product.price : 0))
+    : (typeof product.price === 'number' ? product.price : 0);
+  const rawPromo = typeof product.promoPrice === 'number' && product.promoPrice > 0 ? product.promoPrice : null;
+  const kitOriginalPrice = (product.priceType === 'kit' && typeof product.kitOriginalPrice === 'number' && product.kitOriginalPrice > 0)
+    ? product.kitOriginalPrice
+    : null;
+
+  const basePrice = (kitOriginalPrice && kitOriginalPrice > rawPrice) ? kitOriginalPrice : rawPrice;
+  const promoPrice = product.priceType === 'kit'
+    ? ((rawPromo && rawPromo < rawPrice) ? rawPromo : ((kitOriginalPrice && kitOriginalPrice > rawPrice) ? rawPrice : null))
+    : rawPromo;
 
   // 1. Staff / Equipe override no produto
   if (isStaffUser(userData) && typeof product.staffPrice === 'number' && product.staffPrice > 0) {
@@ -207,4 +217,23 @@ export function formatCentsToCurrency(cents: number): string {
     style: 'currency',
     currency: 'BRL',
   });
+}
+
+/**
+ * Formats kit item summaries (quantity, chosen option/size, gift indicator) for cart/checkout display.
+ */
+export function formatKitSelectionLines(form: any): string[] {
+  if (!form) return [];
+  if (Array.isArray(form.kitItemsSnapshot) && form.kitItemsSnapshot.length > 0) {
+    return form.kitItemsSnapshot.map((k: any) => {
+      const chosen = form.kitSelections?.[k.name];
+      const qtyPrefix = k.quantity && k.quantity > 1 ? `${k.quantity}x ` : '';
+      const giftTag = k.isGift ? ' (Brinde)' : '';
+      return `${qtyPrefix}${k.name}${chosen ? `: ${chosen}` : ''}${giftTag}`;
+    });
+  }
+  if (form.kitSelections && typeof form.kitSelections === 'object') {
+    return Object.entries(form.kitSelections).map(([name, opt]) => `${name}: ${opt}`);
+  }
+  return [];
 }

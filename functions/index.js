@@ -618,6 +618,41 @@ async function reduceProductStock(productId, size = null, quantity = 1) {
                 updatedAt: admin.firestore.FieldValue.serverTimestamp()
             };
 
+            let updatedCdStock = null;
+            if (product.cdStock && typeof product.cdStock === 'object' && Object.keys(product.cdStock).length > 0) {
+                updatedCdStock = JSON.parse(JSON.stringify(product.cdStock));
+                let remaining = quantity;
+                const cdEntries = Object.entries(updatedCdStock);
+
+                if (size) {
+                    for (const [, cdData] of cdEntries) {
+                        if (remaining <= 0) break;
+                        const sizeAvail = cdData && cdData.sizes ? (cdData.sizes[size] || 0) : 0;
+                        if (sizeAvail > 0) {
+                            const deduct = Math.min(remaining, sizeAvail);
+                            cdData.sizes[size] = sizeAvail - deduct;
+                            cdData.total = Math.max(0, (cdData.total || 0) - deduct);
+                            remaining -= deduct;
+                        }
+                    }
+                }
+                if (remaining > 0) {
+                    for (const [, cdData] of cdEntries) {
+                        if (remaining <= 0) break;
+                        const cdTotal = cdData ? (cdData.total || 0) : 0;
+                        if (cdTotal > 0) {
+                            const deduct = Math.min(remaining, cdTotal);
+                            cdData.total = cdTotal - deduct;
+                            if (size && cdData.sizes && cdData.sizes[size] > 0) {
+                                cdData.sizes[size] = Math.max(0, cdData.sizes[size] - deduct);
+                            }
+                            remaining -= deduct;
+                        }
+                    }
+                }
+                updateProductData.cdStock = updatedCdStock;
+            }
+
             if (product.hasSizes && product.sizeStock && size) {
                 const currentStock = product.sizeStock;
                 const currentQty = currentStock[size] || 0;
@@ -638,9 +673,14 @@ async function reduceProductStock(productId, size = null, quantity = 1) {
                 updateProductData.stockQuantity = total;
                 if (!anyAvailable) updateProductData.available = false;
             } else {
-                // Simple stock
-                let currentQty = product.stockQuantity || 0;
-                let newQuantity = Math.max(0, currentQty - quantity);
+                // Simple stock or CD-based stock
+                let newQuantity;
+                if (updatedCdStock) {
+                    newQuantity = Object.values(updatedCdStock).reduce((sum, cd) => sum + ((cd && cd.total) || 0), 0);
+                } else {
+                    const currentQty = product.stockQuantity || 0;
+                    newQuantity = Math.max(0, currentQty - quantity);
+                }
                 updateProductData.stockQuantity = newQuantity;
                 if (newQuantity <= 0) updateProductData.available = false;
             }
@@ -650,6 +690,36 @@ async function reduceProductStock(productId, size = null, quantity = 1) {
         });
     } catch (error) {
         console.error(`[reduceProductStock] Error reducing stock for product ${productId}:`, error);
+    }
+}
+
+/**
+ * Reduz estoque de um produto ou, caso seja um Kit, dos produtos vinculados no Kit (incluindo brindes)
+ */
+async function reduceProductOrKitStock(productId, selectedSize = null, kitSelections = null, kitItemsSnapshot = null, parentQuantity = 1) {
+    if (!productId) return;
+    const baseQty = Math.max(1, parseInt(parentQuantity, 10) || 1);
+    await reduceProductStock(productId, selectedSize, baseQty);
+
+    try {
+        const prodSnap = await db.collection('products').doc(productId).get();
+        const product = prodSnap.exists ? prodSnap.data() : null;
+        const isKit = (product && product.priceType === 'kit') || (Array.isArray(kitItemsSnapshot) && kitItemsSnapshot.length > 0);
+        const kitItems = (product && Array.isArray(product.kitItems) && product.kitItems.length > 0)
+            ? product.kitItems
+            : (Array.isArray(kitItemsSnapshot) ? kitItemsSnapshot : []);
+
+        if (isKit && kitItems.length > 0) {
+            for (const kItem of kitItems) {
+                if (kItem && kItem.productId) {
+                    const qty = Math.max(1, parseInt(kItem.quantity, 10) || 1) * baseQty;
+                    const chosenSize = (kitSelections && (kitSelections[kItem.productId] || kitSelections[kItem.name])) || null;
+                    await reduceProductStock(kItem.productId, chosenSize, qty);
+                }
+            }
+        }
+    } catch (error) {
+        console.error(`[reduceProductOrKitStock] Error checking kit components for ${productId}:`, error);
     }
 }
 
@@ -669,20 +739,31 @@ exports.onSalePaid = functions.firestore
 
         console.log(`[onSalePaid] Processing stock for sale ${context.params.saleId}`);
 
-        // 1. Handle single product sale (Standard/Online)
-        if (afterData.productId) {
-            await reduceProductStock(afterData.productId, afterData.userSize, 1);
-        }
-
-        // 2. Handle manual multi-item sale
-        if (afterData.items && Array.isArray(afterData.items)) {
+        // 1. Handle manual multi-item sale (takes precedence when items[] exists so items[0] is not deducted twice)
+        if (Array.isArray(afterData.items) && afterData.items.length > 0) {
             for (const item of afterData.items) {
                 if (item.productId) {
-                    // Manual sales might have size in item.size or afterData.chosenVariant
                     const itemSize = item.size || afterData.chosenVariant || null;
-                    await reduceProductStock(item.productId, itemSize, 1);
+                    const itemQty = Math.max(1, parseInt(item.quantity, 10) || 1);
+                    await reduceProductOrKitStock(
+                        item.productId,
+                        itemSize,
+                        item.kitSelections || afterData.kitSelections || null,
+                        item.kitItemsSnapshot || afterData.kitItemsSnapshot || null,
+                        itemQty
+                    );
                 }
             }
+        } else if (afterData.productId) {
+            // 2. Handle single product sale (Standard/Online/App)
+            const saleQty = Math.max(1, parseInt(afterData.quantity, 10) || 1);
+            await reduceProductOrKitStock(
+                afterData.productId,
+                afterData.userSize || null,
+                afterData.kitSelections || null,
+                afterData.kitItemsSnapshot || null,
+                saleQty
+            );
         }
 
         // 3. Sincroniza venda do Espetáculo Kihap 2026 com o Google Sheets

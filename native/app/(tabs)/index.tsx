@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, FlatList, Text, ActivityIndicator, RefreshControl, Image, TouchableOpacity, Modal, ScrollView, Dimensions, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { collection, query, orderBy, limit, getDocs, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import FeedCard from '../../src/components/FeedCard';
-import StoriesBar from '../../src/components/StoriesBar';
 import BannerCarousel from '../../src/components/BannerCarousel';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
@@ -116,7 +115,6 @@ export default function FeedScreen() {
   const { user, userData, linkedProfiles, switchProfile, signOut } = useAuth();
   const [isSwitching, setIsSwitching] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
-  const [stories, setStories] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -179,67 +177,7 @@ export default function FeedScreen() {
       setLoading(true);
       const userUnitSlugs = getUserUnitSlugs(userData);
 
-      // 1. Fetch Stories (Static)
-      try {
-        const now = new Date();
-        const storiesQ = query(
-          collection(db, 'stories'), 
-          where('expiresAt', '>=', now),
-          orderBy('expiresAt', 'asc')
-        );
-        const storiesSnap = await getDocs(storiesQ);
-        
-        const storyBatchUnitsMap = new Map<string, Set<string>>();
-        const rawStories: any[] = [];
-        storiesSnap.forEach(docSnap => {
-          const story: any = { id: docSnap.id, ...docSnap.data() };
-          rawStories.push(story);
-          if (story.batchId && story.targetUnit) {
-            if (!storyBatchUnitsMap.has(story.batchId)) {
-              storyBatchUnitsMap.set(story.batchId, new Set<string>());
-            }
-            storyBatchUnitsMap.get(story.batchId)!.add(story.targetUnit);
-          }
-        });
-
-        const allStories: any[] = [];
-        const seenStoryBatches = new Set<string>();
-        rawStories.forEach(story => {
-          if (story.batchId && storyBatchUnitsMap.has(story.batchId)) {
-            const batchUnits = Array.from(storyBatchUnitsMap.get(story.batchId)!);
-            if (!story.targetUnits || story.targetUnits.length === 0) {
-              story.targetUnits = batchUnits;
-            }
-          }
-
-          if (story.batchId) {
-            if (seenStoryBatches.has(story.batchId)) return;
-            seenStoryBatches.add(story.batchId);
-          }
-
-          const isAuthor = story.authorId === user.uid;
-          const isTargeted = isTargetForUser(story, user.uid, userUnitSlugs);
-          if (isAuthor || isTargeted) allStories.push(story);
-        });
-
-        const groupedStories = allStories.reduce((acc, story) => {
-          if (!acc[story.authorId]) {
-            acc[story.authorId] = {
-              authorId: story.authorId,
-              authorName: story.authorName,
-              authorPhotoURL: story.authorPhotoURL,
-              stories: []
-            };
-          }
-          acc[story.authorId].stories.push(story);
-          return acc;
-        }, {});
-        setStories(Object.values(groupedStories));
-      } catch (err) {
-        console.error("Feed: Stories error:", err);
-      }
-
-      // 2. Subscribe to Feed (Real-time)
+      // 1. Subscribe to Feed (Real-time)
       const feedQ = query(collection(db, 'feed'), orderBy('createdAt', 'desc'), limit(50));
       unsubscribeFeed = onSnapshot(feedQ, (feedSnap) => {
         const postBatchUnitsMap = new Map<string, Set<string>>();
@@ -371,8 +309,7 @@ export default function FeedScreen() {
   };
   const onRefresh = () => {
     setRefreshing(true);
-    // Real-time listener will already have latest data, but we can restart flow if needed
-    // Actually, just for the stories which are static:
+    // Real-time listeners will already have latest data
     if (user) {
       setRefreshing(false); // Snapshots are instant
     }
@@ -436,17 +373,11 @@ export default function FeedScreen() {
         renderItem={({ item }) => <FeedCard post={item} />}
         ListHeaderComponent={
           <View className="bg-transparent pt-4">
-            {stories.length > 0 && (
-              <View className="py-4 mb-2">
-                <StoriesBar groups={stories} onPress={(group) => console.log('Story pressed', group)} />
-              </View>
-            )}
-
             {/* Banners em Destaque no Topo do Feed - Carrossel Horizontal Deslizável */}
             <BannerCarousel banners={banners} />
 
-            {/* Respiro extra se não houver stories nem banners */}
-            {stories.length === 0 && banners.length === 0 && <View className="h-4" />}
+            {/* Respiro extra se não houver banners */}
+            {banners.length === 0 && <View className="h-4" />}
           </View>
         }
         contentContainerStyle={{ paddingBottom: 100 }}

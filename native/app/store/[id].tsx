@@ -146,7 +146,8 @@ export default function ProductDetailScreen() {
               userGraduacao: '', 
               userProfessor: '',
               userSize: '',
-              selectedVariant: defaultVariant
+              selectedVariant: defaultVariant,
+              kitSelections: {}
             }];
           }
           return prev;
@@ -320,7 +321,8 @@ export default function ProductDetailScreen() {
                 userGraduacao: '',
                 userProfessor: '',
                 userSize: '',
-                selectedVariant: defaultVariant
+                selectedVariant: defaultVariant,
+                kitSelections: {}
               }),
               seatId: seatInfo?.seatId || null,
               sessionId: seatInfo?.sessionId || null,
@@ -347,7 +349,8 @@ export default function ProductDetailScreen() {
               userGraduacao: '', 
               userProfessor: '', 
               userSize: '',
-              selectedVariant: defaultVariant
+              selectedVariant: defaultVariant,
+              kitSelections: {}
             });
           }
         } else {
@@ -450,7 +453,10 @@ export default function ProductDetailScreen() {
         ((p.userPrograma === 'tradicional' || p.userPrograma === 'littles') && !p.userGraduacao) ||
         (product.askProfessor && !p.userProfessor) || 
         (product.hasSizes && !p.userSize) ||
-        (product.priceType === 'variable' && !p.selectedVariant)
+        (product.priceType === 'variable' && !p.selectedVariant) ||
+        (product.priceType === 'kit' && Array.isArray(product.kitItems) && product.kitItems.some((kItem: any) =>
+          Array.isArray(kItem.options) && kItem.options.length > 0 && !p.kitSelections?.[kItem.name]
+        ))
       );
     });
 
@@ -535,6 +541,15 @@ export default function ProductDetailScreen() {
         ticketTypeName: isMeia ? 'Meia-Entrada' : 'Inteira',
         isExtraTicket: isExtra,
         isMainParticipant: !isExtra,
+        ...(product.priceType === 'kit' && Array.isArray(product.kitItems) ? {
+          kitItemsSnapshot: product.kitItems.map((k: any) => ({
+            productId: k.productId || null,
+            name: k.name,
+            quantity: k.quantity || 1,
+            originalPrice: k.originalPrice || 0,
+            isGift: Boolean(k.isGift),
+          }))
+        } : {}),
         seatId: seatInfo ? seatInfo.seatId : null,
         ...(product.hasSeatMap && seatInfo ? {
           sessionId: seatInfo.sessionId,
@@ -667,11 +682,23 @@ export default function ProductDetailScreen() {
         </View>
 
         <View className="px-6 py-8">
-          {product.category && (
-            <View className="bg-yellow-500/10 self-start px-3 py-1 rounded-lg mb-4 border border-yellow-500/20">
-              <Text className="text-[#eab308] text-[10px] font-black uppercase tracking-widest">{product.category}</Text>
-            </View>
-          )}
+          <View className="flex-row flex-wrap items-center gap-2 mb-4">
+            {product.category && (
+              <View className="bg-yellow-500/10 px-3 py-1 rounded-lg border border-yellow-500/20">
+                <Text className="text-[#eab308] text-[10px] font-black uppercase tracking-widest">{product.category}</Text>
+              </View>
+            )}
+            {product.priceType === 'kit' && (
+              <View className="bg-amber-500/15 px-3 py-1 rounded-lg border border-amber-500/30">
+                <Text className="text-amber-600 dark:text-amber-300 text-[10px] font-black uppercase tracking-widest">KIT</Text>
+              </View>
+            )}
+            {product.priceType === 'kit' && Array.isArray(product.kitItems) && product.kitItems.some((k: any) => k.isGift) && (
+              <View className="bg-emerald-500/15 px-3 py-1 rounded-lg border border-emerald-500/30">
+                <Text className="text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest">COM BRINDE</Text>
+              </View>
+            )}
+          </View>
 
           <Text className="text-3xl font-black text-gray-900 dark:text-white mb-2 leading-tight">
             {product.name}
@@ -710,6 +737,87 @@ export default function ProductDetailScreen() {
           <Text className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
             {product.description || 'Nenhuma descrição disponível para este produto. Qualidade garantida Kihap Martial Arts.'}
           </Text>
+
+          {/* O que está incluso neste Kit */}
+          {product.priceType === 'kit' && Array.isArray(product.kitItems) && product.kitItems.length > 0 && (
+            <View className="mb-6 bg-gray-50 dark:bg-[#121212] rounded-3xl p-4 border border-gray-100 dark:border-white/5">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest">
+                  O que está incluso neste Kit
+                </Text>
+                <View className="bg-amber-500/15 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                  <Text className="text-[10px] font-black text-amber-600 dark:text-amber-300">
+                    {product.kitItems.length} {product.kitItems.length === 1 ? 'item' : 'itens'}
+                  </Text>
+                </View>
+              </View>
+
+              <View className="space-y-2.5">
+                {product.kitItems.map((kItem: any, idx: number) => {
+                  const qty = kItem.quantity && kItem.quantity > 1 ? kItem.quantity : 1;
+                  const origTotal = (kItem.originalPrice || 0) * qty;
+                  return (
+                    <View
+                      key={`kit-summary-${idx}`}
+                      className={`flex-row items-center p-2.5 rounded-2xl border ${kItem.isGift ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/5'}`}
+                    >
+                      {kItem.imageUrl ? (
+                        <Image
+                          source={{ uri: kItem.imageUrl }}
+                          className="w-11 h-11 rounded-xl mr-3"
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View className={`w-11 h-11 rounded-xl mr-3 items-center justify-center ${kItem.isGift ? 'bg-emerald-500/20' : 'bg-gray-100 dark:bg-white/5'}`}>
+                          <Text className="text-[9px] font-black uppercase text-gray-500 dark:text-gray-400">
+                            {kItem.isGift ? 'BRINDE' : 'ITEM'}
+                          </Text>
+                        </View>
+                      )}
+                      <View className="flex-1 pr-2">
+                        <Text className="text-xs font-bold text-gray-900 dark:text-white" numberOfLines={2}>
+                          {qty > 1 ? `${qty}x ` : ''}{kItem.name}
+                        </Text>
+                        {Array.isArray(kItem.options) && kItem.options.length > 0 ? (
+                          <Text className="text-[10px] text-gray-400 mt-0.5" numberOfLines={1}>
+                            Opções: {kItem.options.join(', ')}
+                          </Text>
+                        ) : (
+                          <Text className="text-[10px] text-gray-400 mt-0.5">
+                            Tamanho único / padrão
+                          </Text>
+                        )}
+                      </View>
+                      <View className="items-end">
+                        {origTotal > 0 && (
+                          <Text className="text-[10px] text-gray-400 line-through">
+                            {formatCentsToCurrency(origTotal)}
+                          </Text>
+                        )}
+                        {kItem.isGift ? (
+                          <View className="bg-emerald-600 px-2 py-0.5 rounded-md mt-0.5">
+                            <Text className="text-[9px] font-black text-white uppercase">BRINDE GRÁTIS</Text>
+                          </View>
+                        ) : (
+                          <Text className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+                            Incluso
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {effective.basePrice > effective.price && (
+                <View className="mt-3 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex-row items-center justify-center">
+                  <Text className="text-xs font-black text-emerald-700 dark:text-emerald-300">
+                    Você economiza {formatCentsToCurrency(effective.basePrice - effective.price)} neste kit
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Módulo de Mapa de Assentos, Locais & Sessões */}
           {product.hasSeatMap && (
@@ -1232,6 +1340,49 @@ export default function ProductDetailScreen() {
                           </TouchableOpacity>
                         ))}
                       </View>
+                    </View>
+                  )}
+
+                  {!isExtra && product.priceType === 'kit' && Array.isArray(product.kitItems) && product.kitItems.some((k: any) => Array.isArray(k.options) && k.options.length > 0) && (
+                    <View className="space-y-3">
+                      <Text className="text-[10px] font-bold text-gray-400 uppercase ml-1">Opções dos Itens do Kit</Text>
+                      {product.kitItems.map((kItem: any, kIdx: number) => {
+                        if (!Array.isArray(kItem.options) || kItem.options.length === 0) return null;
+                        const currentSelection = participant.kitSelections?.[kItem.name] || '';
+                        return (
+                          <View key={`kit-opt-${kIdx}`} className="bg-white dark:bg-[#141414] p-3 rounded-xl border border-gray-100 dark:border-white/5">
+                            <View className="flex-row items-center justify-between mb-2">
+                              <Text className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                                {(kItem.quantity && kItem.quantity > 1) ? `${kItem.quantity}x ` : ''}{kItem.name} *
+                              </Text>
+                              {kItem.isGift && (
+                                <View className="bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                                  <Text className="text-[9px] font-black text-emerald-600 dark:text-emerald-400">BRINDE</Text>
+                                </View>
+                              )}
+                            </View>
+                            <View className="flex-row flex-wrap">
+                              {kItem.options.map((opt: string) => {
+                                const isSelected = currentSelection === opt;
+                                return (
+                                  <TouchableOpacity
+                                    key={opt}
+                                    onPress={() => updateParticipant(index, {
+                                      kitSelections: {
+                                        ...(participant.kitSelections || {}),
+                                        [kItem.name]: opt
+                                      }
+                                    })}
+                                    className={`mr-2 mb-2 px-3.5 py-2 rounded-xl border ${isSelected ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-gray-50 dark:bg-[#1a1a1a] border-gray-200 dark:border-white/10'}`}
+                                  >
+                                    <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}>{opt}</Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </View>
+                          </View>
+                        );
+                      })}
                     </View>
                   )}
 

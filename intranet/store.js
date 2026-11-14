@@ -194,8 +194,17 @@ export async function setupStorePage() {
     const lotesList = document.getElementById('lotes-list');
     const kitContainer = document.getElementById('kit-container');
     const kitBasePriceInput = document.getElementById('kit-base-price');
-    const addKitItemBtn = document.getElementById('add-kit-item-btn');
+    const kitDiscountPercentInput = document.getElementById('kit-discount-percent');
+    const kitPixPriceInput = document.getElementById('kit-pix-price');
+    const kitCatalogSearchWrapper = document.getElementById('kit-catalog-search-wrapper');
+    const kitCatalogSearchInput = document.getElementById('kit-catalog-search-input');
+    const kitCatalogSearchClearBtn = document.getElementById('kit-catalog-search-clear-btn');
+    const kitCatalogSearchResults = document.getElementById('kit-catalog-search-results');
+    const kitSummaryOriginal = document.getElementById('kit-summary-original');
+    const kitSummaryGifts = document.getElementById('kit-summary-gifts');
+    const kitSummarySavings = document.getElementById('kit-summary-savings');
     const kitItemsList = document.getElementById('kit-items-list');
+    let kitRowCounter = 0;
 
     // Differential pricing elements (Staff & Unit prices)
     const toggleDifferentialPricingBtn = document.getElementById('toggle-differential-pricing-btn');
@@ -1357,6 +1366,11 @@ export async function setupStorePage() {
             `;
 
             let badgesStr = '';
+            if (product.priceType === 'kit') {
+                const hasGift = Array.isArray(product.kitItems) && product.kitItems.some(i => i.isGift);
+                badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded border border-amber-200 dark:border-amber-800">Kit</span> `;
+                if (hasGift) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded border border-emerald-200 dark:border-emerald-800">Brinde</span> `;
+            }
             if (product.isTicket) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 rounded border border-purple-200 dark:border-purple-800">Ingresso</span> `;
             if (product.isSubscription) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded border border-green-200 dark:border-green-800">Assinatura</span> `;
             if (product.isEvent) badgesStr += `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded border border-indigo-200 dark:border-indigo-800">Evento</span> `;
@@ -1370,6 +1384,38 @@ export async function setupStorePage() {
                 if (product.staffPrice) details.push('Staff');
                 if (countUnits > 0) details.push(`${countUnits} un`);
                 priceDiffBadge = `<div class="text-[10px] text-purple-600 dark:text-purple-400 font-sans font-semibold flex items-center gap-1 mt-0.5"><i class="fas fa-tags text-[9px]"></i> ${details.join(' + ')}</div>`;
+            }
+
+            let cdStockCellHtml = renderCDStockBadges(product);
+            let totalStockCellHtml = product.controlStock
+                ? `<span class="px-2.5 py-1 rounded-full text-xs font-bold ${product.stockQuantity > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'}">${product.stockQuantity || 0} un</span>`
+                : `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700">Sem Controle</span>`;
+
+            if (product.priceType === 'kit' && Array.isArray(product.kitItems) && product.kitItems.length > 0) {
+                const linkedEntries = product.kitItems.map(k => ({
+                    item: k,
+                    comp: k.productId ? allProducts.find(p => p.id === k.productId) : null
+                })).filter(entry => entry.comp);
+
+                if (linkedEntries.length > 0) {
+                    const compBadges = linkedEntries.map(({ item, comp }) => {
+                        const qtyNeeded = Math.max(1, parseInt(item.quantity, 10) || 1);
+                        const qtyInfo = comp.controlStock ? `${comp.stockQuantity || 0} un` : 'Sem ctrl';
+                        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40"><i class="fas fa-link text-[8px]"></i> ${qtyNeeded > 1 ? `${qtyNeeded}x ` : ''}${comp.name}: <strong>${qtyInfo}</strong></span>`;
+                    }).join('');
+                    cdStockCellHtml = `<div class="flex flex-wrap gap-1">${compBadges}</div>`;
+
+                    const controlled = linkedEntries.filter(({ comp }) => comp.controlStock);
+                    if (controlled.length > 0) {
+                        const minKits = Math.min(...controlled.map(({ item, comp }) => {
+                            const q = Math.max(1, parseInt(item.quantity, 10) || 1);
+                            return Math.floor((comp.stockQuantity || 0) / q);
+                        }));
+                        totalStockCellHtml = `<span class="px-2.5 py-1 rounded-full text-xs font-bold ${minKits > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'}" title="Calculado pelo menor estoque entre os produtos vinculados ao kit">${minKits} un (Kit)</span>`;
+                    } else {
+                        totalStockCellHtml = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700">Vinculado</span>`;
+                    }
+                }
             }
 
             row.innerHTML = `
@@ -1407,17 +1453,9 @@ export async function setupStorePage() {
                     ${price}
                     ${priceDiffBadge}
                 </td>
-                <td class="p-4">${renderCDStockBadges(product)}</td>
+                <td class="p-4">${cdStockCellHtml}</td>
                 <td class="p-4 text-center whitespace-nowrap">
-                    ${product.controlStock ? `
-                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${product.stockQuantity > 0 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800' : 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'}">
-                            ${product.stockQuantity || 0} un
-                        </span>
-                    ` : `
-                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700">
-                            Sem Controle
-                        </span>
-                    `}
+                    ${totalStockCellHtml}
                 </td>
                 <td class="p-4 text-center whitespace-nowrap">
                     <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800'}">
@@ -1473,6 +1511,94 @@ export async function setupStorePage() {
     if (productsSearchInput) productsSearchInput.addEventListener('input', debounce(applyProductsFilter, 250));
     if (productsCategoryFilter) productsCategoryFilter.addEventListener('change', applyProductsFilter);
     if (productsStatusFilter) productsStatusFilter.addEventListener('change', applyProductsFilter);
+
+    const getEligibleKitCatalogProducts = () => {
+        const currentProductId = productIdInput ? productIdInput.value : '';
+        return [...allProducts]
+            .filter(p => p.id !== currentProductId && p.priceType !== 'kit')
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pt-BR'));
+    };
+
+    const closeKitSearchResults = () => {
+        if (kitCatalogSearchResults) kitCatalogSearchResults.classList.add('hidden');
+    };
+
+    const renderKitCatalogSearchResults = (queryStr = '') => {
+        if (!kitCatalogSearchResults) return;
+        const normalized = String(queryStr || '')
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+        const eligible = getEligibleKitCatalogProducts();
+        const matches = normalized
+            ? eligible.filter(p => {
+                const hay = `${p.name || ''} ${p.category || ''} ${p.id || ''}`
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '');
+                return hay.includes(normalized);
+            })
+            : eligible;
+
+        const limited = normalized ? matches : matches.slice(0, 20);
+        kitCatalogSearchResults.innerHTML = '';
+
+        if (limited.length === 0) {
+            kitCatalogSearchResults.innerHTML = `
+                <div class="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                    Nenhum produto encontrado para "${escapeKitAttr(queryStr)}".
+                </div>
+            `;
+            kitCatalogSearchResults.classList.remove('hidden');
+            return;
+        }
+
+        limited.forEach(product => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'kit-search-result-item w-full text-left px-3.5 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center justify-between gap-3';
+            btn.dataset.productId = product.id;
+
+            const priceLabel = ((product.price || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const stockBadge = product.controlStock
+                ? `<span class="text-[10px] font-bold ${(product.stockQuantity || 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500'}">Estoque: ${product.stockQuantity || 0} un</span>`
+                : `<span class="text-[10px] text-gray-400">Sem ctrl estoque</span>`;
+            const sizesHint = (product.hasSizes && Array.isArray(product.sizes) && product.sizes.length > 0)
+                ? ` • Tam: ${product.sizes.join(', ')}`
+                : (product.priceType === 'variable' && Array.isArray(product.priceVariants) && product.priceVariants.length > 0)
+                    ? ` • Var: ${product.priceVariants.map(v => v.name).join(', ')}`
+                    : '';
+            const thumb = product.imageUrl
+                ? `<img src="${escapeKitAttr(product.imageUrl)}" alt="" class="w-9 h-9 rounded-lg object-cover border border-gray-200 dark:border-gray-700 shrink-0">`
+                : `<div class="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 shrink-0"><i class="fas fa-box text-xs"></i></div>`;
+
+            btn.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    ${thumb}
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold text-gray-900 dark:text-white truncate">${escapeKitAttr(product.name || '')}</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">${escapeKitAttr(product.category || 'Geral')} • ${priceLabel}${escapeKitAttr(sizesHint)}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    ${stockBadge}
+                    <span class="px-2.5 py-1 text-[11px] font-bold bg-blue-600 text-white rounded-lg">Incluir</span>
+                </div>
+            `;
+            kitCatalogSearchResults.appendChild(btn);
+        });
+
+        if (!normalized && matches.length > 20) {
+            const footer = document.createElement('div');
+            footer.className = 'px-3.5 py-2 text-[11px] text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50';
+            footer.textContent = `Mostrando 20 de ${matches.length} produtos. Digite para filtrar...`;
+            kitCatalogSearchResults.appendChild(footer);
+        }
+
+        kitCatalogSearchResults.classList.remove('hidden');
+    };
 
     const populateRecommendedProductsSelect = () => {
         if (!recommendedProductsSelect) return;
@@ -2351,6 +2477,20 @@ export async function setupStorePage() {
         if (productHalfPricePixInput) productHalfPricePixInput.value = '';
         if (productExtraTicketHalfPriceInput) productExtraTicketHalfPriceInput.value = '';
         if (extraTicketHalfPriceBox) extraTicketHalfPriceBox.classList.add('hidden');
+
+        // Reset Kit fields
+        if (kitBasePriceInput) {
+            kitBasePriceInput.value = '';
+            kitBasePriceInput.dataset.manualOverride = '';
+        }
+        if (kitDiscountPercentInput) kitDiscountPercentInput.value = '';
+        if (kitPixPriceInput) kitPixPriceInput.value = '';
+        if (kitCatalogSearchInput) kitCatalogSearchInput.value = '';
+        if (kitCatalogSearchClearBtn) kitCatalogSearchClearBtn.classList.add('hidden');
+        closeKitSearchResults();
+        if (kitItemsList) kitItemsList.innerHTML = '';
+        syncKitRequiredFields();
+        recalculateKitSummary(false);
     };
 
     // Alias old modal functions for full backwards compatibility
@@ -2365,6 +2505,18 @@ export async function setupStorePage() {
             if (deleteProductBtn) deleteProductBtn.classList.add('hidden');
             populateRecommendedProductsSelect();
             currentDisabledSeats.clear();
+            if (kitBasePriceInput) {
+                kitBasePriceInput.value = '';
+                kitBasePriceInput.dataset.manualOverride = '';
+            }
+            if (kitDiscountPercentInput) kitDiscountPercentInput.value = '';
+            if (kitPixPriceInput) kitPixPriceInput.value = '';
+            if (kitCatalogSearchInput) kitCatalogSearchInput.value = '';
+            if (kitCatalogSearchClearBtn) kitCatalogSearchClearBtn.classList.add('hidden');
+            closeKitSearchResults();
+            if (kitItemsList) kitItemsList.innerHTML = '';
+            syncKitRequiredFields();
+            recalculateKitSummary(false);
             if (productHasSeatMapInput) productHasSeatMapInput.checked = false;
             if (productHasLocationsInput) productHasLocationsInput.checked = false;
             if (eventLocationsBar) eventLocationsBar.classList.add('hidden');
@@ -2747,17 +2899,50 @@ Requisitos:
                 } else if (priceType === 'kit') {
                     productData.kitBasePrice = parseInt(kitBasePriceInput.value, 10) || 0;
                     productData.price = productData.kitBasePrice;
+                    const kitPixVal = (kitPixPriceInput && kitPixPriceInput.value !== '') ? parseInt(kitPixPriceInput.value, 10) : null;
+                    productData.pixPrice = (kitPixVal !== null && !isNaN(kitPixVal) && kitPixVal > 0) ? kitPixVal : null;
+                    const kitDiscountVal = (kitDiscountPercentInput && kitDiscountPercentInput.value !== '') ? parseFloat(kitDiscountPercentInput.value) : null;
+                    productData.kitDiscountPercent = (kitDiscountVal !== null && !isNaN(kitDiscountVal)) ? kitDiscountVal : null;
+
                     const kitItems = [];
+                    let kitOriginalPrice = 0;
                     const itemElements = kitItemsList.querySelectorAll('.kit-item-row');
-                    itemElements.forEach(item => {
-                        const name = item.querySelector('input[name="kit-item-name"]').value;
-                        const optionsStr = item.querySelector('input[name="kit-item-options"]').value;
+                    for (const item of itemElements) {
+                        const productIdInputEl = item.querySelector('input[name="kit-item-product-id"]');
+                        const productId = productIdInputEl ? productIdInputEl.value.trim() : '';
+                        const imageUrl = item.querySelector('input[name="kit-item-image-url"]')?.value?.trim() || '';
+                        const name = item.querySelector('input[name="kit-item-name"]')?.value?.trim() || '';
+                        const quantity = Math.max(1, parseInt(item.querySelector('input[name="kit-item-qty"]')?.value, 10) || 1);
+                        const originalPrice = Math.max(0, parseInt(item.querySelector('input[name="kit-item-price"]')?.value, 10) || 0);
+                        const isGift = Boolean(item.querySelector('input[name="kit-item-is-gift"]')?.checked);
+                        const optionsStr = item.querySelector('input[name="kit-item-options"]')?.value || '';
+
+                        if (!productId) {
+                            alert('Todos os itens do kit devem estar vinculados a um produto existente da Store.');
+                            return;
+                        }
                         if (name) {
                             const options = optionsStr.split(',').map(o => o.trim()).filter(o => o);
-                            kitItems.push({ name, options });
+                            kitItems.push({
+                                productId,
+                                name,
+                                imageUrl,
+                                originalPrice,
+                                quantity,
+                                isGift,
+                                options
+                            });
+                            kitOriginalPrice += originalPrice * quantity;
                         }
-                    });
+                    }
+
+                    if (kitItems.length === 0) {
+                        alert('Adicione pelo menos um produto existente da Store ao Kit.');
+                        return;
+                    }
+
                     productData.kitItems = kitItems;
+                    productData.kitOriginalPrice = kitOriginalPrice;
                 }
 
                 // Handle Addons
@@ -2941,15 +3126,32 @@ Requisitos:
                     kitContainer.classList.add('hidden');
                     lotesList.innerHTML = '';
                     product.lotes.forEach(lote => addLote(lote.name, lote.price, lote.startDate));
-                } else if (product.priceType === 'kit' && product.kitItems) {
+                } else if (product.priceType === 'kit') {
                     document.querySelector('input[name="price-type"][value="kit"]').checked = true;
                     fixedPriceContainer.classList.add('hidden');
                     variablePricesContainer.classList.add('hidden');
                     lotesContainer.classList.add('hidden');
                     kitContainer.classList.remove('hidden');
-                    kitBasePriceInput.value = product.kitBasePrice || product.price;
+                    kitBasePriceInput.value = product.kitBasePrice !== undefined ? product.kitBasePrice : (product.price || 0);
+                    kitBasePriceInput.dataset.manualOverride = 'true';
+                    if (kitDiscountPercentInput) {
+                        kitDiscountPercentInput.value = (product.kitDiscountPercent !== undefined && product.kitDiscountPercent !== null) ? product.kitDiscountPercent : '';
+                    }
+                    if (kitPixPriceInput) {
+                        kitPixPriceInput.value = (product.pixPrice !== undefined && product.pixPrice !== null) ? product.pixPrice : '';
+                    }
+                    if (kitCatalogSearchInput) kitCatalogSearchInput.value = '';
+                    if (kitCatalogSearchClearBtn) kitCatalogSearchClearBtn.classList.add('hidden');
+                    closeKitSearchResults();
                     kitItemsList.innerHTML = '';
-                    product.kitItems.forEach(item => addKitItemRow(item.name, item.options ? item.options.join(', ') : ''));
+                    const kitItemsToLoad = Array.isArray(product.kitItems) ? product.kitItems : [];
+                    if (kitItemsToLoad.length > 0) {
+                        kitItemsToLoad.forEach(item => addKitItemRow(item));
+                    } else {
+                        renderKitEmptyState();
+                    }
+                    syncKitRequiredFields();
+                    recalculateKitSummary(false);
                 } else {
                     // Legacy subscription may have had 'subscription' priceType
                     // Fallback to 'fixed' if so.
@@ -2961,6 +3163,7 @@ Requisitos:
                     productPriceInput.value = product.price;
                     if (productPixPriceInput) productPixPriceInput.value = product.pixPrice || '';
                 }
+                syncKitRequiredFields();
 
                 // Handle Addons load
                 if (addonsList) {
@@ -3471,11 +3674,16 @@ Requisitos:
                 }
             } else if (radio.value === 'kit') {
                 kitContainer.classList.remove('hidden');
+                if (kitCatalogSearchInput) kitCatalogSearchInput.value = '';
+                if (kitCatalogSearchClearBtn) kitCatalogSearchClearBtn.classList.add('hidden');
+                closeKitSearchResults();
                 refreshDiffPricingVariantTabs();
-                if (kitItemsList.children.length === 0) {
-                    addKitItemRow();
+                if (kitItemsList.querySelectorAll('.kit-item-row').length === 0) {
+                    renderKitEmptyState();
                 }
+                recalculateKitSummary(false);
             }
+            syncKitRequiredFields();
             // Addons estão sempre visíveis para Assinatura e Fixo pois são úteis
             if (addonsContainer) addonsContainer.classList.remove('hidden');
         });
@@ -3694,50 +3902,348 @@ Requisitos:
         }
     });
 
-    const addKitItemRow = (name = '', options = '') => {
-        const itemRow = document.createElement('div');
-        itemRow.className = 'kit-item-row grid grid-cols-[1fr,2fr,auto] gap-2 items-center';
-        const isKitPrice = document.querySelector('input[name="price-type"]:checked').value === 'kit';
+    const escapeKitAttr = (val) => String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 
-        itemRow.innerHTML = `
-            <input type="text" name="kit-item-name" placeholder="Item (ex: Bota)" value="${name}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
-            <input type="text" name="kit-item-options" placeholder="Opções (ex: P, M, G)" value="${options}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
-            <div class="flex items-center gap-1 justify-end">
-                <button type="button" class="move-kit-up-btn text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para cima"><i class="fas fa-arrow-up text-xs pointer-events-none"></i></button>
-                <button type="button" class="move-kit-down-btn text-gray-400 hover:text-blue-500 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para baixo"><i class="fas fa-arrow-down text-xs pointer-events-none"></i></button>
-                <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400 p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Remover"><i class="fas fa-times pointer-events-none"></i></button>
+    const formatKitBRL = (cents) => ((cents || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    function syncKitRequiredFields() {
+        const checkedRadio = document.querySelector('input[name="price-type"]:checked');
+        const isKitPrice = checkedRadio && checkedRadio.value === 'kit';
+        if (kitBasePriceInput) kitBasePriceInput.required = Boolean(isKitPrice);
+        if (kitItemsList) {
+            kitItemsList.querySelectorAll('input[name="kit-item-name"]').forEach(inp => {
+                inp.required = Boolean(isKitPrice);
+            });
+        }
+    }
+
+    function renderKitEmptyState() {
+        if (!kitItemsList) return;
+        if (kitItemsList.querySelectorAll('.kit-item-row').length > 0) return;
+        kitItemsList.innerHTML = `
+            <div class="kit-empty-state p-5 text-center rounded-xl border border-dashed border-gray-300 dark:border-gray-700 bg-white/50 dark:bg-gray-900/30">
+                <i class="fas fa-boxes-stacked text-gray-400 text-lg mb-2"></i>
+                <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">Nenhum produto vinculado ao kit ainda.</p>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Selecione um produto cadastrado da Store acima e clique em "Incluir Produto".</p>
             </div>
         `;
+    }
+
+    const buildKitStockBadgeHtml = (prod) => {
+        if (!prod) {
+            return `<span class="kit-item-stock-badge px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-md">Selecione um produto</span>`;
+        }
+        if (prod.controlStock) {
+            const qty = prod.stockQuantity || 0;
+            const colorCls = qty > 0
+                ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300';
+            return `<span class="kit-item-stock-badge px-2 py-0.5 text-[10px] font-bold ${colorCls} rounded-md">Baixa automática: ${qty} un em estoque</span>`;
+        }
+        return `<span class="kit-item-stock-badge px-2 py-0.5 text-[10px] font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-md">Vinculado (sem ctrl de estoque)</span>`;
+    };
+
+    const resolveCatalogProductDefaults = (prod) => {
+        let defaultOptions = [];
+        if (prod.hasSizes && Array.isArray(prod.sizes) && prod.sizes.length > 0) {
+            defaultOptions = prod.sizes;
+        } else if (prod.priceType === 'variable' && Array.isArray(prod.priceVariants) && prod.priceVariants.length > 0) {
+            defaultOptions = prod.priceVariants.map(v => v.name).filter(Boolean);
+        }
+        return {
+            name: prod.name || '',
+            imageUrl: prod.imageUrl || '',
+            originalPrice: typeof prod.price === 'number' ? prod.price : 0,
+            options: defaultOptions
+        };
+    };
+
+    function recalculateKitSummary(applyAutoPrice = false) {
+        if (!kitItemsList) return;
+        let originalSum = 0;
+        let giftsSum = 0;
+        let paidItemsSum = 0;
+
+        kitItemsList.querySelectorAll('.kit-item-row').forEach(row => {
+            const qty = Math.max(1, parseInt(row.querySelector('input[name="kit-item-qty"]')?.value, 10) || 1);
+            const unitPrice = Math.max(0, parseInt(row.querySelector('input[name="kit-item-price"]')?.value, 10) || 0);
+            const isGift = Boolean(row.querySelector('input[name="kit-item-is-gift"]')?.checked);
+            const lineTotal = unitPrice * qty;
+            originalSum += lineTotal;
+            if (isGift) {
+                giftsSum += lineTotal;
+            } else {
+                paidItemsSum += lineTotal;
+            }
+        });
+
+        const pctRaw = kitDiscountPercentInput ? parseFloat(kitDiscountPercentInput.value) : NaN;
+        const pct = (!isNaN(pctRaw) && pctRaw >= 0 && pctRaw <= 100) ? pctRaw : 0;
+
+        if (applyAutoPrice && kitBasePriceInput) {
+            const computed = Math.max(0, Math.round(paidItemsSum * (1 - pct / 100)));
+            kitBasePriceInput.value = computed;
+        }
+
+        const finalPrice = kitBasePriceInput ? (parseInt(kitBasePriceInput.value, 10) || 0) : 0;
+        const savings = Math.max(0, originalSum - finalPrice);
+        const savingsPct = originalSum > 0 ? Math.round((savings / originalSum) * 100) : 0;
+
+        if (kitSummaryOriginal) kitSummaryOriginal.textContent = formatKitBRL(originalSum);
+        if (kitSummaryGifts) kitSummaryGifts.textContent = formatKitBRL(giftsSum);
+        if (kitSummarySavings) kitSummarySavings.textContent = `${formatKitBRL(savings)} (${savingsPct}%)`;
+    }
+
+    const addKitItemRow = (itemOrName = '', legacyOptions = '') => {
+        if (!kitItemsList) return;
+        const emptyEl = kitItemsList.querySelector('.kit-empty-state');
+        if (emptyEl) emptyEl.remove();
+
+        const item = (itemOrName && typeof itemOrName === 'object')
+            ? itemOrName
+            : {
+                productId: '',
+                name: itemOrName || '',
+                imageUrl: '',
+                originalPrice: 0,
+                quantity: 1,
+                isGift: false,
+                options: legacyOptions ? String(legacyOptions).split(',').map(o => o.trim()).filter(Boolean) : []
+            };
+
+        let matchedProd = item.productId ? allProducts.find(p => p.id === item.productId) : null;
+        if (!matchedProd && item.name) {
+            const norm = item.name.trim().toLowerCase();
+            matchedProd = allProducts.find(p => p.priceType !== 'kit' && (p.name || '').trim().toLowerCase() === norm) || null;
+        }
+
+        const rowIdx = ++kitRowCounter;
+        const itemRow = document.createElement('div');
+        const isGift = Boolean(item.isGift);
+        itemRow.className = `kit-item-row p-3.5 rounded-xl border transition-all space-y-3 ${isGift ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-700/60' : 'bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-700'}`;
+
+        const optionsStr = Array.isArray(item.options) ? item.options.join(', ') : (item.options || '');
+        const qtyVal = Math.max(1, parseInt(item.quantity, 10) || 1);
+        const origPriceVal = (item.originalPrice !== undefined && item.originalPrice !== null)
+            ? (parseInt(item.originalPrice, 10) || (matchedProd ? (matchedProd.price || 0) : 0))
+            : (matchedProd ? (matchedProd.price || 0) : 0);
+        const productIdVal = matchedProd ? matchedProd.id : (item.productId || '');
+        const imageUrlVal = item.imageUrl || (matchedProd ? (matchedProd.imageUrl || '') : '');
+        const itemNameVal = item.name || (matchedProd ? (matchedProd.name || '') : '');
+        const checkedRadio = document.querySelector('input[name="price-type"]:checked');
+        const isKitPrice = checkedRadio && checkedRadio.value === 'kit';
+
+        const thumbHtml = imageUrlVal
+            ? `<img src="${escapeKitAttr(imageUrlVal)}" alt="" class="kit-item-thumb w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-700 shrink-0">`
+            : `<div class="kit-item-thumb w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 shrink-0"><i class="fas fa-box text-xs"></i></div>`;
+
+        const linkedTitle = matchedProd
+            ? `${matchedProd.name}`
+            : (productIdVal ? `ID: ${productIdVal}` : 'Produto não vinculado');
+        const linkedSub = matchedProd
+            ? `ID: ${matchedProd.id}`
+            : 'Remova e adicione novamente pela busca acima';
+
+        itemRow.innerHTML = `
+            <input type="hidden" name="kit-item-product-id" value="${escapeKitAttr(productIdVal)}">
+            <input type="hidden" name="kit-item-image-url" value="${escapeKitAttr(imageUrlVal)}">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <div class="kit-item-thumb-wrap">${thumbHtml}</div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        ${buildKitStockBadgeHtml(matchedProd)}
+                        <label for="kit-item-gift-${rowIdx}" class="inline-flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${isGift ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}">
+                            <input type="checkbox" id="kit-item-gift-${rowIdx}" name="kit-item-is-gift" class="kit-item-gift-checkbox rounded text-emerald-600 focus:ring-emerald-500" ${isGift ? 'checked' : ''}>
+                            <span>Brinde (Grátis)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 justify-end">
+                    <button type="button" class="move-kit-up-btn text-gray-400 hover:text-blue-500 p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para cima"><i class="fas fa-arrow-up text-xs pointer-events-none"></i></button>
+                    <button type="button" class="move-kit-down-btn text-gray-400 hover:text-blue-500 p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition" title="Mover para baixo"><i class="fas fa-arrow-down text-xs pointer-events-none"></i></button>
+                    <button type="button" class="remove-kit-item-btn text-red-500 hover:text-red-400 p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Remover"><i class="fas fa-times pointer-events-none"></i></button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                <div class="sm:col-span-6">
+                    <span class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Produto da Store Vinculado</span>
+                    <div class="px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <p class="font-bold text-gray-900 dark:text-white truncate">${escapeKitAttr(linkedTitle)}</p>
+                        <p class="text-[10px] text-gray-400 truncate">${escapeKitAttr(linkedSub)}</p>
+                    </div>
+                </div>
+                <div class="sm:col-span-6">
+                    <label for="kit-item-name-${rowIdx}" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Nome Exibido no Kit</label>
+                    <input type="text" id="kit-item-name-${rowIdx}" name="kit-item-name" placeholder="Nome do produto no kit" value="${escapeKitAttr(itemNameVal)}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" ${isKitPrice ? 'required' : ''}>
+                </div>
+                <div class="sm:col-span-3">
+                    <label for="kit-item-qty-${rowIdx}" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Qtd</label>
+                    <input type="number" id="kit-item-qty-${rowIdx}" name="kit-item-qty" min="1" value="${qtyVal}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="sm:col-span-3">
+                    <label for="kit-item-price-${rowIdx}" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Valor Un. (cents)</label>
+                    <input type="number" id="kit-item-price-${rowIdx}" name="kit-item-price" min="0" value="${origPriceVal}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="sm:col-span-6">
+                    <label for="kit-item-options-${rowIdx}" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Tamanhos/Opções (opc.)</label>
+                    <input type="text" id="kit-item-options-${rowIdx}" name="kit-item-options" placeholder="Vazio se tamanho único" value="${escapeKitAttr(optionsStr)}" class="w-full px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        `;
+
         kitItemsList.appendChild(itemRow);
     };
 
-    if (addKitItemBtn) addKitItemBtn.addEventListener('click', () => addKitItemRow());
+    if (kitCatalogSearchInput) {
+        kitCatalogSearchInput.addEventListener('focus', () => {
+            renderKitCatalogSearchResults(kitCatalogSearchInput.value);
+        });
 
-    if (kitItemsList) kitItemsList.addEventListener('click', (e) => {
-        const removeBtn = e.target.closest('.remove-kit-item-btn');
-        if (removeBtn) {
-            removeBtn.closest('.kit-item-row').remove();
-            return;
-        }
-        const moveUpBtn = e.target.closest('.move-kit-up-btn');
-        if (moveUpBtn) {
-            const item = moveUpBtn.closest('.kit-item-row');
-            const prev = item.previousElementSibling;
-            if (prev && prev.classList.contains('kit-item-row')) {
-                item.parentNode.insertBefore(item, prev);
+        kitCatalogSearchInput.addEventListener('input', () => {
+            const val = kitCatalogSearchInput.value;
+            if (kitCatalogSearchClearBtn) {
+                kitCatalogSearchClearBtn.classList.toggle('hidden', !val);
             }
-            return;
-        }
-        const moveDownBtn = e.target.closest('.move-kit-down-btn');
-        if (moveDownBtn) {
-            const item = moveDownBtn.closest('.kit-item-row');
-            const next = item.nextElementSibling;
-            if (next && next.classList.contains('kit-item-row')) {
-                item.parentNode.insertBefore(next, item);
+            renderKitCatalogSearchResults(val);
+        });
+
+        kitCatalogSearchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const firstMatch = kitCatalogSearchResults ? kitCatalogSearchResults.querySelector('.kit-search-result-item') : null;
+                if (firstMatch) firstMatch.click();
+            } else if (e.key === 'Escape') {
+                closeKitSearchResults();
+                kitCatalogSearchInput.blur();
             }
-            return;
+        });
+    }
+
+    if (kitCatalogSearchClearBtn) {
+        kitCatalogSearchClearBtn.addEventListener('click', () => {
+            if (kitCatalogSearchInput) {
+                kitCatalogSearchInput.value = '';
+                kitCatalogSearchInput.focus();
+            }
+            kitCatalogSearchClearBtn.classList.add('hidden');
+            renderKitCatalogSearchResults('');
+        });
+    }
+
+    if (kitCatalogSearchResults) {
+        kitCatalogSearchResults.addEventListener('click', (e) => {
+            const resultBtn = e.target.closest('.kit-search-result-item');
+            if (!resultBtn) return;
+            const selectedId = resultBtn.dataset.productId;
+            const prod = allProducts.find(p => p.id === selectedId);
+            if (!prod) return;
+
+            const defaults = resolveCatalogProductDefaults(prod);
+            addKitItemRow({
+                productId: prod.id,
+                name: defaults.name,
+                imageUrl: defaults.imageUrl,
+                originalPrice: defaults.originalPrice,
+                quantity: 1,
+                isGift: false,
+                options: defaults.options
+            });
+            if (kitCatalogSearchInput) kitCatalogSearchInput.value = '';
+            if (kitCatalogSearchClearBtn) kitCatalogSearchClearBtn.classList.add('hidden');
+            closeKitSearchResults();
+            recalculateKitSummary(kitBasePriceInput && kitBasePriceInput.dataset.manualOverride !== 'true');
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (kitCatalogSearchWrapper && !kitCatalogSearchWrapper.contains(e.target)) {
+            closeKitSearchResults();
         }
     });
+
+    if (kitDiscountPercentInput) {
+        kitDiscountPercentInput.addEventListener('input', () => {
+            if (kitBasePriceInput) kitBasePriceInput.dataset.manualOverride = '';
+            recalculateKitSummary(true);
+        });
+    }
+
+    if (kitBasePriceInput) {
+        kitBasePriceInput.addEventListener('input', () => {
+            kitBasePriceInput.dataset.manualOverride = 'true';
+            recalculateKitSummary(false);
+        });
+    }
+
+    if (kitItemsList) {
+        kitItemsList.addEventListener('input', (e) => {
+            if (e.target.matches('input[name="kit-item-qty"], input[name="kit-item-price"]')) {
+                const shouldAuto = kitBasePriceInput && (kitBasePriceInput.dataset.manualOverride !== 'true' || kitBasePriceInput.value === '');
+                recalculateKitSummary(shouldAuto);
+            }
+        });
+
+        kitItemsList.addEventListener('change', (e) => {
+            const giftCheckbox = e.target.closest('input[name="kit-item-is-gift"]');
+            if (giftCheckbox) {
+                const row = giftCheckbox.closest('.kit-item-row');
+                if (row) {
+                    if (giftCheckbox.checked) {
+                        row.classList.remove('bg-white', 'dark:bg-gray-900/60', 'border-gray-200', 'dark:border-gray-700');
+                        row.classList.add('bg-emerald-50/60', 'dark:bg-emerald-950/20', 'border-emerald-300', 'dark:border-emerald-700/60');
+                    } else {
+                        row.classList.add('bg-white', 'dark:bg-gray-900/60', 'border-gray-200', 'dark:border-gray-700');
+                        row.classList.remove('bg-emerald-50/60', 'dark:bg-emerald-950/20', 'border-emerald-300', 'dark:border-emerald-700/60');
+                    }
+                    const badgeLabel = giftCheckbox.closest('label');
+                    if (badgeLabel) {
+                        if (giftCheckbox.checked) {
+                            badgeLabel.className = 'inline-flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300';
+                        } else {
+                            badgeLabel.className = 'inline-flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300';
+                        }
+                    }
+                }
+                const shouldAuto = kitBasePriceInput && (kitBasePriceInput.dataset.manualOverride !== 'true' || kitBasePriceInput.value === '');
+                recalculateKitSummary(shouldAuto);
+            }
+        });
+
+        kitItemsList.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-kit-item-btn');
+            if (removeBtn) {
+                removeBtn.closest('.kit-item-row').remove();
+                if (kitItemsList.querySelectorAll('.kit-item-row').length === 0) {
+                    renderKitEmptyState();
+                }
+                const shouldAuto = kitBasePriceInput && (kitBasePriceInput.dataset.manualOverride !== 'true' || kitBasePriceInput.value === '');
+                recalculateKitSummary(shouldAuto);
+                return;
+            }
+            const moveUpBtn = e.target.closest('.move-kit-up-btn');
+            if (moveUpBtn) {
+                const item = moveUpBtn.closest('.kit-item-row');
+                const prev = item.previousElementSibling;
+                if (prev && prev.classList.contains('kit-item-row')) {
+                    item.parentNode.insertBefore(item, prev);
+                }
+                return;
+            }
+            const moveDownBtn = e.target.closest('.move-kit-down-btn');
+            if (moveDownBtn) {
+                const item = moveDownBtn.closest('.kit-item-row');
+                const next = item.nextElementSibling;
+                if (next && next.classList.contains('kit-item-row')) {
+                    item.parentNode.insertBefore(next, item);
+                }
+                return;
+            }
+        });
+    }
 
     const addAddon = (name = '', price = '') => {
         if (!addonsList) return;
@@ -4124,15 +4630,26 @@ Requisitos:
             `;
         }
 
-        if (sale.kitSelections && Object.keys(sale.kitSelections).length > 0) {
-            const kitSelectionsHtml = Object.entries(sale.kitSelections).map(([itemName, option]) =>
-                `<li>${itemName}: ${option}</li>`
-            ).join('');
+        if ((sale.kitItemsSnapshot && Array.isArray(sale.kitItemsSnapshot) && sale.kitItemsSnapshot.length > 0) || (sale.kitSelections && Object.keys(sale.kitSelections).length > 0)) {
+            let kitDetailsListHtml = '';
+            if (sale.kitItemsSnapshot && Array.isArray(sale.kitItemsSnapshot) && sale.kitItemsSnapshot.length > 0) {
+                kitDetailsListHtml = sale.kitItemsSnapshot.map(item => {
+                    const selectedOpt = sale.kitSelections ? sale.kitSelections[item.name] : null;
+                    const qtyLabel = (item.quantity && item.quantity > 1) ? `${item.quantity}x ` : '';
+                    const optLabel = selectedOpt ? `: <span class="text-white font-semibold">${selectedOpt}</span>` : '';
+                    const giftBadge = item.isGift ? ` <span class="ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-300 rounded">BRINDE</span>` : '';
+                    return `<li>${qtyLabel}${item.name}${optLabel}${giftBadge}</li>`;
+                }).join('');
+            } else {
+                kitDetailsListHtml = Object.entries(sale.kitSelections).map(([itemName, option]) =>
+                    `<li>${itemName}: <span class="text-white font-semibold">${option}</span></li>`
+                ).join('');
+            }
             productDetailsHtml += `
                 <div class="mt-2">
-                    <strong class="text-sm border-b border-gray-600 pb-1 text-gray-400 block mb-1">Opções do Kit:</strong>
+                    <strong class="text-sm border-b border-gray-600 pb-1 text-gray-400 block mb-1">Itens / Opções do Kit:</strong>
                     <ul class="list-disc list-inside text-sm text-yellow-300 pl-2">
-                        ${kitSelectionsHtml}
+                        ${kitDetailsListHtml}
                     </ul>
                 </div>
             `;

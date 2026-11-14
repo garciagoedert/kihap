@@ -1120,14 +1120,65 @@ document.addEventListener('DOMContentLoaded', () => {
             if (productData.priceType === 'kit' && productData.kitItems && productData.kitItems.length > 0) {
                 kitOptionsContainer.classList.remove('hidden');
                 kitOptionsContainer.innerHTML = '';
-                
+
+                const escapeHtmlText = (val) => String(val ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+
+                const summaryWrapper = document.createElement('div');
+                summaryWrapper.className = 'mb-4 p-3.5 rounded-xl bg-gray-800/70 border border-gray-700 space-y-2';
+                summaryWrapper.innerHTML = `
+                    <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-yellow-400 mb-1">
+                        <span>O que está incluso neste Kit</span>
+                        <span class="px-2 py-0.5 rounded bg-yellow-500/15 border border-yellow-500/30 text-[10px]">${productData.kitItems.length} ${productData.kitItems.length === 1 ? 'item' : 'itens'}</span>
+                    </div>
+                `;
+
                 productData.kitItems.forEach((item, index) => {
+                    const qty = item.quantity && item.quantity > 1 ? item.quantity : 1;
+                    const origTotal = (item.originalPrice || 0) * qty;
+                    const origPriceHtml = origTotal > 0
+                        ? `<span class="text-xs text-gray-400 line-through">${(origTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>`
+                        : '';
+                    const badgeHtml = item.isGift
+                        ? `<span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-600 text-white rounded">BRINDE GRÁTIS</span>`
+                        : `<span class="text-[11px] font-semibold text-yellow-400">Incluso</span>`;
+                    const thumbHtml = item.imageUrl
+                        ? `<img src="${escapeHtmlText(item.imageUrl)}" alt="" class="w-10 h-10 rounded-lg object-cover border border-gray-700 shrink-0">`
+                        : `<div class="w-10 h-10 rounded-lg bg-gray-700/60 flex items-center justify-center text-sm shrink-0"><i class="fas fa-box text-gray-400 text-xs"></i></div>`;
+
+                    const card = document.createElement('div');
+                    card.className = `flex items-center justify-between gap-3 p-2.5 rounded-lg border ${item.isGift ? 'bg-emerald-950/30 border-emerald-700/50' : 'bg-gray-900/50 border-gray-700/60'}`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            ${thumbHtml}
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-white truncate">${qty > 1 ? `${qty}x ` : ''}${escapeHtmlText(item.name)}</p>
+                                ${Array.isArray(item.options) && item.options.length > 0 ? `<p class="text-[11px] text-gray-400">Opções: ${escapeHtmlText(item.options.join(', '))}</p>` : '<p class="text-[11px] text-gray-400">Tamanho único / padrão</p>'}
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end shrink-0 gap-0.5">
+                            ${origPriceHtml}
+                            ${badgeHtml}
+                        </div>
+                    `;
+                    summaryWrapper.appendChild(card);
+                });
+
+                kitOptionsContainer.appendChild(summaryWrapper);
+
+                productData.kitItems.forEach((item, index) => {
+                    if (!Array.isArray(item.options) || item.options.length === 0) return;
                     const itemDiv = document.createElement('div');
+                    itemDiv.className = 'mb-3';
+                    const giftLabel = item.isGift ? ' <span class="text-emerald-400 text-xs font-bold">(Brinde)</span>' : '';
                     itemDiv.innerHTML = `
-                        <label for="kit-item-${i}-${index}" class="block text-sm font-semibold text-gray-300 mb-1">Selecione o tamanho/opção para: <span class="text-white">${item.name}</span></label>
-                        <select id="kit-item-${i}-${index}" name="kit-item-select" data-item-name="${item.name}" class="w-full px-4 py-3 opacity-90 rounded-lg bg-gray-800 border border-gray-600 text-white shadow-sm focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500" required>
+                        <label for="kit-item-${i}-${index}" class="block text-sm font-semibold text-gray-300 mb-1">Selecione o tamanho/opção para: <span class="text-white">${escapeHtmlText(item.name)}</span>${giftLabel}</label>
+                        <select id="kit-item-${i}-${index}" name="kit-item-select" data-item-name="${escapeHtmlText(item.name)}" class="w-full px-4 py-3 opacity-90 rounded-lg bg-gray-800 border border-gray-600 text-white shadow-sm focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500" required>
                             <option value="" disabled selected>Escolha uma opção...</option>
-                            ${item.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                            ${item.options.map(opt => `<option value="${escapeHtmlText(opt)}">${escapeHtmlText(opt)}</option>`).join('')}
                         </select>
                     `;
                     kitOptionsContainer.appendChild(itemDiv);
@@ -1543,7 +1594,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             } else if (productData.priceType === 'kit') {
-                priceData.amount = productData.kitBasePrice || effectiveBasePrice || 0;
+                priceData.amount = productData.kitBasePrice !== undefined ? productData.kitBasePrice : (effectiveBasePrice || 0);
+                if (productData.pixPrice) {
+                    priceData.pixAmount = productData.pixPrice;
+                }
                 const kitSelects = form.querySelectorAll('select[name="kit-item-select"]');
                 if (kitSelects.length > 0) {
                     kitSelections = {};
@@ -1587,6 +1641,15 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.priceData = priceData;
             if (kitSelections) {
                 formData.kitSelections = kitSelections;
+            }
+            if (productData.priceType === 'kit' && Array.isArray(productData.kitItems)) {
+                formData.kitItemsSnapshot = productData.kitItems.map(k => ({
+                    productId: k.productId || null,
+                    name: k.name,
+                    quantity: k.quantity || 1,
+                    originalPrice: k.originalPrice || 0,
+                    isGift: Boolean(k.isGift)
+                }));
             }
             if (addonsSelected) {
                 formData.addonsSelected = addonsSelected;
