@@ -197,6 +197,9 @@ export default function StoreScreen() {
     const hasDiscount = (effective.isStaffPrice || (effective.promoPrice && effective.promoPrice < effective.basePrice)) && effective.basePrice > effective.price;
     const originalPrice = hasDiscount ? formatCentsToCurrency(effective.basePrice) : null;
 
+    const isKit = item.priceType === 'kit';
+    const hasKitGift = isKit && Array.isArray(item.kitItems) && item.kitItems.some((k: any) => k.isGift);
+
     return (
       <TouchableOpacity 
         onPress={() => isAvailable && router.push(`/store/${item.id}`)}
@@ -215,6 +218,18 @@ export default function StoreScreen() {
               <View className="bg-yellow-500 px-2 py-0.5 rounded-lg shadow-lg">
                 <Text className="text-black text-[8px] font-black uppercase tracking-widest">{item.category}</Text>
               </View>
+            </View>
+          )}
+          {isKit && (
+            <View className="absolute bottom-3 left-3 flex-row items-center gap-1">
+              <View className="bg-black/80 px-2 py-0.5 rounded-lg border border-amber-400/60 shadow-lg">
+                <Text className="text-amber-300 text-[8px] font-black uppercase tracking-widest">KIT</Text>
+              </View>
+              {hasKitGift && (
+                <View className="bg-emerald-600 px-2 py-0.5 rounded-lg shadow-lg">
+                  <Text className="text-white text-[8px] font-black uppercase tracking-widest">BRINDE</Text>
+                </View>
+              )}
             </View>
           )}
           {!isAvailable && (
