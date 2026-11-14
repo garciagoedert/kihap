@@ -12,6 +12,7 @@ import * as Linking from 'expo-linking';
 import { httpsCallable } from 'firebase/functions';
 import { functions, db } from '../src/services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { formatKitSelectionLines } from '../src/utils/pricing';
 
 export default function CheckoutScreen() {
   const { total, items, clearCart, subtotal, discount, coupon } = useCart();
@@ -320,10 +321,18 @@ export default function CheckoutScreen() {
                       const variantStr = form.priceData?.variantName ? ` | Opção: ${form.priceData.variantName}` : '';
                       const seatStr = form.seatId ? ` | Cadeira ${form.seatId}${form.sessionName ? ` (${form.sessionName})` : ''}` : '';
                       const roleBadge = form.isExtraTicket ? ' [Acompanhante]' : (form.isMainParticipant ? ' [Graduando]' : '');
+                      const kitLines = formatKitSelectionLines(form);
                       return (
-                        <Text key={idx} className="text-[10px] text-gray-400 mt-0.5">
-                          {form.userName || 'Participante'}{roleBadge}{seatStr} {form.userSize ? `| Tam: ${form.userSize}` : ''}{variantStr}
-                        </Text>
+                        <View key={idx} className="mt-0.5">
+                          <Text className="text-[10px] text-gray-400">
+                            {form.userName || 'Participante'}{roleBadge}{seatStr} {form.userSize ? `| Tam: ${form.userSize}` : ''}{variantStr}
+                          </Text>
+                          {kitLines.map((line: string, kIdx: number) => (
+                            <Text key={kIdx} className="text-[10px] text-amber-600 dark:text-amber-400 ml-2">
+                              - {line}
+                            </Text>
+                          ))}
+                        </View>
                       );
                     })}
                   </View>

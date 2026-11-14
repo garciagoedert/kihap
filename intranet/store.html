@@ -1307,17 +1307,72 @@
                                 </div>
 
                                 <div id="kit-container" class="hidden animate-fadeIn">
-                                    <div class="p-5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700">
-                                        <label for="kit-base-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Base do Kit (centavos)</label>
-                                        <input type="number" id="kit-base-price" placeholder="Ex: 5000 para R$50,00" 
-                                            class="w-full px-4 py-3 text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        
-                                        <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-4 mb-2">Itens do Kit</label>
-                                        <div id="kit-items-list" class="space-y-3"></div>
-                                        <button type="button" id="add-kit-item-btn" 
-                                            class="w-full mt-3 px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all shadow-sm">
-                                            <i class="fas fa-plus mr-2"></i> Adicionar Item ao Kit
-                                        </button>
+                                    <div class="p-5 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 space-y-5">
+                                        <!-- Buscar produto existente da Store -->
+                                        <div id="kit-catalog-search-wrapper" class="relative">
+                                            <label for="kit-catalog-search-input" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Buscar Produto da Store para Incluir no Kit</label>
+                                            <div class="relative flex items-center">
+                                                <i class="fas fa-search text-gray-400 text-xs absolute left-3.5 pointer-events-none"></i>
+                                                <input type="search" id="kit-catalog-search-input" name="kit-catalog-search" autocomplete="off"
+                                                    placeholder="Digite para buscar por nome, categoria ou ID (ex: Dobok, Capacete, Mochila)..."
+                                                    class="w-full pl-9 pr-9 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <button type="button" id="kit-catalog-search-clear-btn" title="Limpar busca"
+                                                    class="hidden absolute right-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-md transition">
+                                                    <i class="fas fa-times text-xs pointer-events-none"></i>
+                                                </button>
+                                            </div>
+                                            <div id="kit-catalog-search-results"
+                                                class="hidden absolute left-0 right-0 z-30 mt-1.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-64 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+                                            </div>
+                                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">
+                                                <i class="fas fa-link mr-1 text-blue-500"></i>Cada item do kit é vinculado a um produto já cadastrado na Store. Ao vender o kit, o estoque dos produtos vinculados é baixado automaticamente (inclusive itens marcados como brinde).
+                                            </p>
+                                        </div>
+
+                                        <!-- Lista de itens do Kit -->
+                                        <div>
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Produtos Vinculados ao Kit</span>
+                                                <span class="text-[11px] text-gray-500 dark:text-gray-400">Marque <strong>Brinde (Grátis)</strong> se o item sair sem custo no kit</span>
+                                            </div>
+                                            <div id="kit-items-list" class="space-y-3"></div>
+                                        </div>
+
+                                        <!-- Resumo financeiro do Kit -->
+                                        <div id="kit-summary-box" class="p-4 bg-white dark:bg-gray-900/60 rounded-xl border border-gray-200 dark:border-gray-700 space-y-2 text-xs">
+                                            <div class="flex justify-between items-center text-gray-600 dark:text-gray-300">
+                                                <span>Soma original dos itens:</span>
+                                                <span id="kit-summary-original" class="font-bold text-gray-900 dark:text-white">R$ 0,00</span>
+                                            </div>
+                                            <div class="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                                                <span>Valor em brindes (grátis):</span>
+                                                <span id="kit-summary-gifts" class="font-bold">R$ 0,00</span>
+                                            </div>
+                                            <div class="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-gray-800 text-amber-600 dark:text-amber-400">
+                                                <span class="font-bold uppercase tracking-wider text-[11px]">Economia para o cliente:</span>
+                                                <span id="kit-summary-savings" class="font-black text-sm">R$ 0,00 (0%)</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Preço e Desconto do Kit -->
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div>
+                                                <label for="kit-discount-percent" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Desconto (%)</label>
+                                                <input type="number" id="kit-discount-percent" min="0" max="100" step="1" placeholder="Ex: 15"
+                                                    class="w-full px-3.5 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">Calcula o preço nos itens pagos.</p>
+                                            </div>
+                                            <div>
+                                                <label for="kit-base-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço Final (centavos)</label>
+                                                <input type="number" id="kit-base-price" min="0" placeholder="Ex: 25000 para R$250,00"
+                                                    class="w-full px-3.5 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                            <div>
+                                                <label for="kit-pix-price" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">Preço no Pix (centavos)</label>
+                                                <input type="number" id="kit-pix-price" min="0" placeholder="Opcional (ex: 23000)"
+                                                    class="w-full px-3.5 py-2.5 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
