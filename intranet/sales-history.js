@@ -9,6 +9,23 @@ let allProducts = [];
 let currentPage = 1;
 const rowsPerPage = 15;
 
+function getSaleSeatLabel(sale) {
+    if (!sale) return '';
+    if (sale.seatId && String(sale.seatId).trim()) return String(sale.seatId).trim();
+    if (Array.isArray(sale.selectedSeats) && sale.selectedSeats.length > 0) {
+        return sale.selectedSeats.filter(Boolean).join(', ');
+    }
+    if (Array.isArray(sale.seats) && sale.seats.length > 0) {
+        return sale.seats.filter(Boolean).join(', ');
+    }
+    return '';
+}
+
+function getSaleSessionLabel(sale) {
+    if (!sale) return '';
+    return sale.sessionLabel || sale.sessionName || '';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     onAuthReady(user => {
         loadComponents(initializeHistory);
@@ -294,6 +311,8 @@ const handleExport = (e) => {
             date: { header: 'Data da Compra', value: sale.created ? new Date(sale.created.toDate()).toLocaleString('pt-BR') : 'N/A' },
             productName: { header: 'Produto', value: sale.productName || 'N/A' },
             userSize: { header: 'Tamanho', value: sale.userSize || 'N/A' },
+            sessionLabel: { header: 'Sessão', value: getSaleSessionLabel(sale) || 'N/A' },
+            seatId: { header: 'Assento / Cadeira', value: getSaleSeatLabel(sale) || 'N/A' },
             userName: { header: 'Nome do Cliente', value: sale.userName || 'N/A' },
             payerName: { header: 'Responsável/Pagador', value: sale.payerName || 'N/A' },
             userEmail: { header: 'Email', value: sale.userEmail || 'N/A' },
@@ -361,17 +380,23 @@ const openSaleDetailsModal = async (saleIds) => {
         allGroupSales = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     }
 
-    let productDetailsHtml = allGroupSales.map(s => `
+    let productDetailsHtml = allGroupSales.map(s => {
+        const seatLabel = getSaleSeatLabel(s);
+        const sessionLabel = getSaleSessionLabel(s);
+        return `
         <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 mb-3 shadow-sm">
             <p class="font-bold text-blue-600 dark:text-blue-400">${s.productName || 'Produto N/A'}</p>
             ${s.userSize ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tamanho: <span class="text-gray-900 dark:text-white font-medium">${s.userSize}</span></p>` : ''}
+            ${sessionLabel ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sessão: <span class="text-blue-600 dark:text-blue-400 font-medium">${sessionLabel}</span></p>` : ''}
+            ${seatLabel ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Assento / Cadeira: <span class="text-amber-600 dark:text-amber-400 font-bold">${seatLabel}</span></p>` : ''}
             ${s.kitSelections ? Object.entries(s.kitSelections).map(([key, val]) => `<p class="text-xs text-gray-500 dark:text-gray-400">${key}: <span class="text-gray-900 dark:text-white font-medium">${val}</span></p>`).join('') : ''}
             <div class="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-center">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Subtotal</span>
                 <span class="text-sm font-bold text-green-600 dark:text-green-400">${(s.amountTotal / 100).toLocaleString('pt-BR', { style: 'currency', currency: s.currency || 'BRL' })}</span>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     modalContent.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -821,6 +846,15 @@ function renderSalesLog(groupsToDisplay) {
         const amount = (totalAmount / 100).toLocaleString('pt-BR', { style: 'currency', currency: mainSale.currency || 'BRL' });
         const status = renderStatusTag(mainSale.paymentStatus);
         const productName = group.length > 1 ? `${mainSale.productName} (x${group.length})` : mainSale.productName;
+        const seatBadgesHtml = group.map(sale => {
+            const seat = getSaleSeatLabel(sale);
+            const session = getSaleSessionLabel(sale);
+            if (!seat && !session) return '';
+            return `<div class="mt-1 flex flex-wrap items-center gap-1">
+                ${session ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded">${session}</span>` : ''}
+                ${seat ? `<span class="px-1.5 py-0.5 text-[9px] font-black bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 rounded"><i class="fas fa-chair mr-0.5"></i> Cadeira ${seat}</span>` : ''}
+            </div>`;
+        }).filter(Boolean).join('');
         
         const namesList = group.map(sale => sale.userName || 'N/A').join('<br>');
         const emailsList = group.map(sale => sale.userEmail || 'N/A').join('<br>');
@@ -839,7 +873,7 @@ function renderSalesLog(groupsToDisplay) {
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${emailsList}</td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${phonesList}</td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${agesList}</td>
-                <td class="p-4 text-gray-900 dark:text-white font-medium">${productName}</td>
+                <td class="p-4 text-gray-900 dark:text-white font-medium">${productName}${seatBadgesHtml}</td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${mainSale.userPrograma || 'N/A'}</td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${mainSale.userGraduacao || 'N/A'}</td>
                 <td class="p-4 text-gray-500 dark:text-gray-400 text-xs font-bold">${mainSale.userProfessor || 'N/A'}</td>
