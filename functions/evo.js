@@ -132,6 +132,34 @@ async function getActiveStudentsFromUnit(unitId) {
 
 exports.getActiveStudentsFromUnit = getActiveStudentsFromUnit;
 
+function normalizeSearchText(str) {
+    return (str || '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function matchesStudentSearch(member, rawQuery) {
+    const normalizedQuery = normalizeSearchText(rawQuery);
+    if (!normalizedQuery) return true;
+
+    const idStr = String(member?.idMember || member?.id || '').trim();
+    if (idStr && idStr === String(rawQuery || '').trim()) {
+        return true;
+    }
+
+    const fullName = normalizeSearchText(`${member?.firstName || ''} ${member?.lastName || ''}`);
+    if (fullName.includes(normalizedQuery)) {
+        return true;
+    }
+
+    const queryTokens = normalizedQuery.split(' ').filter(Boolean);
+    return queryTokens.length > 0 && queryTokens.every(token => fullName.includes(token));
+}
+
 /**
  * Extrai e normaliza Categoria (rankType), Faixa/Nível (belt) e Colarinho a partir do array memberLevel retornado pela API EVO.
  */
@@ -248,6 +276,13 @@ exports.getMemberDetails = functions.https.onRequest(async (req, res) => {
 
         try {
             const cachePayload = {
+                idMember: memberIdInt,
+                firstName: memberData.firstName || '',
+                lastName: memberData.lastName || '',
+                unitId: validUnitId,
+                branchName: memberData.branchName || validUnitId,
+                contacts: memberData.contacts || [],
+                membershipStatus: memberData.membershipStatus || '',
                 totalFitCoins: totalCoins,
                 lastUpdated: admin.firestore.FieldValue.serverTimestamp()
             };
@@ -556,12 +591,15 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                     const apiClientV2 = getEvoApiClient(currentUnitId, 'v2');
                     let unitMembers = [];
 
+                    const shouldFetchFullUnit = unitsToFetchFromApi.length === 1;
+                    const firstQueryWord = (name && name.trim() !== '') ? name.trim().split(/\s+/)[0] : '';
+
                     const fetchAllPagesForStatus = async (status) => {
                         const PAGE_SIZE = 500;
                         const MAX_PAGES = 20;
                         const apiParams = { skip: 0, take: PAGE_SIZE, showMemberships: false, status };
-                        if (name && name.trim() !== '') {
-                            apiParams.name = name.trim();
+                        if (!shouldFetchFullUnit && firstQueryWord) {
+                            apiParams.name = firstQueryWord;
                         }
 
                         let currentPage = 1;
@@ -626,8 +664,8 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                         await batch.commit();
                     }
 
-                    // Registra sucesso do sync apenas quando foi sincronização completa da unidade (sem filtro de nome)
-                    if (!name || name.trim() === '') {
+                    // Registra sucesso do sync quando foi sincronização completa da unidade
+                    if (shouldFetchFullUnit || !name || name.trim() === '') {
                         await db.collection('evo_sync_status').doc(currentUnitId).set({
                             lastSync: admin.firestore.FieldValue.serverTimestamp(),
                             status: 'success',
@@ -646,13 +684,9 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
             }
         }
 
-        // Filtra por nome se especificado e se usou cache
+        // Filtra por nome/ID se especificado (normalizando acentos e permitindo palavras em qualquer parte do nome)
         if (name && name.trim() !== '') {
-            const searchTerm = name.trim().toLowerCase();
-            allMembers = allMembers.filter(member => {
-                const fullName = `${member.firstName || ''} ${member.lastName || ''}`.toLowerCase();
-                return fullName.includes(searchTerm);
-            });
+            allMembers = allMembers.filter(member => matchesStudentSearch(member, name));
         }
 
         // Remove duplicatas

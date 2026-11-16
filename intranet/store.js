@@ -5648,6 +5648,23 @@ Requisitos:
         });
     };
 
+    const getEventSeatLabel = (sub) => {
+        if (!sub) return '';
+        if (sub.seatId && String(sub.seatId).trim()) return String(sub.seatId).trim();
+        if (Array.isArray(sub.selectedSeats) && sub.selectedSeats.length > 0) {
+            return sub.selectedSeats.filter(Boolean).join(', ');
+        }
+        if (Array.isArray(sub.seats) && sub.seats.length > 0) {
+            return sub.seats.filter(Boolean).join(', ');
+        }
+        return '';
+    };
+
+    const getEventSessionLabel = (sub) => {
+        if (!sub) return '';
+        return sub.sessionLabel || sub.sessionName || '';
+    };
+
     const displayEventSubscribers = (subscribers) => {
         if (!eventsTableBody) return;
         
@@ -5667,6 +5684,14 @@ Requisitos:
             const graduation = sub.userGraduacao || sub.variationName || sub.chosenVariant || 'N/A';
             const program = sub.userPrograma ? ` (${sub.userPrograma})` : '';
             const variant = `${graduation}${program}`;
+            const seatLabel = getEventSeatLabel(sub);
+            const sessionLabel = getEventSessionLabel(sub);
+            const seatBadges = (seatLabel || sessionLabel)
+                ? `<div class="mt-1 flex flex-wrap items-center gap-1">
+                    ${sessionLabel ? `<span class="px-1.5 py-0.5 text-[9px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded">${sessionLabel}</span>` : ''}
+                    ${seatLabel ? `<span class="px-1.5 py-0.5 text-[9px] font-black bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 rounded"><i class="fas fa-chair mr-0.5"></i> Cadeira ${seatLabel}</span>` : ''}
+                </div>`
+                : '';
             const ring = sub.eventRing || '-';
             const dateTime = sub.eventDay && sub.eventTime ? `${sub.eventDay} às ${sub.eventTime}` : (sub.eventTime || '-');
 
@@ -5682,7 +5707,7 @@ Requisitos:
                 <td class="p-4">
                     ${nameDisplay}
                 </td>
-                <td class="p-4 text-[11px] font-medium text-gray-600 dark:text-gray-400">${variant}</td>
+                <td class="p-4 text-[11px] font-medium text-gray-600 dark:text-gray-400">${variant}${seatBadges}</td>
                 <td class="p-4 text-center"><span class="px-2 py-1 bg-primary/10 rounded text-primary font-bold text-[11px]">${ring}</span></td>
                 <td class="p-4 text-[11px] text-gray-500 dark:text-gray-400">${dateTime}</td>
                 <td class="p-4">
@@ -5724,7 +5749,7 @@ Requisitos:
         }
         const selectedProduct = allProducts.find(p => p.id === eventProductFilter.value);
         const eventName = selectedProduct ? selectedProduct.name.replace(/\s+/g, '_') : 'evento';
-        const headers = ['Numero', 'Nome', 'Responsavel/Pagador', 'Email', 'Telefone', 'CPF', 'Categoria', 'Ringue', 'Dia', 'Hora', 'Check-in', 'Data Compra'];
+        const headers = ['Numero', 'Nome', 'Responsavel/Pagador', 'Email', 'Telefone', 'CPF', 'Categoria', 'Sessao', 'Assento/Cadeira', 'Ringue', 'Dia', 'Hora', 'Check-in', 'Data Compra'];
         const rows = allCheckins.map(sub => [
             sub.attendeeNumber || '',
             sub.userName || '',
@@ -5733,6 +5758,8 @@ Requisitos:
             sub.userPhone || '',
             sub.userCpf || sub.userCPF || '',
             sub.variationName || sub.chosenVariant || '',
+            getEventSessionLabel(sub),
+            getEventSeatLabel(sub),
             sub.eventRing || '',
             sub.eventDay || '',
             sub.eventTime || '',

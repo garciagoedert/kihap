@@ -2,7 +2,7 @@ import { onAuthReady, checkAdminStatus, getUserData } from './auth.js';
 import { showConfirm, getUnidades } from './common-ui.js';
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { functions, db, storage } from './firebase-config.js'; // Added storage import
-import { collection, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, getDoc, getDocs, query, orderBy, addDoc, Timestamp, where, deleteDoc, doc, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js"; // Added storage imports
 
 // Import functions for badge management from gerenciar-emblemas.js
@@ -503,6 +503,76 @@ export function setupAlunosPage() {
     });
 }
 
+const normalizeStr = (str) => (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+function matchesStudentQuery(student, rawQuery) {
+    const normalizedQuery = normalizeStr(rawQuery);
+    if (!normalizedQuery) return true;
+
+    const idStr = String(student?.idMember || student?.id || '').trim();
+    if (idStr && idStr === String(rawQuery || '').trim()) {
+        return true;
+    }
+
+    const fullName = normalizeStr(`${student?.firstName || ''} ${student?.lastName || ''}`);
+    if (fullName.includes(normalizedQuery)) {
+        return true;
+    }
+
+    const tokens = normalizedQuery.split(' ').filter(Boolean);
+    return tokens.length > 0 && tokens.every(t => fullName.includes(t));
+}
+
+const checkedUnitsForBackgroundSync = new Set();
+
+async function refreshUnitCacheInBackgroundIfStale(selectedUnit, currentIdsSet) {
+    if (!selectedUnit || selectedUnit === 'all' || checkedUnitsForBackgroundSync.has(selectedUnit)) {
+        return;
+    }
+    checkedUnitsForBackgroundSync.add(selectedUnit);
+
+    try {
+        const syncSnap = await getDoc(doc(db, 'evo_sync_status', selectedUnit));
+        let isStale = true;
+        if (syncSnap.exists()) {
+            const syncData = syncSnap.data();
+            const lastSyncDate = syncData.lastSync?.toDate ? syncData.lastSync.toDate() : null;
+            const hoursSinceSync = lastSyncDate ? (Date.now() - lastSyncDate.getTime()) / (1000 * 60 * 60) : 999;
+            if (syncData.status === 'success' && hoursSinceSync < 6) {
+                isStale = false;
+            }
+        }
+
+        if (!isStale) return;
+
+        console.log(`🔄 Cache de "${selectedUnit}" desatualizado (>6h). Sincronizando em background com o EVO...`);
+        const liveRes = await listAllMembers({ unitId: selectedUnit, forceRefresh: true });
+        const refreshedList = liveRes.data || [];
+
+        const unitFilter = document.getElementById('unit-filter');
+        const searchInput = document.getElementById('search-input');
+        const currentUnitNow = unitFilter ? unitFilter.value : '';
+        const currentSearchNow = searchInput ? searchInput.value.trim() : '';
+
+        if (currentUnitNow !== selectedUnit || currentSearchNow !== '') {
+            return;
+        }
+
+        const hasChanges =
+            refreshedList.length !== currentIdsSet.size ||
+            refreshedList.some(s => !currentIdsSet.has(String(s.idMember || s.id || '')));
+
+        if (hasChanges) {
+            console.log(`✅ Cache de "${selectedUnit}" atualizado em background (${refreshedList.length} alunos).`);
+            allStudents = refreshedList;
+            const isAdmin = await checkAdminStatus(currentAppUser);
+            renderStudents(refreshedList, isAdmin);
+        }
+    } catch (bgErr) {
+        console.warn(`⚠️ Falha ao sincronizar cache de "${selectedUnit}" em background:`, bgErr);
+    }
+}
+
 async function loadStudents() {
     const tableBody = document.getElementById('students-table-body');
     const unitFilter = document.getElementById('unit-filter');
@@ -554,15 +624,9 @@ async function loadStudents() {
             });
         }
 
-        // Search logic local no frontend (ignorando acentos)
-        const normalizeStr = (str) => (str || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+        // Search logic local no frontend (ignorando acentos e aceitando múltiplas palavras no nome)
         if (searchTerm) {
-            const lowerSearchTerm = normalizeStr(searchTerm);
-            studentList = studentList.filter(s => {
-                const fullName = normalizeStr(`${s.firstName || ''} ${s.lastName || ''}`);
-                const idStr = String(s.idMember || s.id || '');
-                return fullName.includes(lowerSearchTerm) || idStr === lowerSearchTerm;
-            });
+            studentList = studentList.filter(s => matchesStudentQuery(s, searchTerm));
 
             // Fallback em tempo real na API do EVO caso o aluno seja recém-cadastrado e ainda não esteja no cache local
             if (studentList.length === 0 && searchTerm.trim().length >= 2) {
@@ -574,11 +638,7 @@ async function loadStudents() {
                         name: searchTerm.trim(),
                         forceRefresh: true
                     });
-                    const liveMatches = (evoLiveResult.data || []).filter(s => {
-                        const fullName = normalizeStr(`${s.firstName || ''} ${s.lastName || ''}`);
-                        const idStr = String(s.idMember || s.id || '');
-                        return fullName.includes(lowerSearchTerm) || idStr === lowerSearchTerm;
-                    });
+                    const liveMatches = (evoLiveResult.data || []).filter(s => matchesStudentQuery(s, searchTerm));
                     if (liveMatches.length > 0) {
                         console.log(`✅ Encontrado(s) ${liveMatches.length} aluno(s) diretamente na API do EVO e salvos no cache!`);
                         studentList = liveMatches;
@@ -595,6 +655,11 @@ async function loadStudents() {
         allStudents = studentList;
         const isAdmin = await checkAdminStatus(currentAppUser);
         renderStudents(studentList, isAdmin);
+
+        if (selectedUnit && selectedUnit !== 'all' && !searchTerm) {
+            const currentIdsSet = new Set(studentList.map(s => String(s.idMember || s.id || '')));
+            refreshUnitCacheInBackgroundIfStale(selectedUnit, currentIdsSet);
+        }
 
     } catch (error) {
         console.error("Erro ao carregar lista de alunos:", error);
