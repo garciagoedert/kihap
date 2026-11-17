@@ -655,6 +655,9 @@ exports.listAllMembers = functions.runWith({ timeoutSeconds: 540, memory: '1GB' 
                                 totalCoins = member.memberships.reduce((sum, m) => sum + (m.fitCoins || 0), 0);
                             }
                             member.totalFitCoins = totalCoins;
+                            if (!Array.isArray(member.memberships)) {
+                                delete member.memberships;
+                            }
                             member.lastUpdated = admin.firestore.FieldValue.serverTimestamp();
 
                             const memberRef = db.collection('evo_students').doc(String(member.idMember));
