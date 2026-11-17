@@ -6,9 +6,16 @@ import { onAuthReady, checkAdminStatus } from './auth.js';
 
 const triggerSnapshot = httpsCallable(functions, 'triggerSnapshot');
 const deleteEvoSnapshot = httpsCallable(functions, 'deleteEvoSnapshot');
+const listAlunosLocais = httpsCallable(functions, 'listAlunosLocais');
+const syncEvoStudentsToCache = httpsCallable(functions, 'syncEvoStudentsToCache');
 
 let snapshots = [];
 let isAdmin = false;
+let allEvoStudents = [];
+let hasLoadedEvoStudents = false;
+let isSyncingContracts = false;
+let activeChurnTab = 'returns';
+let showAllChurnRows = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     onAuthReady(async (user) => {
@@ -35,9 +42,15 @@ async function initializeDashboard() {
         displayEvoKpi();
         displayDailyEntriesKpi();
         displayStoreSalesKpi(selectedUnit);
+        renderChurnAndReturnsPanel();
     };
 
-    locationFilter.addEventListener('change', updateAllKpis);
+    locationFilter.addEventListener('change', () => {
+        showAllChurnRows = false;
+        updateAllKpis();
+    });
+
+    setupChurnAndReturnsPanel();
 
     await fetchSnapshots();
     renderSnapshotLog();
@@ -51,14 +64,20 @@ async function initializeDashboard() {
     document.getElementById('export-snapshots-btn').addEventListener('click', exportSnapshotsToCsv);
     
     updateAllKpis();
+    loadEvoStudentsForAnalysis();
 
     const manualSnapshotBtn = document.getElementById('manual-snapshot-btn');
     const weeklySummaryBtn = document.getElementById('weekly-summary-btn');
+    const syncChurnBtn = document.getElementById('sync-churn-contracts-btn');
 
     if (isAdmin) {
         manualSnapshotBtn.addEventListener('click', handleManualSnapshot);
         weeklySummaryBtn.classList.remove('hidden');
         weeklySummaryBtn.addEventListener('click', showWeeklySummary);
+        if (syncChurnBtn) {
+            syncChurnBtn.classList.remove('hidden');
+            syncChurnBtn.addEventListener('click', handleSyncChurnContracts);
+        }
     } else {
         manualSnapshotBtn.style.display = 'none';
         weeklySummaryBtn.style.display = 'none';
@@ -889,4 +908,617 @@ function exportSnapshotsToCsv() {
     link.download = `kihap_snapshots_${today}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+}
+
+// ─── BAIXAS E RETORNOS (CONTRATOS EVO) ─────────────────────────────────────────
+
+const EXCLUDED_CONTRACT_REGEX = /experimental|di[aá]ria|aula\s*avulsa|visitante|cortesia|free\s*pass/i;
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function normalizeAnalysisText(str) {
+    return (str || '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+function parseEvoDate(dateVal) {
+    if (!dateVal) return null;
+    if (typeof dateVal.toDate === 'function') {
+        return dateVal.toDate();
+    }
+    const parsed = new Date(dateVal);
+    return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatDateBr(dateObj) {
+    if (!dateObj || isNaN(dateObj.getTime())) return 'N/A';
+    return dateObj.toLocaleDateString('pt-BR');
+}
+
+function formatGapDuration(days) {
+    const safeDays = Math.max(0, Math.round(days || 0));
+    if (safeDays < 30) {
+        return `${safeDays} ${safeDays === 1 ? 'dia' : 'dias'}`;
+    }
+    if (safeDays < 365) {
+        const months = Math.max(1, Math.round(safeDays / 30));
+        return `${months} ${months === 1 ? 'mês' : 'meses'} (${safeDays}d)`;
+    }
+    const years = (safeDays / 365).toFixed(1).replace('.', ',');
+    return `${years} anos (${safeDays}d)`;
+}
+
+function formatUnitDisplayName(student) {
+    const raw = student?.branchName || student?.unitId || 'N/A';
+    return raw
+        .toString()
+        .replace(/^KIHAP\s*-\s*/i, '')
+        .trim() || 'N/A';
+}
+
+function matchesSelectedUnit(student, selectedUnit) {
+    if (!selectedUnit || selectedUnit === 'geral' || selectedUnit === 'all') {
+        return true;
+    }
+    const target = selectedUnit.toLowerCase().trim();
+    const studentUnit = String(student?.unitId || '').toLowerCase().trim();
+    if (studentUnit === target) return true;
+
+    const normBranch = normalizeAnalysisText(student?.branchName)
+        .replace(/^kihap\s*-\s*/, '')
+        .trim()
+        .replace(/\s+/g, '-');
+    return normBranch === target;
+}
+
+function isStudentCurrentlyActive(student) {
+    const s = String(student?.status ?? '').toLowerCase().trim();
+    const ms = String(student?.membershipStatus ?? '').toLowerCase().trim();
+    if (s === 'active' || s === 'ativo' || s === '1' || ms === 'active' || ms === 'ativo') {
+        return true;
+    }
+    if (Array.isArray(student?.memberships)) {
+        return student.memberships.some(m => String(m?.membershipStatus || '').toLowerCase() === 'active');
+    }
+    return false;
+}
+
+function getChurnPeriodBounds(periodKey) {
+    const now = new Date();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    if (periodKey === '30d') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30, 0, 0, 0, 0);
+        return { start, end };
+    }
+    if (periodKey === '90d') {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90, 0, 0, 0, 0);
+        return { start, end };
+    }
+    if (periodKey === 'this_month') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        return { start, end };
+    }
+    if (periodKey === 'this_year') {
+        const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+        return { start, end };
+    }
+    return { start: null, end: null };
+}
+
+function isDateWithinBounds(dateObj, bounds) {
+    if (!bounds || (!bounds.start && !bounds.end)) return true;
+    if (!dateObj || isNaN(dateObj.getTime())) return false;
+    const ts = dateObj.getTime();
+    if (bounds.start && ts < bounds.start.getTime()) return false;
+    if (bounds.end && ts > bounds.end.getTime()) return false;
+    return true;
+}
+
+function analyzeStudentContracts(student) {
+    const rawMemberships = Array.isArray(student?.memberships) ? student.memberships : [];
+    const realContracts = rawMemberships
+        .filter(ms => ms && ms.startDate && !EXCLUDED_CONTRACT_REGEX.test(ms.name || ''))
+        .map(ms => {
+            const startDt = parseEvoDate(ms.startDate);
+            const endDt = parseEvoDate(ms.cancelDate || ms.endDate || ms.startDate);
+            const msStatus = String(ms.membershipStatus || '').toLowerCase();
+            const wasCanceled = Boolean(ms.cancelDate || msStatus === 'canceled' || msStatus === 'cancelled');
+            return {
+                raw: ms,
+                startDt,
+                endDt,
+                wasCanceled
+            };
+        })
+        .filter(c => c.startDt !== null)
+        .sort((a, b) => {
+            const diff = a.startDt.getTime() - b.startDt.getTime();
+            if (diff !== 0) return diff;
+            return (Number(a.raw.idMemberMembership) || 0) - (Number(b.raw.idMemberMembership) || 0);
+        });
+
+    if (realContracts.length === 0) {
+        return { hasContracts: false, isActive: isStudentCurrentlyActive(student), returnEvents: [], baixa: null };
+    }
+
+    const isActive = isStudentCurrentlyActive(student);
+    const returnEvents = [];
+
+    // Acompanha a cobertura máxima ativa até o momento para evitar falsos retornos em planos sobrepostos
+    let maxCoverageEnd = realContracts[0].endDt;
+    let lastCoveringContract = realContracts[0];
+
+    for (let i = 1; i < realContracts.length; i++) {
+        const curr = realContracts[i];
+        if (maxCoverageEnd && curr.startDt) {
+            const gapDays = Math.round((curr.startDt.getTime() - maxCoverageEnd.getTime()) / MS_PER_DAY);
+            const isReturnTransition =
+                gapDays > 30 ||
+                (lastCoveringContract.wasCanceled && gapDays > 7 && !curr.raw.idMemberMembershipRenewed);
+
+            if (isReturnTransition) {
+                returnEvents.push({
+                    baixaDate: maxCoverageEnd,
+                    returnDate: curr.startDt,
+                    gapDays: Math.max(0, gapDays),
+                    prevPlan: lastCoveringContract.raw.name || 'Contrato anterior',
+                    currentPlan: curr.raw.name || 'Novo contrato',
+                    wasCanceled: lastCoveringContract.wasCanceled
+                });
+            }
+        }
+
+        if (curr.endDt && (!maxCoverageEnd || curr.endDt.getTime() > maxCoverageEnd.getTime())) {
+            maxCoverageEnd = curr.endDt;
+            lastCoveringContract = curr;
+        }
+    }
+
+    let baixa = null;
+    if (!isActive) {
+        const orderedByEnd = [...realContracts].sort((a, b) => {
+            const aTime = a.endDt ? a.endDt.getTime() : 0;
+            const bTime = b.endDt ? b.endDt.getTime() : 0;
+            return aTime - bTime;
+        });
+        const lastContract = orderedByEnd[orderedByEnd.length - 1];
+        if (lastContract && lastContract.endDt) {
+            baixa = {
+                baixaDate: lastContract.endDt,
+                lastPlan: lastContract.raw.name || 'N/A',
+                wasCanceled: lastContract.wasCanceled
+            };
+        }
+    }
+
+    return {
+        hasContracts: true,
+        isActive,
+        returnEvents,
+        baixa
+    };
+}
+
+function setupChurnAndReturnsPanel() {
+    const periodFilter = document.getElementById('churn-period-filter');
+    const searchInput = document.getElementById('churn-student-search');
+    const tabReturns = document.getElementById('tab-returns-list');
+    const tabChurn = document.getElementById('tab-churn-list');
+
+    if (periodFilter) {
+        periodFilter.addEventListener('change', () => {
+            showAllChurnRows = false;
+            renderChurnAndReturnsPanel();
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            showAllChurnRows = false;
+            renderChurnAndReturnsPanel();
+        });
+    }
+
+    const updateTabStyles = () => {
+        if (!tabReturns || !tabChurn) return;
+        const activeClasses = ['bg-amber-400', 'text-black', 'shadow-sm'];
+        const inactiveClasses = ['text-gray-600', 'dark:text-gray-400', 'hover:text-gray-900', 'dark:hover:text-white'];
+
+        if (activeChurnTab === 'returns') {
+            tabReturns.classList.add(...activeClasses);
+            tabReturns.classList.remove(...inactiveClasses);
+            tabChurn.classList.remove(...activeClasses);
+            tabChurn.classList.add(...inactiveClasses);
+        } else {
+            tabChurn.classList.add(...activeClasses);
+            tabChurn.classList.remove(...inactiveClasses);
+            tabReturns.classList.remove(...activeClasses);
+            tabReturns.classList.add(...inactiveClasses);
+        }
+    };
+
+    if (tabReturns) {
+        tabReturns.addEventListener('click', () => {
+            activeChurnTab = 'returns';
+            showAllChurnRows = false;
+            updateTabStyles();
+            renderChurnAndReturnsPanel();
+        });
+    }
+
+    if (tabChurn) {
+        tabChurn.addEventListener('click', () => {
+            activeChurnTab = 'churn';
+            showAllChurnRows = false;
+            updateTabStyles();
+            renderChurnAndReturnsPanel();
+        });
+    }
+
+    updateTabStyles();
+}
+
+async function loadEvoStudentsForAnalysis() {
+    try {
+        let studentList = [];
+        try {
+            const res = await listAlunosLocais({ unitId: 'all' });
+            studentList = res.data || [];
+        } catch (cfErr) {
+            console.warn('[analysis] Fallback para leitura direta de evo_students:', cfErr);
+            const snap = await getDocs(collection(db, 'evo_students'));
+            studentList = snap.docs.map(d => {
+                const data = d.data();
+                data.idMember = data.idMember || d.id;
+                return data;
+            });
+        }
+        allEvoStudents = studentList;
+        hasLoadedEvoStudents = true;
+        renderChurnAndReturnsPanel();
+    } catch (err) {
+        console.error('[analysis] Erro ao carregar alunos para análise de baixas e retornos:', err);
+        hasLoadedEvoStudents = true;
+        const bodyEl = document.getElementById('churn-returns-table-body');
+        if (bodyEl) {
+            bodyEl.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-red-500">Erro ao carregar contratos dos alunos: ${escapeHtml(err.message)}</td></tr>`;
+        }
+    }
+}
+
+async function handleSyncChurnContracts() {
+    if (isSyncingContracts) return;
+
+    const locationFilter = document.getElementById('location-filter');
+    const selectedUnit = locationFilter ? locationFilter.value : 'geral';
+    const targetUnit = (!selectedUnit || selectedUnit === 'geral') ? 'all' : selectedUnit;
+    const unitLabel = targetUnit === 'all' ? 'todas as unidades' : `a unidade ${selectedUnit}`;
+
+    if (!confirm(`Deseja sincronizar os contratos (memberships) do EVO para ${unitLabel}? Isso pode levar até 1 minuto.`)) {
+        return;
+    }
+
+    const syncBtn = document.getElementById('sync-churn-contracts-btn');
+    const syncIcon = document.getElementById('sync-churn-contracts-icon');
+    const syncText = document.getElementById('sync-churn-contracts-text');
+
+    isSyncingContracts = true;
+    if (syncBtn) syncBtn.disabled = true;
+    if (syncIcon) syncIcon.classList.add('fa-spin');
+    if (syncText) syncText.textContent = 'Sincronizando...';
+
+    try {
+        const result = await syncEvoStudentsToCache({ unitId: targetUnit });
+        const summary = result.data || {};
+        alert(`Sincronização concluída! Unidades atualizadas: ${(summary.success || []).length}. Alunos processados: ${summary.totalStudents || 0}.`);
+        await loadEvoStudentsForAnalysis();
+    } catch (error) {
+        console.error('[analysis] Erro ao sincronizar contratos EVO:', error);
+        alert(`Erro ao sincronizar contratos: ${error.message}`);
+    } finally {
+        isSyncingContracts = false;
+        if (syncBtn) syncBtn.disabled = false;
+        if (syncIcon) syncIcon.classList.remove('fa-spin');
+        if (syncText) syncText.textContent = 'Atualizar Contratos EVO';
+    }
+}
+
+function renderChurnAndReturnsPanel() {
+    const kpiContainer = document.getElementById('churn-returns-kpi-container');
+    const tableHead = document.getElementById('churn-returns-table-head');
+    const tableBody = document.getElementById('churn-returns-table-body');
+    const tableFooter = document.getElementById('churn-returns-table-footer');
+    const noticeEl = document.getElementById('churn-sync-notice');
+    const noticeTextEl = document.getElementById('churn-sync-notice-text');
+    const returnsCountBadge = document.getElementById('tab-returns-count');
+    const churnCountBadge = document.getElementById('tab-churn-count');
+
+    if (!kpiContainer || !tableHead || !tableBody) return;
+
+    if (!hasLoadedEvoStudents) {
+        kpiContainer.innerHTML = Array.from({ length: 4 }).map(() => `
+            <div class="kpi-card bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4 animate-pulse">
+                <div class="w-11 h-11 rounded-xl bg-gray-200 dark:bg-gray-800"></div>
+                <div class="space-y-2 flex-1">
+                    <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-24"></div>
+                    <div class="h-6 bg-gray-200 dark:bg-gray-800 rounded w-16"></div>
+                </div>
+            </div>
+        `).join('');
+        return;
+    }
+
+    const locationFilter = document.getElementById('location-filter');
+    const periodFilter = document.getElementById('churn-period-filter');
+    const searchInput = document.getElementById('churn-student-search');
+
+    const selectedUnit = locationFilter ? locationFilter.value : 'geral';
+    const selectedPeriod = periodFilter ? periodFilter.value : 'this_year';
+    const searchTerm = normalizeAnalysisText(searchInput ? searchInput.value : '');
+    const bounds = getChurnPeriodBounds(selectedPeriod);
+
+    const unitStudents = allEvoStudents.filter(s => matchesSelectedUnit(s, selectedUnit));
+    const studentsWithMemberships = unitStudents.filter(s => Array.isArray(s.memberships) && s.memberships.length > 0);
+
+    if (noticeEl && noticeTextEl) {
+        if (unitStudents.length === 0 || studentsWithMemberships.length === 0) {
+            noticeTextEl.textContent = 'Os registros carregados para este filtro ainda não possuem o histórico completo de contratos (memberships) sincronizado do EVO.';
+            noticeEl.classList.remove('hidden');
+        } else if (studentsWithMemberships.length < unitStudents.length * 0.4) {
+            noticeTextEl.textContent = `Apenas ${studentsWithMemberships.length} de ${unitStudents.length} alunos desta visão já possuem contratos carregados em cache. Clique em "Atualizar Contratos EVO" para sincronizar o histórico completo.`;
+            noticeEl.classList.remove('hidden');
+        } else {
+            noticeEl.classList.add('hidden');
+        }
+    }
+
+    let activeStudentsCount = 0;
+    let activeReturnedCount = 0;
+    let totalInactiveBaixasAllTime = 0;
+    let returnedEverCount = 0;
+
+    const baixasInPeriod = [];
+    const returnsInPeriod = [];
+
+    for (const student of unitStudents) {
+        const fullName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || student.name || `Aluno #${student.idMember}`;
+        if (fullName.startsWith('***Dados')) continue;
+
+        const analysis = analyzeStudentContracts(student);
+        if (analysis.isActive) {
+            activeStudentsCount++;
+        }
+        if (!analysis.hasContracts) continue;
+
+        if (analysis.returnEvents.length > 0) {
+            returnedEverCount++;
+            if (analysis.isActive) {
+                activeReturnedCount++;
+            }
+
+            const matchingReturns = analysis.returnEvents.filter(ev => isDateWithinBounds(ev.returnDate, bounds));
+            if (matchingReturns.length > 0) {
+                const latestReturn = matchingReturns[matchingReturns.length - 1];
+                returnsInPeriod.push({
+                    idMember: student.idMember,
+                    unitId: student.unitId || '',
+                    unitName: formatUnitDisplayName(student),
+                    name: fullName,
+                    isActive: analysis.isActive,
+                    baixaDate: latestReturn.baixaDate,
+                    returnDate: latestReturn.returnDate,
+                    gapDays: latestReturn.gapDays,
+                    prevPlan: latestReturn.prevPlan,
+                    currentPlan: latestReturn.currentPlan
+                });
+            }
+        }
+
+        if (!analysis.isActive && analysis.baixa) {
+            totalInactiveBaixasAllTime++;
+            if (isDateWithinBounds(analysis.baixa.baixaDate, bounds)) {
+                baixasInPeriod.push({
+                    idMember: student.idMember,
+                    unitId: student.unitId || '',
+                    unitName: formatUnitDisplayName(student),
+                    name: fullName,
+                    lastPlan: analysis.baixa.lastPlan,
+                    baixaDate: analysis.baixa.baixaDate,
+                    wasCanceled: analysis.baixa.wasCanceled
+                });
+            }
+        }
+    }
+
+    baixasInPeriod.sort((a, b) => b.baixaDate.getTime() - a.baixaDate.getTime());
+    returnsInPeriod.sort((a, b) => b.returnDate.getTime() - a.returnDate.getTime());
+
+    const canceledCount = baixasInPeriod.filter(b => b.wasCanceled).length;
+    const expiredCount = baixasInPeriod.length - canceledCount;
+    const avgGapDays = returnsInPeriod.length > 0
+        ? Math.round(returnsInPeriod.reduce((sum, r) => sum + r.gapDays, 0) / returnsInPeriod.length)
+        : 0;
+    const totalEverBaixas = totalInactiveBaixasAllTime + returnedEverCount;
+    const recoveryRate = totalEverBaixas > 0
+        ? ((returnedEverCount / totalEverBaixas) * 100).toFixed(1).replace('.', ',')
+        : '0,0';
+    const activeReturnedPct = activeStudentsCount > 0
+        ? ((activeReturnedCount / activeStudentsCount) * 100).toFixed(1).replace('.', ',')
+        : '0,0';
+
+    kpiContainer.innerHTML = `
+        <div class="kpi-card bg-gray-50/80 dark:bg-gray-900/50 border border-gray-200/80 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                <i class="fas fa-user-minus text-lg"></i>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Baixas no Período</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">${baixasInPeriod.length.toLocaleString('pt-BR')}</p>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">${canceledCount} cancelamentos | ${expiredCount} expirados</p>
+            </div>
+        </div>
+        <div class="kpi-card bg-gray-50/80 dark:bg-gray-900/50 border border-gray-200/80 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <i class="fas fa-undo-alt text-lg"></i>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Retornos no Período</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">${returnsInPeriod.length.toLocaleString('pt-BR')}</p>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Reativados após baixa anterior</p>
+            </div>
+        </div>
+        <div class="kpi-card bg-gray-50/80 dark:bg-gray-900/50 border border-gray-200/80 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <i class="fas fa-user-check text-lg"></i>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Ativos Hoje que Retornaram</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">${activeReturnedCount.toLocaleString('pt-BR')}</p>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">${activeReturnedPct}% dos ${activeStudentsCount.toLocaleString('pt-BR')} ativos atuais</p>
+            </div>
+        </div>
+        <div class="kpi-card bg-gray-50/80 dark:bg-gray-900/50 border border-gray-200/80 dark:border-gray-800 p-5 rounded-2xl flex items-center gap-4">
+            <div class="w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <i class="fas fa-hourglass-half text-lg"></i>
+            </div>
+            <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">Tempo Médio até Retorno</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">${returnsInPeriod.length > 0 ? formatGapDuration(avgGapDays) : '-'}</p>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">Recuperação histórica: ${recoveryRate}%</p>
+            </div>
+        </div>
+    `;
+
+    const filteredReturns = searchTerm
+        ? returnsInPeriod.filter(r =>
+            normalizeAnalysisText(r.name).includes(searchTerm) ||
+            normalizeAnalysisText(r.currentPlan).includes(searchTerm) ||
+            normalizeAnalysisText(r.unitName).includes(searchTerm) ||
+            String(r.idMember) === searchTerm
+        )
+        : returnsInPeriod;
+
+    const filteredBaixas = searchTerm
+        ? baixasInPeriod.filter(b =>
+            normalizeAnalysisText(b.name).includes(searchTerm) ||
+            normalizeAnalysisText(b.lastPlan).includes(searchTerm) ||
+            normalizeAnalysisText(b.unitName).includes(searchTerm) ||
+            String(b.idMember) === searchTerm
+        )
+        : baixasInPeriod;
+
+    if (returnsCountBadge) returnsCountBadge.textContent = filteredReturns.length.toLocaleString('pt-BR');
+    if (churnCountBadge) churnCountBadge.textContent = filteredBaixas.length.toLocaleString('pt-BR');
+
+    const activeRows = activeChurnTab === 'returns' ? filteredReturns : filteredBaixas;
+    const maxVisible = showAllChurnRows ? activeRows.length : 100;
+    const rowsToRender = activeRows.slice(0, maxVisible);
+
+    if (activeChurnTab === 'returns') {
+        tableHead.innerHTML = `
+            <tr>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Aluno</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Unidade</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Baixa Anterior</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Data do Retorno</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Tempo Afastado</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Contrato Atual / Retorno</th>
+                <th scope="col" class="px-4 py-3 text-center text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Ficha</th>
+            </tr>
+        `;
+
+        if (rowsToRender.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhum aluno com retorno encontrado para os filtros selecionados.</td></tr>`;
+        } else {
+            tableBody.innerHTML = rowsToRender.map(item => `
+                <tr class="hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition">
+                    <td class="px-4 py-3 font-bold text-gray-900 dark:text-white">
+                        <div>${escapeHtml(item.name)}</div>
+                        <div class="text-[10px] font-medium text-gray-400">ID: ${escapeHtml(item.idMember)} • ${item.isActive ? '<span class="text-emerald-600 dark:text-emerald-400">Ativo hoje</span>' : '<span class="text-gray-400">Inativo hoje</span>'}</div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">${escapeHtml(item.unitName)}</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${formatDateBr(item.baixaDate)}</td>
+                    <td class="px-4 py-3 font-bold text-emerald-600 dark:text-emerald-400">${formatDateBr(item.returnDate)}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 font-bold text-[11px]">${formatGapDuration(item.gapDays)}</span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        <div class="font-medium">${escapeHtml(item.currentPlan)}</div>
+                        <div class="text-[10px] text-gray-400">Anterior: ${escapeHtml(item.prevPlan)}</div>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <a href="aluno.html?id=${encodeURIComponent(item.idMember)}&unit=${encodeURIComponent(item.unitId)}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition" title="Abrir Ficha do Aluno">
+                            <i class="fas fa-external-link-alt text-xs"></i>
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } else {
+        tableHead.innerHTML = `
+            <tr>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Aluno</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Unidade</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Último Contrato</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Data da Baixa</th>
+                <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Motivo / Tipo</th>
+                <th scope="col" class="px-4 py-3 text-center text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Ficha</th>
+            </tr>
+        `;
+
+        if (rowsToRender.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Nenhuma baixa encontrada para os filtros selecionados.</td></tr>`;
+        } else {
+            tableBody.innerHTML = rowsToRender.map(item => `
+                <tr class="hover:bg-gray-50/70 dark:hover:bg-gray-800/30 transition">
+                    <td class="px-4 py-3 font-bold text-gray-900 dark:text-white">
+                        <div>${escapeHtml(item.name)}</div>
+                        <div class="text-[10px] font-medium text-gray-400">ID: ${escapeHtml(item.idMember)}</div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">${escapeHtml(item.unitName)}</td>
+                    <td class="px-4 py-3 text-gray-700 dark:text-gray-300 font-medium">${escapeHtml(item.lastPlan)}</td>
+                    <td class="px-4 py-3 font-bold text-gray-900 dark:text-white">${formatDateBr(item.baixaDate)}</td>
+                    <td class="px-4 py-3">
+                        ${item.wasCanceled
+                            ? '<span class="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-bold text-[11px]">Cancelamento</span>'
+                            : '<span class="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold text-[11px]">Término de Contrato</span>'
+                        }
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <a href="aluno.html?id=${encodeURIComponent(item.idMember)}&unit=${encodeURIComponent(item.unitId)}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition" title="Abrir Ficha do Aluno">
+                            <i class="fas fa-external-link-alt text-xs"></i>
+                        </a>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    if (tableFooter) {
+        const hasMore = activeRows.length > rowsToRender.length;
+        tableFooter.innerHTML = `
+            <span>Exibindo ${rowsToRender.length.toLocaleString('pt-BR')} de ${activeRows.length.toLocaleString('pt-BR')} registros (base com contratos sincronizados: ${studentsWithMemberships.length.toLocaleString('pt-BR')} alunos)</span>
+            ${hasMore ? '<button id="churn-show-all-btn" type="button" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Mostrar todos os registros</button>' : ''}
+        `;
+        const showAllBtn = document.getElementById('churn-show-all-btn');
+        if (showAllBtn) {
+            showAllBtn.addEventListener('click', () => {
+                showAllChurnRows = true;
+                renderChurnAndReturnsPanel();
+            });
+        }
+    }
 }
