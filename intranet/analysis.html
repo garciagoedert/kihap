@@ -93,6 +93,9 @@
                         <select id="location-filter" aria-label="Filtrar por unidade" class="w-full sm:w-auto bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-gray-900 dark:text-white">
                             <option value="geral">Visão Geral (Todas as Unidades)</option>
                         </select>
+                        <select id="instructor-filter" aria-label="Filtrar por instrutor" class="w-full sm:w-auto bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-600 rounded-lg p-2 focus:ring-2 focus:ring-yellow-500 focus:outline-none text-gray-900 dark:text-white">
+                            <option value="all">Todos os Instrutores</option>
+                        </select>
                         <button id="manual-snapshot-btn" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">
                             <i class="fas fa-camera mr-2"></i>Gerar Snapshot Manual
                         </button>
@@ -151,12 +154,12 @@
                     </div>
                 </div>
 
-                <!-- Baixas e Retornos Section -->
+                <!-- Baixas, Retornos e Matrículas Section -->
                 <div id="churn-returns-section" class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col mb-8">
                     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
                         <div>
-                            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Baixas e Retornos (Contratos EVO)</h2>
-                            <p id="churn-returns-subtitle" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Análise de contratos encerrados (baixas) e alunos que retornaram após período afastado</p>
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Baixas, Retornos e Matrículas (Contratos EVO)</h2>
+                            <p id="churn-returns-subtitle" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Análise de novos alunos, contratos encerrados (baixas) e retornos após período afastado</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <select id="churn-period-filter" aria-label="Filtrar período de baixas e retornos" class="w-full sm:w-auto bg-white dark:bg-[#111111] border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:outline-none">
@@ -180,12 +183,12 @@
                         </div>
                     </div>
 
-                    <div id="churn-returns-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
-                        <!-- KPIs de Baixas e Retornos inseridos via JS -->
+                    <div id="churn-returns-kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+                        <!-- KPIs de Baixas, Retornos e Matrículas inseridos via JS -->
                     </div>
 
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                        <div class="inline-flex bg-gray-100 dark:bg-gray-900/70 p-1 rounded-xl border border-gray-200 dark:border-gray-800">
+                        <div class="inline-flex flex-wrap bg-gray-100 dark:bg-gray-900/70 p-1 rounded-xl border border-gray-200 dark:border-gray-800 gap-1">
                             <button id="tab-returns-list" type="button" class="px-4 py-2 rounded-lg text-xs font-bold bg-amber-400 text-black shadow-sm transition flex items-center gap-2">
                                 <span>Lista de Retornos</span>
                                 <span id="tab-returns-count" class="px-1.5 py-0.5 rounded-md bg-black/10 text-[10px] font-black">0</span>
@@ -193,6 +196,10 @@
                             <button id="tab-churn-list" type="button" class="px-4 py-2 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition flex items-center gap-2">
                                 <span>Lista de Baixas</span>
                                 <span id="tab-churn-count" class="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-800 text-[10px] font-black">0</span>
+                            </button>
+                            <button id="tab-new-list" type="button" class="px-4 py-2 rounded-lg text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition flex items-center gap-2">
+                                <span>Lista de Novos</span>
+                                <span id="tab-new-count" class="px-1.5 py-0.5 rounded-md bg-gray-200 dark:bg-gray-800 text-[10px] font-black">0</span>
                             </button>
                         </div>
 
@@ -220,10 +227,41 @@
                     </div>
                 </div>
 
+                <!-- Visão por Instrutor (Carteira da Grade) -->
+                <div id="instructor-portfolio-section" class="bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm flex flex-col mb-8">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white">Visão por Instrutor (Carteira da Grade)</h2>
+                            <p id="instructor-portfolio-subtitle" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Alunos vinculados às turmas de cada instrutor na Grade, frequência semanal e movimentação de contratos no período</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 shadow-inner">
+                        <table class="min-w-full text-left">
+                            <thead class="bg-gray-100 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-800">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Instrutor</th>
+                                    <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Turmas</th>
+                                    <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Alunos Ativos</th>
+                                    <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Frequência 7d</th>
+                                    <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Novos</th>
+                                    <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Retornos</th>
+                                    <th scope="col" class="px-4 py-3 text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Baixas</th>
+                                    <th scope="col" class="px-4 py-3 text-center text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Filtrar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="instructor-portfolio-body" class="divide-y divide-gray-100 dark:divide-gray-800 bg-white dark:bg-transparent text-xs">
+                                <tr>
+                                    <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Carregando turmas e carteiras de instrutores...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Snapshot Log Section -->
-                <div id="snapshot-log-container" class="mt-8 bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm mb-10">
+                <div id="snapshot-log-container" class="mt-2 bg-white/70 dark:bg-[#1a1a1a]/70 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 p-6 rounded-3xl shadow-sm mb-10">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Histórico de Snapshots (Últimos 7 dias)</h2>
+                        <h2 id="snapshot-log-title" class="text-xl font-bold text-gray-900 dark:text-white">Histórico de Snapshots (Últimos 7 dias)</h2>
                         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                             <input type="text" id="snapshot-search" placeholder="Buscar por data..." class="w-full sm:w-auto bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:outline-none transition">
                             <button id="export-snapshots-btn" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition duration-200 shadow-lg shadow-emerald-600/10 active:scale-95 flex items-center justify-center gap-2 text-sm">
@@ -239,8 +277,8 @@
                             <thead class="bg-gray-100 dark:bg-gray-800/80 border-b border-gray-150 dark:border-gray-850">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Data</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Total Contratos (EVO)</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Total Alunos Ativos (EVO)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Contratos Ativos (EVO)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Presenças Semana / Dia</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Vendas (Loja)</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Receita (Loja)</th>
                                 </tr>
@@ -256,6 +294,6 @@
         </main>
     </div>
 
-    <script type="module" src="student-analysis.js?v=1.1"></script>
+    <script type="module" src="student-analysis.js?v=1.2"></script>
 </body>
 </html>

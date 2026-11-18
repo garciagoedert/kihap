@@ -1974,47 +1974,113 @@ exports.getDailyEntries = functions.https.onCall(async (data, context) => {
     }
 });
 
+const getSaoPauloDateInfo = (daysAgo = 0) => {
+    const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    if (daysAgo !== 0) {
+        nowInSaoPaulo.setDate(nowInSaoPaulo.getDate() - daysAgo);
+    }
+    const year = nowInSaoPaulo.getFullYear();
+    const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
+    const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
+    return { dateObj: nowInSaoPaulo, dateStr: `${year}-${month}-${day}` };
+};
+
+const withEvoRetry = async (fn, retries = 3, baseDelayMs = 1500) => {
+    let lastError;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            return await fn();
+        } catch (err) {
+            lastError = err;
+            if (attempt < retries) {
+                await new Promise(resolve => setTimeout(resolve, baseDelayMs * attempt));
+            }
+        }
+    }
+    throw lastError;
+};
+
+const fetchEvoEntriesRange = async (apiClientV1, startDateStr, endDateStr) => {
+    const TAKE = 500;
+    const MAX_PAGES = 6;
+    const allEntries = [];
+    let lastSignature = null;
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+        const skip = page * TAKE;
+        const response = await withEvoRetry(() => apiClientV1.get("/entries", {
+            params: {
+                registerDateStart: `${startDateStr}T00:00:00Z`,
+                registerDateEnd: `${endDateStr}T23:59:59Z`,
+                take: TAKE,
+                skip
+            },
+            timeout: 8000
+        }), 2, 1000);
+
+        const raw = response.data || [];
+        const list = Array.isArray(raw) ? raw : (raw.entries || raw.results || raw.data || []);
+        if (!Array.isArray(list) || list.length === 0) break;
+
+        const firstSig = `${list[0]?.idEntry || ''}_${list[0]?.idMember || ''}_${list.length}`;
+        if (firstSig === lastSignature) break;
+        lastSignature = firstSig;
+
+        allEntries.push(...list);
+        if (list.length < TAKE) break;
+    }
+
+    const uniqueMemberIds = new Set();
+    allEntries.forEach(entry => {
+        if (entry && entry.idMember !== undefined && entry.idMember !== null) {
+            uniqueMemberIds.add(String(entry.idMember));
+        }
+    });
+
+    return { totalEntries: allEntries.length, uniqueMemberIds };
+};
+
 /**
- * Atualiza as entradas (check-ins) ao vivo de hoje de todas as unidades no Firestore.
+ * Atualiza as entradas (check-ins de hoje e dos últimos 7 dias) ao vivo de todas as unidades no Firestore.
  */
-exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => {
+exports.refreshLiveEvoEntries = functions.runWith({ timeoutSeconds: 180, memory: '512MB' }).https.onCall(async (data, context) => {
     if (!context.auth) {
         throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado.");
     }
 
-    const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    const year = nowInSaoPaulo.getFullYear();
-    const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
-    const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
-
-    const registerDateStart = `${todayStr}T00:00:00Z`;
-    const registerDateEnd = `${todayStr}T23:59:59Z`;
+    const { dateStr: todayStr } = getSaoPauloDateInfo(0);
+    const { dateStr: weekStartStr } = getSaoPauloDateInfo(6);
 
     let grandTotalEntries = 0;
+    let grandTotalWeeklyUnique = 0;
     let grandTotalActiveContracts = 0;
     const unitResults = {};
 
-    const promises = Object.entries(EVO_CREDENTIALS).map(async ([unitId, creds]) => {
+    const promises = Object.entries(EVO_CREDENTIALS).map(async ([unitId]) => {
         try {
             const apiClientV1 = getEvoApiClient(unitId, 'v1');
             const apiClientV2 = getEvoApiClient(unitId, 'v2');
 
-            // 1. Presenças Hoje (v1 /entries)
-            const entriesRes = await apiClientV1.get("/entries", {
-                params: { registerDateStart, registerDateEnd, take: 1000 },
-                timeout: 5000
-            });
-            const entries = entriesRes.data || [];
-            const entriesCount = Array.isArray(entries) ? entries.length : 0;
+            // 1. Presenças Hoje e Últimos 7 dias (v1 /entries)
+            const [todayData, weeklyData] = await Promise.all([
+                fetchEvoEntriesRange(apiClientV1, todayStr, todayStr),
+                fetchEvoEntriesRange(apiClientV1, weekStartStr, todayStr).catch(err => {
+                    functions.logger.warn(`Erro ao buscar entradas semanais para ${unitId}:`, err.message);
+                    return null;
+                })
+            ]);
+
+            const entriesCount = todayData.totalEntries;
+            const todayUniqueCount = todayData.uniqueMemberIds.size;
+            const weeklyMemberIds = weeklyData ? Array.from(weeklyData.uniqueMemberIds) : Array.from(todayData.uniqueMemberIds);
 
             // 2. Contratos Ativos (v2 /members?status=1 via cabeçalho 'total')
             let unitActiveContracts = 0;
             try {
-                const membersRes = await apiClientV2.get("/members", {
+                const membersRes = await withEvoRetry(() => apiClientV2.get("/members", {
                     params: { status: 1, take: 1 },
-                    timeout: 5000
-                });
+                    timeout: 8000
+                }), 2, 1000);
                 const totalHeader = membersRes.headers['total'] || membersRes.headers['x-total-count'];
                 if (totalHeader !== undefined && totalHeader !== null) {
                     unitActiveContracts = parseInt(totalHeader, 10);
@@ -2027,11 +2093,20 @@ exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => 
                 functions.logger.warn(`Erro ao buscar contratos ativos para ${unitId}:`, e.message);
             }
 
-            unitResults[unitId] = { entriesCount, unitActiveContracts };
+            unitResults[unitId] = {
+                entriesCount,
+                todayUniqueCount,
+                weeklyEntries: weeklyMemberIds.length,
+                unitActiveContracts
+            };
 
             const docData = {
-                todayEntries: entriesCount,
+                todayEntries: todayUniqueCount || entriesCount,
+                todayTotalPassages: entriesCount,
                 todayDate: todayStr,
+                weeklyEntries: weeklyMemberIds.length,
+                weeklyMemberIds,
+                weeklyRangeStart: weekStartStr,
                 lastEntriesCheck: admin.firestore.FieldValue.serverTimestamp()
             };
             if (unitActiveContracts > 0) {
@@ -2040,7 +2115,7 @@ exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => 
 
             await db.collection('evo_sync_status').doc(unitId).set(docData, { merge: true });
 
-            return { unitId, entriesCount, unitActiveContracts };
+            return { unitId, entriesCount: todayUniqueCount || entriesCount, weeklyEntries: weeklyMemberIds.length, unitActiveContracts };
         } catch (err) {
             functions.logger.warn(`Erro ao atualizar dados ao vivo para ${unitId}:`, err.message);
             return { unitId, error: err.message };
@@ -2051,15 +2126,18 @@ exports.refreshLiveEvoEntries = functions.https.onCall(async (data, context) => 
     results.forEach(r => {
         if (r.status === 'fulfilled' && r.value) {
             if (r.value.entriesCount !== undefined) grandTotalEntries += r.value.entriesCount;
+            if (r.value.weeklyEntries !== undefined) grandTotalWeeklyUnique += r.value.weeklyEntries;
             if (r.value.unitActiveContracts !== undefined) grandTotalActiveContracts += r.value.unitActiveContracts;
         }
     });
 
     return {
         totalTodayEntries: grandTotalEntries,
+        totalWeeklyEntries: grandTotalWeeklyUnique,
         totalActiveContracts: grandTotalActiveContracts,
         unitResults,
-        todayDate: todayStr
+        todayDate: todayStr,
+        weekStartDate: weekStartStr
     };
 });
 
@@ -2103,35 +2181,61 @@ const _snapshotDailyEvoData = async () => {
     functions.logger.info("Iniciando snapshot diário de dados do EVO...");
     const db = admin.firestore();
 
-    const nowInSaoPaulo = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    const year = nowInSaoPaulo.getFullYear();
-    const month = String(nowInSaoPaulo.getMonth() + 1).padStart(2, '0');
-    const day = String(nowInSaoPaulo.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
+    const { dateObj: nowInSaoPaulo, dateStr: today } = getSaoPauloDateInfo(0);
+    const { dateStr: weekStart } = getSaoPauloDateInfo(6);
 
     const getUnitData = async (id) => {
+        let contractsCount = 0;
+        let dailyActivesCount = 0;
+        let weeklyActivesCount = 0;
+        let usedFallback = false;
+
         try {
             const apiClientV2 = getEvoApiClient(id, 'v2');
-            const contractsResponse = await apiClientV2.get("/members", { params: { status: 1, take: 1 } });
-            const contractsCount = parseInt(contractsResponse.headers['total'] || '0', 10);
-
-            const apiClientV1 = getEvoApiClient(id, 'v1');
-            const entriesResponse = await apiClientV1.get("/entries", {
-                params: {
-                    registerDateStart: `${today}T00:00:00Z`,
-                    registerDateEnd: `${today}T23:59:59Z`,
-                    take: 1000
-                }
-            });
-            const entriesData = entriesResponse.data || [];
-            const uniqueMemberIds = Array.isArray(entriesData) ? new Set(entriesData.map(entry => entry.idMember)) : new Set();
-            const dailyActivesCount = uniqueMemberIds.size;
-
-            return { id, contractsCount, dailyActivesCount };
+            const contractsResponse = await withEvoRetry(
+                () => apiClientV2.get("/members", { params: { status: 1, take: 1 }, timeout: 9000 }),
+                3,
+                1500
+            );
+            const totalHeader = contractsResponse.headers['total'] || contractsResponse.headers['x-total-count'];
+            contractsCount = parseInt(totalHeader || '0', 10);
         } catch (error) {
-            functions.logger.error(`Erro ao buscar dados para snapshot da unidade '${id}':`, error.message);
-            return { id, contractsCount: 0, dailyActivesCount: 0 };
+            functions.logger.error(`Erro ao buscar contratos para snapshot da unidade '${id}' após retries:`, error.message);
         }
+
+        // Blindagem: se a API EVO falhar ou retornar 0, usa último valor válido salvo em evo_sync_status
+        if (!contractsCount || contractsCount === 0) {
+            try {
+                const statusSnap = await db.collection('evo_sync_status').doc(id).get();
+                if (statusSnap.exists) {
+                    const cachedContracts = Number(statusSnap.data().activeStudents || 0);
+                    if (cachedContracts > 0) {
+                        contractsCount = cachedContracts;
+                        usedFallback = true;
+                        functions.logger.warn(`[SNAPSHOT] Usando fallback (${cachedContracts} contratos) para unidade '${id}'.`);
+                    }
+                }
+            } catch (fbErr) {
+                functions.logger.warn(`Erro ao ler fallback de evo_sync_status para '${id}':`, fbErr.message);
+            }
+        }
+
+        try {
+            const apiClientV1 = getEvoApiClient(id, 'v1');
+            const [todayData, weeklyData] = await Promise.all([
+                fetchEvoEntriesRange(apiClientV1, today, today),
+                fetchEvoEntriesRange(apiClientV1, weekStart, today).catch(err => {
+                    functions.logger.warn(`[SNAPSHOT] Erro nas entradas semanais da unidade '${id}':`, err.message);
+                    return null;
+                })
+            ]);
+            dailyActivesCount = todayData.uniqueMemberIds.size;
+            weeklyActivesCount = weeklyData ? weeklyData.uniqueMemberIds.size : dailyActivesCount;
+        } catch (error) {
+            functions.logger.error(`Erro ao buscar entradas para snapshot da unidade '${id}':`, error.message);
+        }
+
+        return { id, contractsCount, dailyActivesCount, weeklyActivesCount, usedFallback };
     };
 
     try {
@@ -2142,12 +2246,15 @@ const _snapshotDailyEvoData = async () => {
         let snapshotData = results.reduce((acc, result) => {
             acc.units[result.id] = {
                 contracts: result.contractsCount,
-                dailyActives: result.dailyActivesCount
+                dailyActives: result.dailyActivesCount,
+                weeklyActives: result.weeklyActivesCount,
+                ...(result.usedFallback ? { contractsFromFallback: true } : {})
             };
             acc.totalContracts += result.contractsCount;
             acc.totalDailyActives += result.dailyActivesCount;
+            acc.totalWeeklyActives += result.weeklyActivesCount;
             return acc;
-        }, { totalContracts: 0, totalDailyActives: 0, units: {} });
+        }, { totalContracts: 0, totalDailyActives: 0, totalWeeklyActives: 0, units: {} });
 
         // Buscar dados de vendas da loja para o dia
         const todayStart = new Date(nowInSaoPaulo);
@@ -2167,26 +2274,28 @@ const _snapshotDailyEvoData = async () => {
         const totalSales = sales.length;
         const totalRevenue = sales.reduce((acc, sale) => acc + (sale.amountTotal || 0), 0);
 
-        // Calcula a receita por unidade
-        const revenueByUnit = sales.reduce((acc, sale) => {
+        // Calcula a receita e a quantidade de vendas por unidade
+        const revenueByUnit = {};
+        const salesCountByUnit = {};
+        sales.forEach(sale => {
             const unitId = sale.userUnit || 'desconhecida';
-            if (!acc[unitId]) {
-                acc[unitId] = 0;
-            }
-            acc[unitId] += sale.amountTotal || 0;
-            return acc;
-        }, {});
+            revenueByUnit[unitId] = (revenueByUnit[unitId] || 0) + (sale.amountTotal || 0);
+            salesCountByUnit[unitId] = (salesCountByUnit[unitId] || 0) + 1;
+        });
 
-        // Adiciona a receita da loja a cada unidade no snapshot
+        // Adiciona a receita e as vendas da loja a cada unidade no snapshot
         for (const unitId in revenueByUnit) {
             if (snapshotData.units[unitId]) {
                 snapshotData.units[unitId].storeRevenue = revenueByUnit[unitId];
+                snapshotData.units[unitId].storeSales = salesCountByUnit[unitId] || 0;
             } else {
                 // Caso a unidade da venda não exista na lista de unidades EVO (ex: 'store')
                 snapshotData.units[unitId] = {
                     contracts: 0,
                     dailyActives: 0,
-                    storeRevenue: revenueByUnit[unitId]
+                    weeklyActives: 0,
+                    storeRevenue: revenueByUnit[unitId],
+                    storeSales: salesCountByUnit[unitId] || 0
                 };
             }
         }
