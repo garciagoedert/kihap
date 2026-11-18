@@ -99,6 +99,7 @@ function RootLayoutNav() {
       <Stack.Screen name="atividades" options={{ headerShown: false }} />
       <Stack.Screen name="littles" options={{ headerShown: false }} />
       <Stack.Screen name="player" options={{ headerShown: false }} />
+      <Stack.Screen name="intranet/aluno/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
     </Stack>
   );

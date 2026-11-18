@@ -1,15 +1,23 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { onAuthStateChanged, User, signInWithCustomToken } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db, functions } from '../services/firebase';
 import { doc, onSnapshot, query, collection, where, documentId } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { trackAppAccess } from '../services/analytics';
+import { hasIntranetAccess } from '../utils/intranetPermissions';
+
+export type AppMode = 'student' | 'intranet';
+const APP_MODE_STORAGE_KEY = '@kihap:app_mode';
 
 interface AuthContextType {
   user: User | null;
   userData: any | null;
   loading: boolean;
   linkedProfiles: any[];
+  appMode: AppMode;
+  canUseIntranet: boolean;
+  setAppMode: (mode: AppMode) => Promise<void>;
   switchProfile: (targetUid: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -19,6 +27,9 @@ const AuthContext = createContext<AuthContextType>({
   userData: null,
   loading: true,
   linkedProfiles: [],
+  appMode: 'student',
+  canUseIntranet: false,
+  setAppMode: async () => {},
   switchProfile: async () => {},
   signOut: async () => {},
 });
@@ -28,6 +39,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userData, setUserData] = useState<any | null>(null);
   const [linkedProfiles, setLinkedProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [storedAppMode, setStoredAppMode] = useState<AppMode>('student');
+
+  useEffect(() => {
+    AsyncStorage.getItem(APP_MODE_STORAGE_KEY)
+      .then((saved) => {
+        if (saved === 'intranet' || saved === 'student') {
+          setStoredAppMode(saved);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const canUseIntranet = useMemo(() => hasIntranetAccess(userData), [userData]);
+  const appMode: AppMode = canUseIntranet ? storedAppMode : 'student';
+
+  const setAppMode = useCallback(async (mode: AppMode) => {
+    const nextMode: AppMode = canUseIntranet ? mode : 'student';
+    setStoredAppMode(nextMode);
+    try {
+      await AsyncStorage.setItem(APP_MODE_STORAGE_KEY, nextMode);
+    } catch (e) {
+      console.warn('Erro ao salvar appMode no AsyncStorage:', e);
+    }
+  }, [canUseIntranet]);
 
   useEffect(() => {
     console.log("Auth: Provider useEffect started.");
@@ -189,7 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, userData, loading, linkedProfiles, switchProfile, signOut: signOutUser }}>
+    <AuthContext.Provider value={{ user, userData, loading, linkedProfiles, appMode, canUseIntranet, setAppMode, switchProfile, signOut: signOutUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,6 +6,7 @@ import { db } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import FeedCard from '../../src/components/FeedCard';
 import BannerCarousel from '../../src/components/BannerCarousel';
+import { SidebarModeSwitcher } from '../../src/components/IntranetModeBar';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { Menu, X, Home, Layout, MessageSquare, BookOpen, UserCheck, Activity, ShoppingBag, CreditCard, Star, LogOut, Calendar, Clock, Send, Sparkles, Panda } from 'lucide-react-native';
@@ -438,6 +439,7 @@ export default function FeedScreen() {
                     </ScrollView>
                   </View>
                 )}
+                <SidebarModeSwitcher onAfterSwitch={() => setSidebarOpen(false)} />
               </View>
 
               <ScrollView className="flex-1 p-4">
