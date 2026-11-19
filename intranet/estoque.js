@@ -591,17 +591,29 @@ export async function setupEstoquePage() {
                 sizes: cdData.sizes || {}
             };
 
-            // Recalculate total product stock
+            // Recalculate total product stock and aggregated size stock
             let newTotalStock = 0;
+            const aggregatedSizeStock = {};
             Object.values(cdStock).forEach(cd => {
                 newTotalStock += (cd.total || 0);
+                if (cd.sizes && typeof cd.sizes === 'object') {
+                    Object.entries(cd.sizes).forEach(([sz, q]) => {
+                        aggregatedSizeStock[sz] = (aggregatedSizeStock[sz] || 0) + (parseInt(q, 10) || 0);
+                    });
+                }
             });
 
-            await updateDoc(productRef, {
+            const updatePayload = {
                 cdStock: cdStock,
                 stockQuantity: newTotalStock,
-                controlStock: true
-            });
+                controlStock: true,
+                available: newTotalStock > 0
+            };
+            if (pData.hasSizes || Object.keys(aggregatedSizeStock).length > 0) {
+                updatePayload.sizeStock = aggregatedSizeStock;
+            }
+
+            await updateDoc(productRef, updatePayload);
 
             // Log movement
             await addDoc(collection(db, 'stock_movements'), {

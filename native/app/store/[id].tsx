@@ -12,7 +12,14 @@ const { width } = Dimensions.get('window');
 
 import { useCart } from '../../src/context/CartContext';
 import { useAuth } from '../../src/context/AuthContext';
-import { getEffectiveProductPrice, getEffectiveVariantPrice, formatCentsToCurrency } from '../../src/utils/pricing';
+import {
+  getEffectiveProductPrice,
+  getEffectiveVariantPrice,
+  formatCentsToCurrency,
+  getProductTotalStock,
+  getProductSizeStock,
+  isProductAvailableForPurchase,
+} from '../../src/utils/pricing';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import SeatMapSelector, { getSeatSectorName } from '../../src/components/SeatMapSelector';
 
@@ -425,6 +432,11 @@ export default function ProductDetailScreen() {
   };
 
   const handleAddToCart = async () => {
+    if (!isProductAvailableForPurchase(product)) {
+      alert('Este produto está esgotado ou indisponível no momento.');
+      return;
+    }
+
     const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
       ? selectedLocation.extraTicketPrice
       : (product.extraTicketPrice || 0);
@@ -434,6 +446,46 @@ export default function ProductDetailScreen() {
       if (allSelectedSeats.length === 0) {
         alert('Por favor, selecione pelo menos uma cadeira no mapa para os ingressos de acompanhante.');
         return;
+      }
+    }
+
+    if (product.controlStock) {
+      const totalStock = getProductTotalStock(product);
+      const physicalRequested = isGraduation
+        ? (purchaseMode === 'full' ? 1 : 0)
+        : participants.length;
+
+      if (physicalRequested > 0 && (totalStock <= 0 || physicalRequested > totalStock)) {
+        alert(
+          totalStock <= 0
+            ? 'Este produto está esgotado no estoque.'
+            : `Estoque insuficiente. Disponível: ${totalStock} unidade(s).`
+        );
+        return;
+      }
+
+      if (product.hasSizes) {
+        const sizeDemand: Record<string, { display: string; qty: number }> = {};
+        participants.forEach((p, idx) => {
+          const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
+          if (!isExtra && p.userSize) {
+            const raw = String(p.userSize).trim();
+            const key = raw.toLowerCase();
+            if (!sizeDemand[key]) sizeDemand[key] = { display: raw, qty: 0 };
+            sizeDemand[key].qty += 1;
+          }
+        });
+        for (const req of Object.values(sizeDemand)) {
+          const sizeAvail = getProductSizeStock(product, req.display);
+          if (sizeAvail !== null && req.qty > sizeAvail) {
+            alert(
+              sizeAvail <= 0
+                ? `O tamanho "${req.display}" deste produto está esgotado.`
+                : `Estoque insuficiente para o tamanho "${req.display}". Disponível: ${sizeAvail} unidade(s).`
+            );
+            return;
+          }
+        }
       }
     }
 
@@ -632,6 +684,10 @@ export default function ProductDetailScreen() {
     );
   }
 
+  const controlsStock = Boolean(product.controlStock);
+  const totalAvailableStock = controlsStock ? getProductTotalStock(product) : 0;
+  const isProductUnavailable = !isProductAvailableForPurchase(product);
+
   const effective = getEffectiveProductPrice(product, userData);
   let priceText = '';
   let originalPriceText = '';
@@ -729,6 +785,19 @@ export default function ProductDetailScreen() {
                 </View>
               )}
             </View>
+            {isProductUnavailable ? (
+              <View className="mt-2 self-start bg-red-500/15 px-3 py-1.5 rounded-xl border border-red-500/30">
+                <Text className="text-xs font-black text-red-600 dark:text-red-400 uppercase tracking-wider">
+                  Produto Esgotado / Indisponível
+                </Text>
+              </View>
+            ) : controlsStock ? (
+              <Text className={`text-xs font-bold mt-1.5 ${totalAvailableStock <= 10 ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                {totalAvailableStock <= 10
+                  ? `Últimas ${totalAvailableStock} unidade(s) em estoque`
+                  : `${totalAvailableStock} unidades em estoque`}
+              </Text>
+            ) : null}
           </View>
 
           <View className="h-[1px] bg-gray-100 dark:bg-white/5 w-full mb-6" />
@@ -1330,15 +1399,45 @@ export default function ProductDetailScreen() {
                     <View>
                       <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Tamanho</Text>
                       <View className="flex-row flex-wrap">
-                        {product.sizes.map((size: string) => (
-                          <TouchableOpacity 
-                            key={size}
-                            onPress={() => updateParticipant(index, { userSize: size })}
-                            className={`mr-2 mb-2 px-4 py-2 rounded-xl border ${participant.userSize === size ? 'bg-[#014fa4] border-[#014fa4]' : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'}`}
-                          >
-                            <Text className={`text-xs font-bold ${participant.userSize === size ? 'text-white' : 'text-gray-500'}`}>{size}</Text>
-                          </TouchableOpacity>
-                        ))}
+                        {product.sizes.map((size: string) => {
+                          const sizeQty = controlsStock ? getProductSizeStock(product, size) : null;
+                          const isSizeSoldOut = controlsStock && sizeQty !== null && sizeQty <= 0;
+                          const isSelectedSize = participant.userSize === size;
+                          const labelSuffix =
+                            sizeQty === null
+                              ? ''
+                              : sizeQty <= 0
+                                ? ' (Esgotado)'
+                                : sizeQty <= 5
+                                  ? ` (${sizeQty} rest.)`
+                                  : '';
+                          return (
+                            <TouchableOpacity
+                              key={size}
+                              disabled={isSizeSoldOut}
+                              onPress={() => updateParticipant(index, { userSize: size })}
+                              className={`mr-2 mb-2 px-4 py-2 rounded-xl border ${
+                                isSizeSoldOut
+                                  ? 'bg-gray-100 dark:bg-[#111] border-red-200 dark:border-red-900/30 opacity-45'
+                                  : isSelectedSize
+                                    ? 'bg-[#014fa4] border-[#014fa4]'
+                                    : 'bg-white dark:bg-[#1a1a1a] border-gray-100 dark:border-white/10'
+                              }`}
+                            >
+                              <Text
+                                className={`text-xs font-bold ${
+                                  isSizeSoldOut
+                                    ? 'text-red-500 line-through'
+                                    : isSelectedSize
+                                      ? 'text-white'
+                                      : 'text-gray-500'
+                                }`}
+                              >
+                                {size}{labelSuffix}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
                     </View>
                   )}
@@ -1467,8 +1566,12 @@ export default function ProductDetailScreen() {
               </TouchableOpacity>
               <Text className="px-4 text-lg font-black text-gray-900 dark:text-white">{quantity}</Text>
               <TouchableOpacity 
-                onPress={() => setQuantity(q => q + 1)}
-                className="w-10 h-10 items-center justify-center"
+                onPress={() => {
+                  if (controlsStock && quantity >= totalAvailableStock) return;
+                  setQuantity(q => q + 1);
+                }}
+                disabled={controlsStock && quantity >= totalAvailableStock}
+                className={`w-10 h-10 items-center justify-center ${controlsStock && quantity >= totalAvailableStock ? 'opacity-30' : ''}`}
               >
                 <Plus size={18} color={isDark ? '#fff' : '#000'} />
               </TouchableOpacity>
@@ -1493,12 +1596,20 @@ export default function ProductDetailScreen() {
 
         <TouchableOpacity 
           onPress={handleAddToCart}
-          disabled={lockingSeats}
-          className="bg-[#014fa4] py-5 rounded-2xl items-center justify-center flex-row shadow-lg shadow-blue-500/20"
+          disabled={lockingSeats || isProductUnavailable}
+          className={`py-5 rounded-2xl items-center justify-center flex-row shadow-lg ${
+            isProductUnavailable
+              ? 'bg-gray-400 dark:bg-gray-700'
+              : 'bg-[#014fa4] shadow-blue-500/20'
+          }`}
           activeOpacity={0.8}
         >
           {lockingSeats ? (
             <ActivityIndicator size="small" color="#fff" />
+          ) : isProductUnavailable ? (
+            <Text className="text-white font-black uppercase tracking-widest">
+              Produto Esgotado
+            </Text>
           ) : (
             <>
               <ShoppingCart size={20} color="#fff" strokeWidth={3} />

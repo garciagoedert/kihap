@@ -160,8 +160,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update grid to be more compact (4 columns on larger screens)
         productsGrid.className = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6";
 
+        const getEffectiveProductTotalStock = (product) => {
+            if (!product) return 0;
+            if (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0) return 0;
+            if (product.hasSizes && product.sizeStock && typeof product.sizeStock === 'object' && Object.keys(product.sizeStock).length > 0) {
+                const sizeSum = Object.values(product.sizeStock).reduce((sum, q) => sum + Math.max(0, Number(q) || 0), 0);
+                return typeof product.stockQuantity === 'number' ? Math.min(product.stockQuantity, sizeSum) : sizeSum;
+            }
+            if (typeof product.stockQuantity === 'number') return Math.max(0, product.stockQuantity);
+            if (product.cdStock && typeof product.cdStock === 'object' && Object.keys(product.cdStock).length > 0) {
+                return Object.values(product.cdStock).reduce((sum, cd) => sum + Math.max(0, Number(cd?.total) || 0), 0);
+            }
+            return 0;
+        };
+
         products.forEach(product => {
-            const isAvailable = product.available !== false;
+            const hasExpired = product.availabilityDate && new Date() > new Date(product.availabilityDate);
+            const hasStock = !product.controlStock || getEffectiveProductTotalStock(product) > 0;
+            const isAvailable = product.available !== false && !hasExpired && hasStock;
             const price = (product.price / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             
             const productCard = `

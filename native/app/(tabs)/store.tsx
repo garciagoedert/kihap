@@ -12,7 +12,7 @@ import { BannerCarousel } from '../../src/components/BannerCarousel';
 import { useAuth } from '../../src/context/AuthContext';
 import { useCart } from '../../src/context/CartContext';
 import { isTargetForUser, getUserUnitSlugs } from './index';
-import { getEffectiveProductPrice, formatCentsToCurrency } from '../../src/utils/pricing';
+import { getEffectiveProductPrice, formatCentsToCurrency, isProductAvailableForPurchase } from '../../src/utils/pricing';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -191,7 +191,7 @@ export default function StoreScreen() {
   };
 
   const renderProduct = ({ item }: { item: any }) => {
-    const isAvailable = item.available !== false;
+    const isAvailable = isProductAvailableForPurchase(item);
     const effective = getEffectiveProductPrice(item, userData);
     const price = formatCentsToCurrency(effective.price);
     const hasDiscount = (effective.isStaffPrice || (effective.promoPrice && effective.promoPrice < effective.basePrice)) && effective.basePrice > effective.price;

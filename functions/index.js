@@ -973,6 +973,184 @@ function getNotificationUrl(functionName, accountId = null) {
 }
 
 
+function getEffectiveSizeStockMap(product) {
+    const rootSizes = {};
+    let rootSum = 0;
+    if (product && product.sizeStock && typeof product.sizeStock === 'object') {
+        for (const [k, v] of Object.entries(product.sizeStock)) {
+            if (v !== undefined && v !== null) {
+                const qty = Math.max(0, Number(v) || 0);
+                rootSizes[k] = qty;
+                rootSum += qty;
+            }
+        }
+    }
+
+    const cdSizes = {};
+    let cdTotalSum = 0;
+    let cdHasSizes = false;
+    if (product && product.cdStock && typeof product.cdStock === 'object') {
+        for (const cd of Object.values(product.cdStock)) {
+            cdTotalSum += Math.max(0, Number(cd && cd.total) || 0);
+            if (cd && cd.sizes && typeof cd.sizes === 'object') {
+                for (const [k, v] of Object.entries(cd.sizes)) {
+                    cdHasSizes = true;
+                    cdSizes[k] = (cdSizes[k] || 0) + Math.max(0, Number(v) || 0);
+                }
+            }
+        }
+    }
+
+    if (cdHasSizes && (Object.keys(rootSizes).length === 0 || (typeof product.stockQuantity === 'number' && cdTotalSum === product.stockQuantity && rootSum !== cdTotalSum))) {
+        return cdSizes;
+    }
+    return rootSizes;
+}
+
+function getEffectiveTotalStock(product) {
+    if (!product) return 0;
+    if (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0) {
+        return 0;
+    }
+    const sizeMap = getEffectiveSizeStockMap(product);
+    if (product.hasSizes && Object.keys(sizeMap).length > 0) {
+        const sizeSum = Object.values(sizeMap).reduce((sum, q) => sum + Math.max(0, Number(q) || 0), 0);
+        if (typeof product.stockQuantity === 'number') {
+            return Math.min(product.stockQuantity, sizeSum);
+        }
+        return sizeSum;
+    }
+    if (typeof product.stockQuantity === 'number') {
+        return Math.max(0, product.stockQuantity);
+    }
+    if (product.cdStock && typeof product.cdStock === 'object' && Object.keys(product.cdStock).length > 0) {
+        return Object.values(product.cdStock).reduce((sum, cd) => sum + Math.max(0, Number(cd && cd.total) || 0), 0);
+    }
+    return 0;
+}
+
+function getEffectiveSizeQty(product, size) {
+    if (!size) return null;
+    const sizeMap = getEffectiveSizeStockMap(product);
+    if (Object.keys(sizeMap).length === 0) return null;
+    if (sizeMap[size] !== undefined) return Number(sizeMap[size]) || 0;
+    const targetLower = String(size).trim().toLowerCase();
+    for (const [k, v] of Object.entries(sizeMap)) {
+        if (String(k).trim().toLowerCase() === targetLower) {
+            return Number(v) || 0;
+        }
+    }
+    return 0;
+}
+
+async function validateCartStock(cartItems) {
+    if (!Array.isArray(cartItems) || cartItems.length === 0) {
+        throw new Error('O carrinho está vazio.');
+    }
+
+    const productDocsCache = new Map();
+    const getCachedProduct = async (productId) => {
+        if (!productId) return null;
+        if (!productDocsCache.has(productId)) {
+            const snap = await db.collection('products').doc(productId).get();
+            productDocsCache.set(productId, snap.exists ? { id: snap.id, ...snap.data() } : null);
+        }
+        return productDocsCache.get(productId);
+    };
+
+    const demandByProduct = new Map();
+    const addDemand = (productId, size, qty, fallbackName) => {
+        if (!productId || qty <= 0) return;
+        if (!demandByProduct.has(productId)) {
+            demandByProduct.set(productId, { total: 0, bySize: new Map(), fallbackName: fallbackName || productId });
+        }
+        const entry = demandByProduct.get(productId);
+        entry.total += qty;
+        if (size && String(size).trim() !== '') {
+            const rawSize = String(size).trim();
+            const normSize = rawSize.toLowerCase();
+            const prev = entry.bySize.get(normSize) || { display: rawSize, qty: 0 };
+            prev.qty += qty;
+            entry.bySize.set(normSize, prev);
+        }
+    };
+
+    for (const cartItem of cartItems) {
+        if (!cartItem || !cartItem.productId) continue;
+        const productData = await getCachedProduct(cartItem.productId);
+        const forms = (Array.isArray(cartItem.formDataList) && cartItem.formDataList.length > 0)
+            ? cartItem.formDataList
+            : [{}];
+
+        for (const itemFormData of forms) {
+            if (itemFormData && itemFormData.isExtraTicket === true) {
+                continue;
+            }
+            const itemSize = (itemFormData && (itemFormData.userSize || itemFormData.size)) || null;
+            addDemand(cartItem.productId, itemSize, 1, cartItem.productName || cartItem.name);
+
+            if (productData && productData.priceType === 'kit' && Array.isArray(productData.kitItems)) {
+                const kitSel = itemFormData && itemFormData.kitSelections ? itemFormData.kitSelections : null;
+                for (const kItem of productData.kitItems) {
+                    if (kItem && kItem.productId) {
+                        const kQty = Math.max(1, parseInt(kItem.quantity, 10) || 1);
+                        const chosenSize = (kitSel && (kitSel[kItem.productId] || kitSel[kItem.name])) || null;
+                        addDemand(kItem.productId, chosenSize, kQty, kItem.name);
+                    }
+                }
+            }
+        }
+
+        if (Array.isArray(cartItem.recommendedItems)) {
+            for (const rec of cartItem.recommendedItems) {
+                if (rec && rec.productId) {
+                    const rQty = Math.max(1, parseInt(rec.quantity, 10) || 1);
+                    addDemand(rec.productId, rec.size || rec.userSize || null, rQty, rec.productName);
+                }
+            }
+        }
+    }
+
+    for (const [productId, demand] of demandByProduct.entries()) {
+        const product = await getCachedProduct(productId);
+        if (!product) {
+            throw new Error(`Produto "${demand.fallbackName}" não encontrado.`);
+        }
+        const prodName = product.name || demand.fallbackName;
+
+        if (product.available === false) {
+            throw new Error(`O produto "${prodName}" está esgotado ou indisponível no momento.`);
+        }
+        if (product.availabilityDate && new Date() > new Date(product.availabilityDate)) {
+            throw new Error(`O prazo de compra para "${prodName}" já foi encerrado.`);
+        }
+
+        if (product.controlStock) {
+            const totalAvail = getEffectiveTotalStock(product);
+            if (totalAvail <= 0) {
+                throw new Error(`O produto "${prodName}" está esgotado no estoque.`);
+            }
+            if (demand.total > totalAvail) {
+                throw new Error(`Estoque insuficiente para "${prodName}". Disponível: ${totalAvail} unidade(s).`);
+            }
+
+            if (product.hasSizes && demand.bySize.size > 0) {
+                for (const [, sizeReq] of demand.bySize.entries()) {
+                    const sizeAvail = getEffectiveSizeQty(product, sizeReq.display);
+                    if (sizeAvail !== null) {
+                        if (sizeAvail <= 0) {
+                            throw new Error(`O tamanho "${sizeReq.display}" do produto "${prodName}" está esgotado.`);
+                        }
+                        if (sizeReq.qty > sizeAvail) {
+                            throw new Error(`Estoque insuficiente para o tamanho "${sizeReq.display}" de "${prodName}". Disponível: ${sizeAvail} unidade(s).`);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) => {
     console.log('[createCartCheckoutSession] Iniciando a execução.');
     res.set('Access-Control-Allow-Origin', '*');
@@ -986,6 +1164,13 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
     
     if (!cartItems || cartItems.length === 0 || totalAmount === undefined || !globalUserData) {
         return res.status(400).json({ error: 'Missing required fields: cartItems, globalUserData, totalAmount.' });
+    }
+
+    try {
+        await validateCartStock(cartItems);
+    } catch (stockErr) {
+        console.warn('[createCartCheckoutSession] Bloqueado por validação de estoque:', stockErr.message);
+        return res.status(400).json({ error: stockErr.message });
     }
 
     let finalTotalAmount = Number(totalAmount);
@@ -1278,6 +1463,13 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
 
     if (!cartItems || cartItems.length === 0 || !globalUserData) {
         return res.status(400).json({ error: 'Missing required fields: cartItems, globalUserData.' });
+    }
+
+    try {
+        await validateCartStock(cartItems);
+    } catch (stockErr) {
+        console.warn('[processCartFreePurchase] Bloqueado por validação de estoque:', stockErr.message);
+        return res.status(400).json({ error: stockErr.message });
     }
 
     try {

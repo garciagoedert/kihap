@@ -237,3 +237,104 @@ export function formatKitSelectionLines(form: any): string[] {
   }
   return [];
 }
+
+/**
+ * Retorna o mapa efetivo de estoque por tamanho, conciliando sizeStock e cdStock.
+ */
+export function getProductSizeStockMap(product: any): Record<string, number> {
+  const rootSizes: Record<string, number> = {};
+  let rootSum = 0;
+  if (product?.sizeStock && typeof product.sizeStock === 'object') {
+    for (const [k, v] of Object.entries(product.sizeStock)) {
+      if (v !== undefined && v !== null) {
+        const q = Math.max(0, Number(v) || 0);
+        rootSizes[k] = q;
+        rootSum += q;
+      }
+    }
+  }
+
+  const cdSizes: Record<string, number> = {};
+  let cdTotalSum = 0;
+  let cdHasSizes = false;
+  if (product?.cdStock && typeof product.cdStock === 'object') {
+    for (const cd of Object.values(product.cdStock) as any[]) {
+      cdTotalSum += Math.max(0, Number(cd?.total) || 0);
+      if (cd?.sizes && typeof cd.sizes === 'object') {
+        for (const [k, v] of Object.entries(cd.sizes)) {
+          cdHasSizes = true;
+          cdSizes[k] = (cdSizes[k] || 0) + Math.max(0, Number(v) || 0);
+        }
+      }
+    }
+  }
+
+  if (
+    cdHasSizes &&
+    (Object.keys(rootSizes).length === 0 ||
+      (typeof product?.stockQuantity === 'number' &&
+        cdTotalSum === product.stockQuantity &&
+        rootSum !== cdTotalSum))
+  ) {
+    return cdSizes;
+  }
+  return rootSizes;
+}
+
+/**
+ * Retorna o estoque total efetivo de um produto (0 quando zerado).
+ */
+export function getProductTotalStock(product: any): number {
+  if (!product) return 0;
+  if (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0) {
+    return 0;
+  }
+  const sizeMap = getProductSizeStockMap(product);
+  if (product.hasSizes && Object.keys(sizeMap).length > 0) {
+    const sizeSum = Object.values(sizeMap).reduce((sum, q) => sum + Math.max(0, Number(q) || 0), 0);
+    return typeof product.stockQuantity === 'number' ? Math.min(product.stockQuantity, sizeSum) : sizeSum;
+  }
+  if (typeof product.stockQuantity === 'number') {
+    return Math.max(0, product.stockQuantity);
+  }
+  if (product.cdStock && typeof product.cdStock === 'object' && Object.keys(product.cdStock).length > 0) {
+    return (Object.values(product.cdStock) as any[]).reduce(
+      (sum, cd) => sum + Math.max(0, Number(cd?.total) || 0),
+      0
+    );
+  }
+  return 0;
+}
+
+/**
+ * Retorna a quantidade em estoque para um tamanho específico (ou null quando não controla por tamanho).
+ */
+export function getProductSizeStock(product: any, size?: string | null): number | null {
+  if (!size) return null;
+  const sizeMap = getProductSizeStockMap(product);
+  if (Object.keys(sizeMap).length === 0) return null;
+  if (sizeMap[size] !== undefined) return Number(sizeMap[size]) || 0;
+  const lower = String(size).trim().toLowerCase();
+  for (const [k, v] of Object.entries(sizeMap)) {
+    if (String(k).trim().toLowerCase() === lower) {
+      return Number(v) || 0;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Determina se o produto está disponível para venda levando em conta available, data limite e controlStock.
+ */
+export function isProductAvailableForPurchase(product: any): boolean {
+  if (!product) return false;
+  if (product.available === false) return false;
+  if (product.availabilityDate && new Date() > new Date(product.availabilityDate)) {
+    return false;
+  }
+  if (product.controlStock && getProductTotalStock(product) <= 0) {
+    return false;
+  }
+  return true;
+}
+

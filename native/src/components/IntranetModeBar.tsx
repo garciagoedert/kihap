@@ -95,13 +95,13 @@ export function SidebarModeSwitcher({ onAfterSwitch }: { onAfterSwitch?: () => v
           />
           <Text
             numberOfLines={1}
-            className={`text-[11px] font-black tracking-tight ${
+            className={`text-xs font-black tracking-tight ${
               appMode === 'student'
                 ? 'text-gray-900 dark:text-white'
                 : 'text-gray-500 dark:text-gray-400'
             }`}
           >
-            Modo Aluno
+            Aluno
           </Text>
         </TouchableOpacity>
 
@@ -118,13 +118,13 @@ export function SidebarModeSwitcher({ onAfterSwitch }: { onAfterSwitch?: () => v
           />
           <Text
             numberOfLines={1}
-            className={`text-[11px] font-black tracking-tight ${
+            className={`text-xs font-black tracking-tight ${
               appMode === 'intranet'
                 ? 'text-black'
                 : 'text-gray-500 dark:text-gray-400'
             }`}
           >
-            Modo Intranet
+            Intranet
           </Text>
         </TouchableOpacity>
       </View>
@@ -295,7 +295,7 @@ export function IntranetScreenHeader({
                 >
                   <User size={20} color={isDark ? '#9ca3af' : '#4b5563'} />
                   <Text className="ml-4 text-[14px] font-bold text-gray-600 dark:text-gray-300">
-                    Meu Perfil (Modo Aluno)
+                    Meu Perfil
                   </Text>
                 </TouchableOpacity>
               </ScrollView>

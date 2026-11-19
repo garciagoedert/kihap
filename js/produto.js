@@ -3,6 +3,66 @@ import { doc, getDoc, collection, getDocs, query, where, onSnapshot } from "http
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 import { onAuthReady, getUserData } from '../members/js/auth.js';
 import { cart } from './cart.js';
+
+function getProductSizeStockMap(p) {
+    const rootSizes = {};
+    let rootSum = 0;
+    if (p?.sizeStock && typeof p.sizeStock === 'object') {
+        for (const [k, v] of Object.entries(p.sizeStock)) {
+            if (v !== undefined && v !== null) {
+                const q = Math.max(0, Number(v) || 0);
+                rootSizes[k] = q;
+                rootSum += q;
+            }
+        }
+    }
+    const cdSizes = {};
+    let cdTotalSum = 0;
+    let cdHasSizes = false;
+    if (p?.cdStock && typeof p.cdStock === 'object') {
+        for (const cd of Object.values(p.cdStock)) {
+            cdTotalSum += Math.max(0, Number(cd?.total) || 0);
+            if (cd?.sizes && typeof cd.sizes === 'object') {
+                for (const [k, v] of Object.entries(cd.sizes)) {
+                    cdHasSizes = true;
+                    cdSizes[k] = (cdSizes[k] || 0) + Math.max(0, Number(v) || 0);
+                }
+            }
+        }
+    }
+    if (cdHasSizes && (Object.keys(rootSizes).length === 0 || (typeof p?.stockQuantity === 'number' && cdTotalSum === p.stockQuantity && rootSum !== cdTotalSum))) {
+        return cdSizes;
+    }
+    return rootSizes;
+}
+
+function getProductTotalStock(p) {
+    if (!p) return 0;
+    if (typeof p.stockQuantity === 'number' && p.stockQuantity <= 0) return 0;
+    const sMap = getProductSizeStockMap(p);
+    if (p.hasSizes && Object.keys(sMap).length > 0) {
+        const sizeSum = Object.values(sMap).reduce((sum, q) => sum + Math.max(0, Number(q) || 0), 0);
+        return typeof p.stockQuantity === 'number' ? Math.min(p.stockQuantity, sizeSum) : sizeSum;
+    }
+    if (typeof p.stockQuantity === 'number') return Math.max(0, p.stockQuantity);
+    if (p.cdStock && typeof p.cdStock === 'object' && Object.keys(p.cdStock).length > 0) {
+        return Object.values(p.cdStock).reduce((sum, cd) => sum + Math.max(0, Number(cd?.total) || 0), 0);
+    }
+    return 0;
+}
+
+function getProductSizeStock(p, size) {
+    if (!size) return null;
+    const sizeMap = getProductSizeStockMap(p);
+    if (Object.keys(sizeMap).length === 0) return null;
+    if (sizeMap[size] !== undefined) return Number(sizeMap[size]) || 0;
+    const lower = String(size).trim().toLowerCase();
+    for (const [k, v] of Object.entries(sizeMap)) {
+        if (String(k).trim().toLowerCase() === lower) return Number(v) || 0;
+    }
+    return 0;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const stripe = Stripe('pk_live_51SL5wfCOKFM07tm8iVZ7c7tB8PEIoiczwTEAUoRhe4dXusoilvXxm4vkgmbrcnMdCrXnOiIpvc0nw6FBhxYbnryl00gTmK12WA');
 
@@ -141,14 +201,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (docSnap.exists()) {
                 productData = { id: docSnap.id, ...docSnap.data() };
 
-                const isAvailable = productData.available !== false; // Default to true if undefined
+                const isOutOfStock = Boolean(productData.controlStock && getProductTotalStock(productData) <= 0);
+                const isAvailable = productData.available !== false && !isOutOfStock;
                 const hasExpired = productData.availabilityDate && new Date() > new Date(productData.availabilityDate);
 
                 if (!isAvailable || hasExpired) {
                     productLoading.innerHTML = `
                         <div class="text-center">
-                            <h1 class="text-4xl font-bold mb-4">Produto Indisponível</h1>
-                            <p class="text-lg text-gray-400 mb-8">Este produto não está mais disponível para compra.</p>
+                            <h1 class="text-4xl font-bold mb-4">${isOutOfStock ? 'Produto Esgotado' : 'Produto Indisponível'}</h1>
+                            <p class="text-lg text-gray-400 mb-8">${isOutOfStock ? 'Este produto está temporariamente sem estoque.' : 'Este produto não está mais disponível para compra.'}</p>
                             <a href="/store.html" class="bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-600 transition">Voltar para a Loja</a>
                         </div>`;
                     productContent.classList.add('hidden');
@@ -269,23 +330,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (product.controlStock) {
             productStockDisplay.classList.remove('hidden');
-            if (product.hasSizes && product.sizeStock) {
-                const totalQty = Object.values(product.sizeStock).reduce((a, b) => a + b, 0);
-                if (totalQty <= 0) {
-                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">Esgotado</span>`;
-                } else if (totalQty <= 10) {
-                    productStockDisplay.innerHTML = `<span class="text-amber-400 font-bold"><i class="fas fa-fire mr-1"></i> Poucas unidades em estoque!</span>`;
-                } else {
-                    productStockDisplay.textContent = `Em Estoque`;
+            const totalQty = (typeof product.stockQuantity === 'number' && product.stockQuantity <= 0)
+                ? 0
+                : (product.hasSizes && product.sizeStock && Object.keys(product.sizeStock).length > 0
+                    ? Object.values(product.sizeStock).reduce((a, b) => a + (Number(b) || 0), 0)
+                    : (Number(product.stockQuantity) || 0));
+
+            if (totalQty <= 0) {
+                productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">Esgotado</span>`;
+                if (payButton) {
+                    payButton.disabled = true;
+                    payButton.textContent = 'Produto Esgotado';
                 }
-            } else if (product.stockQuantity !== undefined) {
-                if (product.stockQuantity <= 10 && product.stockQuantity > 0) {
-                    productStockDisplay.innerHTML = `<span class="text-amber-400 font-bold"><i class="fas fa-fire mr-1"></i> Últimas ${product.stockQuantity} unidades!</span>`;
-                } else if (product.stockQuantity > 0) {
-                    productStockDisplay.textContent = `${product.stockQuantity} em estoque`;
-                } else {
-                    productStockDisplay.innerHTML = `<span class="text-red-400 font-bold">Esgotado</span>`;
-                }
+            } else if (totalQty <= 10) {
+                productStockDisplay.innerHTML = `<span class="text-amber-400 font-bold"><i class="fas fa-fire mr-1"></i> Últimas ${totalQty} unidade(s)!</span>`;
+            } else {
+                productStockDisplay.textContent = `${totalQty} em estoque`;
             }
         } else {
             productStockDisplay.classList.remove('hidden');
@@ -1231,13 +1291,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     option.value = size;
                     
                     // If this product controls stock per size, mark out-of-stock sizes
-                    if (productData.controlStock && productData.hasSizes && productData.sizeStock) {
-                        const qty = productData.sizeStock[size] !== undefined ? productData.sizeStock[size] : 0;
-                        if (qty <= 0) {
+                    const effSizeQty = (productData.controlStock && productData.hasSizes)
+                        ? getProductSizeStock(productData, size)
+                        : null;
+                    if (effSizeQty !== null) {
+                        if (effSizeQty <= 0) {
                             option.disabled = true;
                             option.textContent = `${size} — Esgotado`;
-                        } else if (qty <= 5) {
-                            option.textContent = `${size} 🔥 (${qty} restante${qty === 1 ? '' : 's'})`;
+                        } else if (effSizeQty <= 5) {
+                            option.textContent = `${size} 🔥 (${effSizeQty} restante${effSizeQty === 1 ? '' : 's'})`;
                         } else {
                             option.textContent = size;
                         }
@@ -1248,11 +1310,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 // Show per-size stock when user selects a size
-                if (productData.controlStock && productData.sizeStock) {
+                if (productData.controlStock) {
                     sizeSelector.addEventListener('change', () => {
                         const selected = sizeSelector.value;
                         if (!selected) return;
-                        const qty = productData.sizeStock[selected] !== undefined ? productData.sizeStock[selected] : null;
+                        const qty = getProductSizeStock(productData, selected);
                         if (productStockDisplay && qty !== null) {
                             productStockDisplay.classList.remove('hidden');
                             if (qty <= 0) {
@@ -1482,6 +1544,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
         const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
+
+        // Validação de estoque antes de prosseguir
+        if (productData && productData.controlStock) {
+            const totalStock = getProductTotalStock(productData);
+
+            let requestedPhysicalCount = 0;
+            const requestedBySize = {};
+            formInstances.forEach((form, idx) => {
+                const isExtraTicket = hasExtraTicketMode ? (currentPurchaseMode === 'extra_only' || idx > 0) : false;
+                if (isExtraTicket) return;
+                requestedPhysicalCount += 1;
+                const sizeEl = form.querySelector('[name="size-selector"]');
+                const sizeContainer = form.querySelector('.size-selector-container');
+                if (sizeEl && sizeContainer && !sizeContainer.classList.contains('hidden') && sizeEl.value) {
+                    const sz = sizeEl.value.trim();
+                    requestedBySize[sz] = (requestedBySize[sz] || 0) + 1;
+                }
+            });
+
+            if (totalStock <= 0 || requestedPhysicalCount > totalStock) {
+                formStatus.textContent = totalStock <= 0
+                    ? 'Este produto está esgotado no estoque.'
+                    : `Estoque insuficiente. Disponível: ${totalStock} unidade(s).`;
+                formStatus.className = 'mt-6 text-center text-lg text-red-500 font-bold';
+                payButton.disabled = false;
+                return;
+            }
+
+            if (productData.hasSizes) {
+                for (const [sz, reqQty] of Object.entries(requestedBySize)) {
+                    const availSz = getProductSizeStock(productData, sz);
+                    if (availSz !== null && reqQty > availSz) {
+                        formStatus.textContent = availSz <= 0
+                            ? `O tamanho "${sz}" está esgotado.`
+                            : `Estoque insuficiente para o tamanho "${sz}". Disponível: ${availSz} unidade(s).`;
+                        formStatus.className = 'mt-6 text-center text-lg text-red-500 font-bold';
+                        payButton.disabled = false;
+                        return;
+                    }
+                }
+            }
+        }
 
         // Seat Map Validation & Locking
         if (productData.hasSeatMap) {
