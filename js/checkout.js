@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (item.formDataList && Array.isArray(item.formDataList)) {
                 item.formDataList.forEach(form => {
                     const priceData = form.priceData;
-                    const amount = priceData ? priceData.amount : (item.totalAmount / item.formDataList.length);
+                    const amount = (priceData && typeof priceData.amount === 'number') ? priceData.amount : (item.totalAmount / item.formDataList.length);
                     if (priceData && priceData.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
                         hasExplicitPixPrice = true;
                         discount += (amount - Number(priceData.pixAmount));
@@ -297,6 +297,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(updateTimer, 1000);
     };
 
+    const getFormSlotKey = (form, item) => {
+        if (form && form.multiSessionSlotKey) return form.multiSessionSlotKey;
+        if (form && typeof form.multiSessionSlotIndex === 'number') {
+            return `${form.locationId || item?.locationId || 'default'}::${form.multiSessionSlotIndex}`;
+        }
+        return null;
+    };
+
     const renderParticipantFields = () => {
         const items = cart.getCart();
         participantsContainer.innerHTML = '';
@@ -305,11 +313,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         items.forEach((item, itemIdx) => {
             item.formDataList.forEach((form, formIdx) => {
-                const isComplexEvent = true; // For now, we collect for all, but could filter by product typa
-                
+                // Sessões extras inclusas no mesmo slot são exibidas agrupadas dentro do card principal do slot
+                if (form.isMultiSessionFree) return;
+
                 const assignedSeat = form.seatId || (item.seats && item.seats[formIdx]);
                 const sessionTag = form.sessionName || form.sessionLabel;
-                const seatBadge = assignedSeat ? `
+                const slotKey = getFormSlotKey(form, item);
+                const linkedFreeForms = slotKey
+                    ? item.formDataList
+                        .map((f, fIdx) => ({ form: f, formIdx: fIdx }))
+                        .filter((entry) => Boolean(entry.form.isMultiSessionFree) && getFormSlotKey(entry.form, item) === slotKey)
+                    : [];
+                const isGroupedMultiSession = linkedFreeForms.length > 0;
+
+                const seatBadge = (!isGroupedMultiSession && assignedSeat) ? `
                     <span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black normal-case ml-2">
                         <i class="fas fa-couch mr-1"></i> Cadeira ${assignedSeat}${sessionTag ? ` (${sessionTag})` : ''}
                     </span>
@@ -320,37 +337,95 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const roleBadge = isExtra
                     ? `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold normal-case ml-2"><i class="fas fa-ticket-alt mr-1"></i> Acompanhante</span>`
                     : (item.hasExtraTicketPrice ? `<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-lg text-xs font-bold normal-case ml-2"><i class="fas fa-user-graduate mr-1"></i> Graduando</span>` : '');
+                const groupedMultiBadge = isGroupedMultiSession
+                    ? `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-black normal-case ml-2"><i class="fas fa-layer-group mr-1"></i> ${1 + linkedFreeForms.length} sessões • Paga 1x</span>`
+                    : '';
+
+                let multiSessionsListHtml = '';
+                let multiAltNamesHtml = '';
+                if (isGroupedMultiSession) {
+                    const allGroupEntries = [{ form, formIdx, isFree: false }, ...linkedFreeForms.map(e => ({ form: e.form, formIdx: e.formIdx, isFree: true }))];
+                    const rowsHtml = allGroupEntries.map((entry, eIdx) => {
+                        const sName = entry.form.sessionLabel || entry.form.sessionName || 'Sessão';
+                        const seatCode = entry.form.seatId || '-';
+                        const rowBadge = entry.isFree
+                            ? `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-black">Incluso • R$ 0,00</span>`
+                            : `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-black">${eIdx + 1}ª sessão</span>`;
+                        return `
+                            <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-900/70 border ${entry.isFree ? 'border-emerald-500/30' : 'border-amber-500/30'}">
+                                <div class="text-xs">
+                                    <span class="font-bold text-white">${sName}</span>
+                                    <span class="text-gray-400 ml-1">• Cadeira <strong class="${entry.isFree ? 'text-emerald-300' : 'text-amber-400'}">${seatCode}</strong></span>
+                                </div>
+                                ${rowBadge}
+                            </div>
+                        `;
+                    }).join('');
+
+                    multiSessionsListHtml = `
+                        <div class="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2">
+                            <p class="text-[11px] font-black text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fas fa-layer-group"></i> Sessões e cadeiras incluídas neste ingresso:
+                            </p>
+                            <div class="space-y-1.5">${rowsHtml}</div>
+                        </div>
+                    `;
+
+                    const altInputsHtml = linkedFreeForms.map((entry) => {
+                        const sLabel = entry.form.sessionName || entry.form.sessionLabel || 'Outra sessão';
+                        return `
+                            <div>
+                                <label class="block text-[11px] font-medium text-gray-400 mb-1">Nome em ${sLabel} (Cadeira ${entry.form.seatId || '-'})</label>
+                                <input type="text" name="participant-name" data-item="${itemIdx}" data-form="${entry.formIdx}" placeholder="Deixe em branco para manter o mesmo nome" class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                        `;
+                    }).join('');
+
+                    multiAltNamesHtml = `
+                        <p class="text-[11px] text-emerald-300/80 mt-1"><i class="fas fa-info-circle mr-1"></i> Este nome será usado em todas as ${1 + linkedFreeForms.length} sessões incluídas sem custo adicional.</p>
+                        <details class="mt-2">
+                            <summary class="text-xs font-semibold text-blue-400 hover:text-blue-300 cursor-pointer select-none">Outra pessoa ocupará alguma sessão?</summary>
+                            <div class="mt-2.5 p-3 rounded-lg bg-gray-900/50 border border-gray-700 space-y-2.5">
+                                ${altInputsHtml}
+                            </div>
+                        </details>
+                    `;
+                }
 
                 const block = document.createElement('div');
                 block.className = 'bg-gray-700/30 p-6 rounded-xl border border-gray-600 space-y-4';
 
                 if (isExtra) {
                     block.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-bold text-emerald-400 uppercase flex items-center">
-                                ${titleLabel} ${roleBadge} ${seatBadge}
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="text-lg font-bold text-emerald-400 uppercase flex items-center flex-wrap">
+                                ${titleLabel} ${roleBadge} ${seatBadge} ${groupedMultiBadge}
                             </h3>
                             <span class="text-xs text-gray-400 font-normal normal-case">${item.productName}</span>
                         </div>
+                        ${multiSessionsListHtml}
                         <div class="grid grid-cols-1 gap-4">
                             <div>
                                 <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Nome Completo do Acompanhante / Convidado</label>
                                 <input type="text" name="participant-name" data-item="${itemIdx}" data-form="${formIdx}" placeholder="Nome do familiar ou acompanhante" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+                                ${multiAltNamesHtml}
                             </div>
                         </div>
                     `;
                 } else {
                     block.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-bold text-yellow-500 uppercase flex items-center">
-                                ${titleLabel} ${roleBadge} ${seatBadge}
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <h3 class="text-lg font-bold text-yellow-500 uppercase flex items-center flex-wrap">
+                                ${titleLabel} ${roleBadge} ${seatBadge} ${groupedMultiBadge}
                             </h3>
                             <span class="text-xs text-gray-400 font-normal normal-case">${item.productName}</span>
                         </div>
+                        ${multiSessionsListHtml}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Nome Completo do Aluno</label>
                                 <input type="text" name="participant-name" data-item="${itemIdx}" data-form="${formIdx}" placeholder="Nome do participante" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500" required>
+                                ${multiAltNamesHtml}
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Programa</label>
@@ -587,6 +662,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 items[itemIdx].formDataList[formIdx].locationVenue = items[itemIdx].locationVenue;
                 items[itemIdx].formDataList[formIdx].locationAddress = items[itemIdx].locationAddress;
             }
+        });
+
+        // Preenche automaticamente nomes/dados deixados em branco nos assentos inclusos multi-sessão usando o slot pago correspondente
+        items.forEach((item) => {
+            if (!Array.isArray(item.formDataList)) return;
+            const paidBySlot = new Map();
+            item.formDataList.forEach((fd) => {
+                const sKey = getFormSlotKey(fd, item);
+                if (!fd.isMultiSessionFree && sKey && !paidBySlot.has(sKey)) {
+                    paidBySlot.set(sKey, fd);
+                }
+            });
+            item.formDataList.forEach((fd) => {
+                if (fd.isMultiSessionFree) {
+                    const sKey = getFormSlotKey(fd, item);
+                    const source = sKey ? paidBySlot.get(sKey) : null;
+                    if (source) {
+                        if (!fd.userName || !fd.userName.trim()) fd.userName = source.userName || '';
+                        if (!fd.isExtraTicket) {
+                            if (!fd.userPrograma) fd.userPrograma = source.userPrograma || '';
+                            if (!fd.userGraduacao && source.userGraduacao) fd.userGraduacao = source.userGraduacao;
+                            if (!fd.userProfessor && source.userProfessor) fd.userProfessor = source.userProfessor;
+                        }
+                    }
+                }
+            });
         });
 
         const globalUserData = {

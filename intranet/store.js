@@ -476,6 +476,7 @@ export async function setupStorePage() {
 
     // Extra Ticket Pricing elements (Modo Graduação / Inscrição com Acompanhantes)
     const productHasExtraTicketPriceInput = document.getElementById('product-has-extra-ticket-price');
+    const productMultiSessionSingleChargeInput = document.getElementById('product-multi-session-single-charge');
     const extraTicketPriceContainer = document.getElementById('extra-ticket-price-container');
     const productExtraTicketPriceInput = document.getElementById('product-extra-ticket-price');
     const productIncludedTicketsCountInput = document.getElementById('product-included-tickets-count');
@@ -2459,6 +2460,7 @@ export async function setupStorePage() {
         if (productHasLocationsInput) productHasLocationsInput.checked = false;
         if (eventLocationsBar) eventLocationsBar.classList.add('hidden');
         if (productHasExtraTicketPriceInput) productHasExtraTicketPriceInput.checked = false;
+        if (productMultiSessionSingleChargeInput) productMultiSessionSingleChargeInput.checked = false;
         if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
         if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
         if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '0';
@@ -2521,6 +2523,7 @@ export async function setupStorePage() {
             if (productHasLocationsInput) productHasLocationsInput.checked = false;
             if (eventLocationsBar) eventLocationsBar.classList.add('hidden');
             if (productHasExtraTicketPriceInput) productHasExtraTicketPriceInput.checked = false;
+            if (productMultiSessionSingleChargeInput) productMultiSessionSingleChargeInput.checked = false;
             if (extraTicketPriceContainer) extraTicketPriceContainer.classList.add('hidden');
             if (productExtraTicketPriceInput) productExtraTicketPriceInput.value = '';
             if (productIncludedTicketsCountInput) productIncludedTicketsCountInput.value = '0';
@@ -2762,6 +2765,7 @@ Requisitos:
                         : null,
                     hasLocations: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasLocationsInput && productHasLocationsInput.checked),
                     hasExtraTicketPrice: Boolean(productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked),
+                    multiSessionSingleCharge: Boolean(productHasSeatMapInput && productHasSeatMapInput.checked && productMultiSessionSingleChargeInput && productMultiSessionSingleChargeInput.checked),
                     extraTicketPrice: (productHasSeatMapInput && productHasSeatMapInput.checked && productHasExtraTicketPriceInput && productHasExtraTicketPriceInput.checked)
                         ? (parseInt(productExtraTicketPriceInput.value, 10) || 0)
                         : 0,
@@ -3346,6 +3350,9 @@ Requisitos:
                     }
                     if (productIncludedTicketsCountInput) {
                         productIncludedTicketsCountInput.value = (product.includedTicketsCount !== undefined && product.includedTicketsCount !== null) ? product.includedTicketsCount : 0;
+                    }
+                    if (productMultiSessionSingleChargeInput) {
+                        productMultiSessionSingleChargeInput.checked = Boolean(product.multiSessionSingleCharge);
                     }
 
                     // Meia-Entrada loading

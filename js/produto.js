@@ -103,6 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const webSelectedSeatsCount = document.getElementById('web-selected-seats-count');
     const webLockTimerBadge = document.getElementById('web-lock-timer-badge');
     const webLockTimerText = document.getElementById('web-lock-timer-text');
+    const webMultiSessionBanner = document.getElementById('web-multi-session-banner');
+    const webReplicateSeatsBar = document.getElementById('web-replicate-seats-bar');
+    const webReplicateSeatsButtons = document.getElementById('web-replicate-seats-buttons');
+    const webReplicateFeedback = document.getElementById('web-replicate-feedback');
 
     // Purchase Mode (Inscrição Completa vs Apenas Ingressos Acompanhante)
     const webPurchaseModeContainer = document.getElementById('web-purchase-mode-container');
@@ -150,10 +154,107 @@ document.addEventListener('DOMContentLoaded', () => {
         btnModeExtra.addEventListener('click', () => setPurchaseMode('extra_only'));
     }
 
+    const getActiveSessionsList = () => {
+        if (!productData || !productData.hasSeatMap) return [];
+        if (productData.hasLocations && selectedLocation && selectedLocation.sessions && selectedLocation.sessions.length > 0) {
+            return selectedLocation.sessions;
+        }
+        return (productData.sessions && productData.sessions.length > 0)
+            ? productData.sessions
+            : [{ id: 'default', name: 'Sessão Principal', label: 'Sessão Principal' }];
+    };
+
     const getAllSelectedSeats = () => {
-        const list = [];
+        const sessionsOrder = getActiveSessionsList();
+        const orderedEntries = [];
+        const seenKeys = new Set();
+
+        sessionsOrder.forEach((sess) => {
+            const key = sess?.id || 'default';
+            if (selectedSeatsBySession[key] && !seenKeys.has(key)) {
+                orderedEntries.push([key, selectedSeatsBySession[key]]);
+                seenKeys.add(key);
+            }
+        });
         Object.entries(selectedSeatsBySession).forEach(([sessId, data]) => {
-            (data.seats || []).forEach(seatId => {
+            if (!seenKeys.has(sessId)) {
+                orderedEntries.push([sessId, data]);
+                seenKeys.add(sessId);
+            }
+        });
+
+        const isMultiFreeEnabled = Boolean(productData && productData.multiSessionSingleCharge);
+        const list = [];
+
+        if (!isMultiFreeEnabled) {
+            let globalIdx = 0;
+            orderedEntries.forEach(([sessId, data]) => {
+                const scopeKey = data.location?.id || 'default';
+                (data.seats || []).forEach(seatId => {
+                    const slotIndex = globalIdx++;
+                    list.push({
+                        seatId,
+                        sessionId: sessId,
+                        sessionName: data.session?.name || 'Sessão',
+                        sessionLabel: data.session?.label || data.session?.name || 'Sessão',
+                        sessionDate: data.session?.date || null,
+                        sessionTime: data.session?.time || null,
+                        locationId: data.location?.id || null,
+                        locationName: data.location?.name || null,
+                        locationVenue: data.location?.venue || null,
+                        locationAddress: data.location?.address || null,
+                        slotIndex,
+                        slotKey: `${scopeKey}::${slotIndex}`,
+                        isMultiSessionFree: false,
+                    });
+                });
+            });
+            return list;
+        }
+
+        const seenSlotsByScope = new Map();
+        const seatIdToSlotByScope = new Map();
+
+        orderedEntries.forEach(([sessId, data]) => {
+            const scopeKey = data.location?.id || 'default';
+            if (!seenSlotsByScope.has(scopeKey)) {
+                seenSlotsByScope.set(scopeKey, new Set());
+                seatIdToSlotByScope.set(scopeKey, new Map());
+            }
+            const seenSlots = seenSlotsByScope.get(scopeKey);
+            const seatIdToSlot = seatIdToSlotByScope.get(scopeKey);
+
+            const usedInSession = new Set();
+            const assignedSlots = new Map();
+            const seats = data.seats || [];
+
+            // Fase A: alinhamento por mesmo seatId
+            seats.forEach(seatId => {
+                if (seatIdToSlot.has(seatId)) {
+                    const prefSlot = seatIdToSlot.get(seatId);
+                    if (!usedInSession.has(prefSlot)) {
+                        assignedSlots.set(seatId, prefSlot);
+                        usedInSession.add(prefSlot);
+                    }
+                }
+            });
+
+            // Fase B: assentos alternativos ou extras
+            seats.forEach(seatId => {
+                if (assignedSlots.has(seatId)) return;
+                let s = 0;
+                while (usedInSession.has(s)) s++;
+                assignedSlots.set(seatId, s);
+                usedInSession.add(s);
+                if (!seatIdToSlot.has(seatId)) {
+                    seatIdToSlot.set(seatId, s);
+                }
+            });
+
+            seats.forEach(seatId => {
+                const slotIndex = assignedSlots.get(seatId);
+                const isFree = seenSlots.has(slotIndex);
+                seenSlots.add(slotIndex);
                 list.push({
                     seatId,
                     sessionId: sessId,
@@ -165,11 +266,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     locationName: data.location?.name || null,
                     locationVenue: data.location?.venue || null,
                     locationAddress: data.location?.address || null,
+                    slotIndex,
+                    slotKey: `${scopeKey}::${slotIndex}`,
+                    isMultiSessionFree: isFree,
                 });
             });
         });
+
         return list;
     };
+
+    const getPrimarySeats = (allSeats) => allSeats.filter(s => !s.isMultiSessionFree);
+    const getLinkedFreeSeats = (allSeats, slotKey) => allSeats.filter(s => s.isMultiSessionFree && s.slotKey === slotKey);
 
     const getUserIdentifier = () => {
         let id = sessionStorage.getItem('kihap_seat_user_id');
@@ -490,10 +598,172 @@ document.addEventListener('DOMContentLoaded', () => {
             webSessionsContainer.classList.add('hidden');
         }
 
+        if (webMultiSessionBanner) {
+            if (product.multiSessionSingleCharge && sessions.length > 1) {
+                webMultiSessionBanner.classList.remove('hidden');
+            } else {
+                webMultiSessionBanner.classList.add('hidden');
+            }
+        }
+
         updateSelectedSeatsUI();
         const all = getAllSelectedSeats();
         renderForms(all.length > 0 ? all.length : 1);
         listenToSeatReservations(product.id, selectedSession ? selectedSession.id : 'default');
+    };
+
+    const sortSeatsList = (arr) => {
+        arr.sort((a, b) => {
+            const [rowA, colA] = a.split('-');
+            const [rowB, colB] = b.split('-');
+            if (rowA !== rowB) return rowA.localeCompare(rowB);
+            return parseInt(colA, 10) - parseInt(colB, 10);
+        });
+    };
+
+    const renderReplicateButtons = () => {
+        if (!webReplicateSeatsBar || !webReplicateSeatsButtons || !productData) return;
+        const sessions = getActiveSessionsList();
+        const activeSessId = (selectedSession && selectedSession.id) || sessions[0]?.id || 'default';
+        const currentSeats = selectedSeatsBySession[activeSessId]?.seats || [];
+        const otherSessions = sessions.filter(s => (s.id || 'default') !== activeSessId);
+
+        if (!productData.multiSessionSingleCharge || sessions.length <= 1 || currentSeats.length === 0 || otherSessions.length === 0) {
+            webReplicateSeatsBar.classList.add('hidden');
+            webReplicateSeatsButtons.innerHTML = '';
+            return;
+        }
+
+        webReplicateSeatsBar.classList.remove('hidden');
+        webReplicateSeatsButtons.innerHTML = '';
+
+        if (otherSessions.length >= 2) {
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = 'px-3.5 py-2 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-500 text-white transition-all flex items-center gap-1.5 shadow cursor-pointer';
+            allBtn.innerHTML = '<i class="fas fa-layer-group"></i> <span>Todas as sessões</span>';
+            allBtn.addEventListener('click', () => replicateSeatsToSessions(otherSessions));
+            webReplicateSeatsButtons.appendChild(allBtn);
+        }
+
+        otherSessions.forEach((targetSess) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'px-3.5 py-2 rounded-xl font-bold text-xs bg-gray-900 hover:bg-gray-800 text-indigo-300 border border-indigo-500/40 transition-all flex items-center gap-1.5 cursor-pointer';
+            btn.innerHTML = `<i class="fas fa-copy"></i> <span>${targetSess.label || targetSess.name || 'Outra sessão'}</span>`;
+            btn.addEventListener('click', () => replicateSeatsToSessions([targetSess]));
+            webReplicateSeatsButtons.appendChild(btn);
+        });
+    };
+
+    const replicateSeatsToSessions = async (targetSessions) => {
+        if (!productData || !selectedSession) return;
+        const activeSessId = selectedSession.id || 'default';
+        const sourceSeats = selectedSeatsBySession[activeSessId]?.seats || [];
+        if (sourceSeats.length === 0) return;
+
+        const targets = targetSessions.filter(s => (s.id || 'default') !== activeSessId);
+        if (targets.length === 0) return;
+
+        if (webReplicateFeedback) {
+            webReplicateFeedback.className = 'text-xs font-medium text-indigo-300 mt-1';
+            webReplicateFeedback.textContent = 'Verificando disponibilidade nas sessões...';
+            webReplicateFeedback.classList.remove('hidden');
+        }
+
+        try {
+            const activeConfig = (productData.hasLocations && selectedLocation && selectedLocation.seatMapConfig)
+                ? selectedLocation.seatMapConfig
+                : (productData.seatMapConfig || {});
+            const disabledSet = new Set(activeConfig.disabledSeats || []);
+            const now = Date.now();
+            const myId = getUserIdentifier();
+
+            const conflicts = [];
+            let copiedCount = 0;
+
+            for (const targetSess of targets) {
+                const targetId = targetSess.id || 'default';
+                const snap = await getDoc(doc(db, 'productSeatReservations', `${productData.id}_${targetId}`));
+                const reserved = snap.exists() ? (snap.data().seats || {}) : {};
+
+                const availableToCopy = [];
+                const occupiedSeats = [];
+
+                sourceSeats.forEach((seatId) => {
+                    const reservation = reserved[seatId];
+                    const isDisabled = disabledSet.has(seatId) || reservation?.status === 'disabled' || reservation?.status === 'blocked_admin';
+                    const isBooked = reservation?.status === 'booked';
+                    const isLockedByOther = reservation?.status === 'locked' && reservation?.lockedUntil > now && reservation?.lockedBy !== myId;
+
+                    if (isDisabled || isBooked || isLockedByOther) {
+                        occupiedSeats.push(seatId);
+                    } else {
+                        availableToCopy.push(seatId);
+                    }
+                });
+
+                if (availableToCopy.length > 0) {
+                    if (!selectedSeatsBySession[targetId]) {
+                        selectedSeatsBySession[targetId] = {
+                            session: targetSess,
+                            location: selectedLocation,
+                            seats: []
+                        };
+                    }
+                    const merged = Array.from(new Set([...selectedSeatsBySession[targetId].seats, ...availableToCopy]));
+                    sortSeatsList(merged);
+                    selectedSeatsBySession[targetId].seats = merged;
+                    copiedCount += availableToCopy.length;
+                }
+
+                if (occupiedSeats.length > 0) {
+                    conflicts.push({ session: targetSess, occupied: occupiedSeats });
+                }
+            }
+
+            const sessions = getActiveSessionsList();
+
+            if (conflicts.length > 0) {
+                selectedSession = conflicts[0].session;
+                if (sessions.length > 1) {
+                    renderWebSessionButtons(sessions, productData);
+                }
+                listenToSeatReservations(productData.id, selectedSession.id || 'default');
+
+                const conflictText = conflicts
+                    .map(c => `${c.session.name || 'Sessão'}: ${c.occupied.join(', ')}`)
+                    .join(' | ');
+
+                if (webReplicateFeedback) {
+                    webReplicateFeedback.className = 'text-xs font-bold text-amber-300 mt-1';
+                    webReplicateFeedback.textContent = `Cadeira(s) já ocupada(s) em ${conflictText}. Escolha outra cadeira disponível neste mapa sem custo adicional.`;
+                    webReplicateFeedback.classList.remove('hidden');
+                }
+                alert(`Algumas cadeiras já estão ocupadas em outra sessão (${conflictText}).\n\nAbrimos essa sessão no mapa para você escolher outra cadeira disponível sem custo adicional.`);
+            } else if (copiedCount > 0) {
+                if (webReplicateFeedback) {
+                    webReplicateFeedback.className = 'text-xs font-bold text-emerald-300 mt-1';
+                    webReplicateFeedback.textContent = 'Cadeiras replicadas com sucesso sem cobrança adicional!';
+                    webReplicateFeedback.classList.remove('hidden');
+                }
+            }
+
+            updateSelectedSeatsUI();
+            if (sessions.length > 1) {
+                renderWebSessionButtons(sessions, productData);
+            }
+            renderWebSeatGrid();
+            const newAll = getAllSelectedSeats();
+            renderForms(newAll.length > 0 ? newAll.length : 1);
+        } catch (err) {
+            console.error('Erro ao replicar cadeiras na web:', err);
+            if (webReplicateFeedback) {
+                webReplicateFeedback.className = 'text-xs font-bold text-red-400 mt-1';
+                webReplicateFeedback.textContent = 'Erro ao verificar disponibilidade na outra sessão.';
+                webReplicateFeedback.classList.remove('hidden');
+            }
+        }
     };
 
     const renderWebSessionButtons = (sessions, product) => {
@@ -516,8 +786,10 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 if (selectedSession && selectedSession.id === sess.id) return;
                 selectedSession = sess;
+                if (webReplicateFeedback) webReplicateFeedback.classList.add('hidden');
                 renderWebSessionButtons(sessions, product);
                 renderWebSeatGrid();
+                renderReplicateButtons();
                 listenToSeatReservations(product.id, selectedSession.id);
             });
             webSessionsList.appendChild(btn);
@@ -624,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const sideCols = Math.min(Math.max(1, parseInt(activeConfig.sideCols || 4, 10) || 4), Math.max(1, Math.floor((cols - 2) / 2)));
 
             const arenaWrapper = document.createElement('div');
-            arenaWrapper.className = 'flex flex-col items-center gap-4 p-2 w-full';
+            arenaWrapper.className = 'flex flex-col items-center gap-2 p-2 w-fit mx-auto';
 
             // 1. Setor Superior (Norte) - Se não for em U
             if (!isUShape && topRows > 0) {
@@ -665,14 +937,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. Miolo: Setor Oeste + Tatame Central + Setor Leste
             const midRowDiv = document.createElement('div');
-            midRowDiv.className = 'flex flex-row items-stretch justify-center gap-3 sm:gap-5 w-full';
+            midRowDiv.className = 'flex flex-row items-stretch justify-between gap-2 sm:gap-3 w-full';
 
             // 2a. Setor Oeste (Esquerda)
             const leftSectorDiv = document.createElement('div');
             leftSectorDiv.className = 'flex flex-col items-center';
             leftSectorDiv.innerHTML = `
-                <div class="px-2 py-0.5 mb-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                    <i class="fas fa-arrow-left text-[8px]"></i> Setor Oeste (Lateral)
+                <div class="h-5 px-2 mb-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-arrow-left text-[8px]"></i> Oeste
                 </div>
             `;
             const leftRowsDiv = document.createElement('div');
@@ -696,10 +968,19 @@ document.addEventListener('DOMContentLoaded', () => {
             leftSectorDiv.appendChild(leftRowsDiv);
             midRowDiv.appendChild(leftSectorDiv);
 
-            // 2b. Tatame Central (Acompanha toda a extensão das fileiras laterais para visão frontal contínua)
+            // 2b. Tatame Central (ocupa todo o vão entre Oeste e Leste e encosta rente ao Setor Sul)
+            const hasMidRows = (rows - bottomRows - topRows) > 0;
             const arenaCenterTatame = document.createElement('div');
-            arenaCenterTatame.className = 'flex-1 self-stretch min-w-[140px] sm:min-w-[220px] max-w-sm flex flex-col items-center justify-center p-4 bg-gradient-to-b from-amber-500/15 via-yellow-500/10 to-amber-500/15 border-2 border-dashed border-amber-500/60 rounded-3xl shadow-inner text-center select-none relative';
-            arenaCenterTatame.innerHTML = `
+            arenaCenterTatame.className = `flex-1 self-stretch ${hasMidRows ? 'mt-6' : 'min-h-[84px]'} min-w-[120px] flex flex-col items-center ${bottomRows > 0 ? 'justify-between' : 'justify-center'} py-4 px-3 bg-gradient-to-b from-amber-500/15 via-yellow-500/10 to-amber-500/15 border-2 border-dashed border-amber-500/60 rounded-2xl shadow-inner text-center select-none relative`;
+            arenaCenterTatame.innerHTML = bottomRows > 0 ? `
+                <span></span>
+                <span class="font-black text-xs sm:text-sm text-amber-300 tracking-widest uppercase">
+                    ${stageLabel}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-[9px] font-black text-emerald-300 uppercase tracking-wider inline-flex items-center gap-1">
+                    <i class="fas fa-arrow-down text-[8px]"></i> Frente do Tatame
+                </span>
+            ` : `
                 <span class="font-black text-xs sm:text-sm text-amber-300 tracking-widest uppercase">
                     ${stageLabel}
                 </span>
@@ -710,8 +991,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const rightSectorDiv = document.createElement('div');
             rightSectorDiv.className = 'flex flex-col items-center';
             rightSectorDiv.innerHTML = `
-                <div class="px-2 py-0.5 mb-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[10px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                    Setor Leste (Lateral) <i class="fas fa-arrow-right text-[8px]"></i>
+                <div class="h-5 px-2 mb-1 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[10px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    Leste <i class="fas fa-arrow-right text-[8px]"></i>
                 </div>
             `;
             const rightRowsDiv = document.createElement('div');
@@ -738,14 +1019,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             arenaWrapper.appendChild(midRowDiv);
 
-            // 3. Setor Inferior (Sul)
+            // 3. Setor Inferior (Sul) - Fileiras coladas diretamente ao Tatame; rótulo abaixo apontando para cima
             const bottomSectorDiv = document.createElement('div');
             bottomSectorDiv.className = 'flex flex-col items-center';
-            bottomSectorDiv.innerHTML = `
-                <div class="px-2.5 py-0.5 mb-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                    <i class="fas fa-arrow-down text-[8px]"></i> Setor Sul (Frontal)
-                </div>
-            `;
             const bottomRowsDiv = document.createElement('div');
             bottomRowsDiv.className = 'space-y-1';
             for (let r = rows - bottomRows; r < rows; r++) {
@@ -771,6 +1047,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 bottomRowsDiv.appendChild(rDiv);
             }
             bottomSectorDiv.appendChild(bottomRowsDiv);
+            const bottomBadgeDiv = document.createElement('div');
+            bottomBadgeDiv.className = 'mt-1.5';
+            bottomBadgeDiv.innerHTML = `
+                <div class="px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-[10px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-arrow-up text-[8px]"></i> Setor Sul (Frontal ao Tatame)
+                </div>
+            `;
+            bottomSectorDiv.appendChild(bottomBadgeDiv);
             arenaWrapper.appendChild(bottomSectorDiv);
 
             webSeatGridContainer.appendChild(arenaWrapper);
@@ -850,15 +1134,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const all = getAllSelectedSeats();
         const count = all.length;
-        webSelectedSeatsCount.textContent = count;
+        const paidCount = all.filter(s => !s.isMultiSessionFree).length;
+        const freeCount = all.filter(s => s.isMultiSessionFree).length;
+        webSelectedSeatsCount.textContent = freeCount > 0
+            ? `${count} (${paidCount} paga${paidCount === 1 ? '' : 's'} + ${freeCount} inclusa${freeCount === 1 ? '' : 's'})`
+            : `${count}`;
 
         if (count > 0) {
             webSelectedSeatsBar.classList.remove('hidden');
             webSelectedSeatsChips.innerHTML = '';
             all.forEach(item => {
+                const isFreeChip = Boolean(item.isMultiSessionFree);
                 const chip = document.createElement('span');
-                chip.className = 'px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black flex items-center gap-1.5';
-                chip.innerHTML = `<i class="fas fa-couch text-[10px]"></i> ${item.seatId} <span class="text-[10px] text-gray-400 font-normal">(${item.sessionName})</span> <button type="button" class="text-amber-300 hover:text-white ml-0.5" data-seat-remove="${item.seatId}">&times;</button>`;
+                chip.className = isFreeChip
+                    ? 'px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-black flex items-center gap-1.5'
+                    : 'px-2.5 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black flex items-center gap-1.5';
+                const freeBadge = isFreeChip
+                    ? `<span class="px-1.5 py-0.5 bg-emerald-500/30 text-emerald-200 rounded text-[10px] font-black">Incluso • R$ 0</span>`
+                    : '';
+                const removeBtnClass = isFreeChip ? 'text-emerald-300 hover:text-white ml-0.5' : 'text-amber-300 hover:text-white ml-0.5';
+                chip.innerHTML = `<i class="fas fa-couch text-[10px]"></i> ${item.seatId} <span class="text-[10px] text-gray-400 font-normal">(${item.sessionName})</span> ${freeBadge} <button type="button" class="${removeBtnClass}" data-seat-remove="${item.seatId}">&times;</button>`;
                 chip.querySelector('button').addEventListener('click', (e) => {
                     e.stopPropagation();
                     const group = selectedSeatsBySession[item.sessionId];
@@ -887,6 +1182,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             webSelectedSeatsBar.classList.add('hidden');
         }
+
+        renderReplicateButtons();
     };
 
     const fetchAndDisplayRecommendedProducts = async (productIds) => {
@@ -960,13 +1257,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const { effectiveBasePrice, effectiveExtraPrice, effectiveBaseHalfPrice, effectiveExtraHalfPrice } = getEffectivePrices();
         const hasExtraTicketMode = Boolean(productData && productData.hasSeatMap && (productData.hasExtraTicketPrice || productData.extraTicketPrice > 0 || effectiveExtraPrice > 0));
         const all = getAllSelectedSeats();
+        const primarySeats = getPrimarySeats(all);
 
         let numForms = 1;
         if (productData && productData.hasSeatMap) {
             if (hasExtraTicketMode) {
-                numForms = (currentPurchaseMode === 'full') ? (1 + all.length) : all.length;
+                numForms = (currentPurchaseMode === 'full') ? (1 + primarySeats.length) : primarySeats.length;
             } else {
-                numForms = all.length > 0 ? all.length : 1;
+                numForms = primarySeats.length > 0 ? primarySeats.length : 1;
             }
         } else {
             numForms = (quantity !== undefined && quantity !== null) ? quantity : (quantitySelector ? parseInt(quantitySelector.value, 10) || 1 : 1);
@@ -998,32 +1296,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const seatItemForForm = (productData && productData.hasSeatMap)
                 ? (hasExtraTicketMode
-                    ? (isExtraTicket ? (currentPurchaseMode === 'full' ? all[i - 2] : all[i - 1]) : null)
-                    : all[i - 1])
+                    ? (isExtraTicket ? (currentPurchaseMode === 'full' ? primarySeats[i - 2] : primarySeats[i - 1]) : null)
+                    : primarySeats[i - 1])
                 : null;
+            if (seatItemForForm) {
+                formInstance.dataset.slotKey = seatItemForForm.slotKey;
+            }
+            const linkedFree = seatItemForForm ? getLinkedFreeSeats(all, seatItemForForm.slotKey) : [];
+            const isGroupedMultiSession = linkedFree.length > 0;
+            const isMultiSessionFree = false;
+            const hideNonPrimaryFields = isExtraTicket;
 
             if (formInstanceTitle) {
                 let seatBadgeHtml = '';
-                if (seatItemForForm) {
+                if (seatItemForForm && !isGroupedMultiSession) {
                     const sessionInfo = seatItemForForm.sessionName ? ` - ${seatItemForForm.sessionName}` : '';
                     seatBadgeHtml = ` <span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-lg text-xs font-black inline-flex items-center gap-1 ml-2"><i class="fas fa-couch"></i> Cadeira ${seatItemForForm.seatId}${sessionInfo}</span>`;
                 }
+                const multiGroupBadge = isGroupedMultiSession
+                    ? ` <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-black ml-1"><i class="fas fa-layer-group mr-1"></i> ${1 + linkedFree.length} sessões • Paga 1x</span>`
+                    : '';
                 if (isStudent) {
-                    formInstanceTitle.innerHTML = `Inscrição do Aluno <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold ml-1">🥋 Aluno (Tatame)</span>`;
+                    formInstanceTitle.innerHTML = `Inscrição do Aluno <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-bold ml-1">Aluno (Tatame)</span>`;
                 } else if (isExtraTicket) {
                     const priceFormatted = (effectiveExtraPrice / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     const compNum = (hasExtraTicketMode && currentPurchaseMode === 'full') ? (i - 1) : i;
-                    formInstanceTitle.innerHTML = `Acompanhante <span class="form-instance-number">${compNum}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">Cadeira (${priceFormatted})</span>${seatBadgeHtml}`;
+                    formInstanceTitle.innerHTML = `Acompanhante <span class="form-instance-number">${compNum}</span> <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg text-xs font-bold ml-1">Cadeira (${priceFormatted})</span>${multiGroupBadge}${seatBadgeHtml}`;
                 } else if (productData.priceType === 'kit') {
-                    formInstanceTitle.innerHTML = `Detalhes do Item <span class="form-instance-number">${i}</span>${seatBadgeHtml}`;
+                    formInstanceTitle.innerHTML = `Detalhes do Item <span class="form-instance-number">${i}</span>${multiGroupBadge}${seatBadgeHtml}`;
                 } else {
-                    formInstanceTitle.innerHTML = `Inscrição <span class="form-instance-number">${i}</span>${seatBadgeHtml}`;
+                    formInstanceTitle.innerHTML = `Inscrição <span class="form-instance-number">${i}</span>${multiGroupBadge}${seatBadgeHtml}`;
                 }
             } else {
                 formInstance.querySelector('.form-instance-number').textContent = i;
             }
 
-            if (isExtraTicket) {
+            if (isGroupedMultiSession && seatItemForForm) {
+                const groupedRows = [seatItemForForm, ...linkedFree].map((s, sIdx) => {
+                    const isFreeRow = Boolean(s.isMultiSessionFree);
+                    const rowBadge = isFreeRow
+                        ? `<span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-black">Incluso • R$ 0,00</span>`
+                        : `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-black">${sIdx + 1}ª sessão</span>`;
+                    return `
+                        <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-gray-900/80 border ${isFreeRow ? 'border-emerald-500/30' : 'border-amber-500/30'}">
+                            <div class="text-xs">
+                                <span class="font-bold text-white">${s.sessionLabel || s.sessionName}</span>
+                                <span class="text-gray-400 ml-1">• Cadeira <strong class="${isFreeRow ? 'text-emerald-300' : 'text-amber-400'}">${s.seatId}</strong></span>
+                            </div>
+                            ${rowBadge}
+                        </div>
+                    `;
+                }).join('');
+
+                const multiGroupBox = document.createElement('div');
+                multiGroupBox.className = 'p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl space-y-2 mb-2';
+                multiGroupBox.innerHTML = `
+                    <p class="text-[11px] font-black text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-layer-group"></i> Sessões e cadeiras incluídas neste ingresso:
+                    </p>
+                    <div class="space-y-1.5">${groupedRows}</div>
+                    <p class="text-[11px] text-emerald-200/80">Todos os assentos acima valem para o mesmo participante/acompanhante pagando apenas 1x. Caso outra pessoa vá ocupar alguma sessão, você pode ajustar opcionalmente no checkout.</p>
+                `;
+                formInstance.querySelector('.grid').prepend(multiGroupBox);
+            } else if (isExtraTicket) {
                 const companionNotice = document.createElement('div');
                 companionNotice.className = 'p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-center gap-2 mb-2';
                 companionNotice.innerHTML = `<i class="fas fa-ticket-alt text-base text-emerald-400"></i><span>Ingresso para familiar/convidado assistir da plateia. Cadeira: <strong>${seatItemForForm ? seatItemForForm.seatId : 'Selecione no mapa'}</strong>.</span>`;
@@ -1046,9 +1381,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Configuração do Tipo de Ingresso (Inteira vs Meia-Entrada)
             const ticketTypeContainer = formInstance.querySelector('.ticket-type-container');
             if (ticketTypeContainer) {
-                const hasHalfForThis = isExtraTicket
+                const hasHalfForThis = !isMultiSessionFree && (isExtraTicket
                     ? Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice) || (productData.extraTicketHalfPrice && productData.extraTicketHalfPrice > 0))
-                    : Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice));
+                    : Boolean(productData.hasHalfPrice || (selectedLocation && selectedLocation.halfPrice)));
 
                 if (hasHalfForThis) {
                     ticketTypeContainer.classList.remove('hidden');
@@ -1107,8 +1442,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Campo Idade condicional (ignorado em ingressos adicionais)
-            if (productData.askAge && !isExtraTicket) {
+            // Campo Idade condicional (ignorado em ingressos adicionais ou multi-sessão incluso)
+            if (productData.askAge && !hideNonPrimaryFields) {
                 const ageContainer = formInstance.querySelector('.age-container');
                 if (ageContainer) {
                     ageContainer.classList.remove('hidden');
@@ -1120,8 +1455,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Campo Professor condicional (ignorado em ingressos adicionais)
-            if (productData.askProfessor && !isExtraTicket) {
+            // Campo Professor condicional (ignorado em ingressos adicionais ou multi-sessão incluso)
+            if (productData.askProfessor && !hideNonPrimaryFields) {
                 const professorContainer = formInstance.querySelector('.professor-container');
                 if (professorContainer) {
                     professorContainer.classList.remove('hidden');
@@ -1150,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const priceVariantSelectorContainer = formInstance.querySelector('.price-variant-selector-container');
             const priceVariantSelector = formInstance.querySelector('[name="price-variant-selector"]');
 
-            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0 && !isExtraTicket) {
+            if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0 && !hideNonPrimaryFields) {
                 priceVariantSelectorContainer.classList.remove('hidden');
                 priceVariantSelector.required = true;
                 priceVariantSelector.innerHTML = '';
@@ -1177,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const kitOptionsContainer = formInstance.querySelector('.kit-options-container');
-            if (productData.priceType === 'kit' && productData.kitItems && productData.kitItems.length > 0) {
+            if (!isMultiSessionFree && productData.priceType === 'kit' && productData.kitItems && productData.kitItems.length > 0) {
                 kitOptionsContainer.classList.remove('hidden');
                 kitOptionsContainer.innerHTML = '';
 
@@ -1248,7 +1583,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const addonsOptionsContainer = formInstance.querySelector('.addons-options-container');
-            if (productData.addons && productData.addons.length > 0) {
+            if (!isMultiSessionFree && productData.addons && productData.addons.length > 0) {
                 addonsOptionsContainer.classList.remove('hidden');
                 addonsOptionsContainer.innerHTML = '';
                 
@@ -1277,7 +1612,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const sizeSelectorContainer = formInstance.querySelector('.size-selector-container');
             const sizeSelector = formInstance.querySelector('[name="size-selector"]');
-            if (productData.hasSizes && productData.sizes && productData.sizes.length > 0 && !isExtraTicket) {
+            if (productData.hasSizes && productData.sizes && productData.sizes.length > 0 && !hideNonPrimaryFields) {
                 sizeSelectorContainer.classList.remove('hidden');
                 sizeSelector.required = true;
                 
@@ -1548,12 +1883,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validação de estoque antes de prosseguir
         if (productData && productData.controlStock) {
             const totalStock = getProductTotalStock(productData);
+            const allForStock = productData.hasSeatMap ? getAllSelectedSeats() : [];
 
             let requestedPhysicalCount = 0;
             const requestedBySize = {};
             formInstances.forEach((form, idx) => {
                 const isExtraTicket = hasExtraTicketMode ? (currentPurchaseMode === 'extra_only' || idx > 0) : false;
-                if (isExtraTicket) return;
+                const seatItemStock = productData.hasSeatMap
+                    ? (hasExtraTicketMode
+                        ? (isExtraTicket ? (currentPurchaseMode === 'full' ? allForStock[idx - 1] : allForStock[idx]) : null)
+                        : allForStock[idx])
+                    : null;
+                if (isExtraTicket || (seatItemStock && seatItemStock.isMultiSessionFree)) return;
                 requestedPhysicalCount += 1;
                 const sizeEl = form.querySelector('[name="size-selector"]');
                 const sizeContainer = form.querySelector('.size-selector-container');
@@ -1637,22 +1978,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        const allSeatsForSubmit = (productData && productData.hasSeatMap) ? getAllSelectedSeats() : [];
+        const primarySeatsForSubmit = getPrimarySeats(allSeatsForSubmit);
+
         formInstances.forEach((form, idx) => {
             const isStudent = hasExtraTicketMode && (currentPurchaseMode === 'full') && (idx === 0);
             const isExtraTicket = hasExtraTicketMode ? (currentPurchaseMode === 'extra_only' || idx > 0) : false;
-            const all = getAllSelectedSeats();
             const seatItem = (productData && productData.hasSeatMap)
                 ? (hasExtraTicketMode
-                    ? (isExtraTicket ? (currentPurchaseMode === 'full' ? all[idx - 1] : all[idx]) : null)
-                    : all[idx])
+                    ? (isExtraTicket ? (currentPurchaseMode === 'full' ? primarySeatsForSubmit[idx - 1] : primarySeatsForSubmit[idx]) : null)
+                    : primarySeatsForSubmit[idx])
                 : null;
+            const hideNonPrimaryFields = isExtraTicket;
 
             const formData = {
                 isExtraTicket: isExtraTicket,
                 isMainParticipant: !isExtraTicket,
-                userAge: isExtraTicket ? null : (form.querySelector('[name="idade"]') && !form.querySelector('.age-container').classList.contains('hidden') ? form.querySelector('[name="idade"]').value : null),
-                userSize: isExtraTicket ? null : (form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null),
-                userProfessor: isExtraTicket ? null : (form.querySelector('[name="professor-selector"]') && !form.querySelector('.professor-container').classList.contains('hidden') ? form.querySelector('[name="professor-selector"]').value : null),
+                userAge: hideNonPrimaryFields ? null : (form.querySelector('[name="idade"]') && !form.querySelector('.age-container').classList.contains('hidden') ? form.querySelector('[name="idade"]').value : null),
+                userSize: hideNonPrimaryFields ? null : (form.querySelector('[name="size-selector"]') && !form.querySelector('.size-selector-container').classList.contains('hidden') ? form.querySelector('[name="size-selector"]').value : null),
+                userProfessor: hideNonPrimaryFields ? null : (form.querySelector('[name="professor-selector"]') && !form.querySelector('.professor-container').classList.contains('hidden') ? form.querySelector('[name="professor-selector"]').value : null),
             };
 
             if (seatItem) {
@@ -1666,8 +2010,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.locationName = seatItem.locationName || null;
                 formData.locationVenue = seatItem.locationVenue || null;
                 formData.locationAddress = seatItem.locationAddress || null;
+                formData.isMultiSessionFree = false;
+                formData.multiSessionSlotIndex = seatItem.slotIndex;
+                formData.multiSessionSlotKey = seatItem.slotKey;
             } else {
                 formData.seatId = null;
+                formData.isMultiSessionFree = false;
             }
 
             const hasHalfForThis = isExtraTicket
@@ -1680,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let priceData = {};
             let kitSelections = null;
             if (isExtraTicket) {
-                priceData.variantName = (currentPurchaseMode === 'extra_only') ? 'Cadeira Extra (Acompanhante)' : 'Cadeira Extra (Acompanhante)';
+                priceData.variantName = 'Cadeira Extra (Acompanhante)';
                 priceData.amount = effectiveExtraPrice;
             } else if (productData.priceType === 'variable' && productData.priceVariants && productData.priceVariants.length > 0) {
                 const selector = form.querySelector('[name="price-variant-selector"]');
@@ -1760,6 +2108,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             totalAmount += priceData.amount;
             formDataList.push(formData);
+
+            // Emite também 1 item incluso (R$ 0,00) para cada sessão adicional ligada ao mesmo slot
+            if (seatItem) {
+                const linkedFreeSeats = getLinkedFreeSeats(allSeatsForSubmit, seatItem.slotKey);
+                linkedFreeSeats.forEach((freeSeat) => {
+                    formDataList.push({
+                        isExtraTicket: formData.isExtraTicket,
+                        isMainParticipant: formData.isMainParticipant,
+                        userAge: formData.isExtraTicket ? null : (formData.userAge || null),
+                        userSize: formData.isExtraTicket ? null : (formData.userSize || null),
+                        userProfessor: formData.isExtraTicket ? null : (formData.userProfessor || null),
+                        seatId: freeSeat.seatId,
+                        sessionId: freeSeat.sessionId,
+                        sessionName: freeSeat.sessionName,
+                        sessionDate: freeSeat.sessionDate,
+                        sessionTime: freeSeat.sessionTime,
+                        sessionLabel: freeSeat.sessionLabel,
+                        locationId: freeSeat.locationId || null,
+                        locationName: freeSeat.locationName || null,
+                        locationVenue: freeSeat.locationVenue || null,
+                        locationAddress: freeSeat.locationAddress || null,
+                        isMultiSessionFree: true,
+                        multiSessionSlotIndex: freeSeat.slotIndex,
+                        multiSessionSlotKey: freeSeat.slotKey,
+                        ticketType: 'inteira',
+                        ticketTypeName: 'Incluso Multi-Sessão',
+                        priceData: {
+                            amount: 0,
+                            variantName: 'Cadeira Multi-Sessão (Inclusa)'
+                        },
+                        ...(!formData.isExtraTicket && kitSelections ? { kitSelections } : {})
+                    });
+                });
+            }
         });
 
         if (appliedCoupon) {
@@ -1770,12 +2152,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        const isExtraOnlyMode = hasExtraTicketMode && (currentPurchaseMode === 'extra_only');
+
         try {
             cart.addItem({
                 productId: currentProductId,
-                productName: (currentPurchaseMode === 'extra_only') ? `${productData.name} (Cadeiras Extras)` : productData.name,
-                purchaseMode: currentPurchaseMode,
-                isExtraTicketOnly: (currentPurchaseMode === 'extra_only'),
+                productName: isExtraOnlyMode ? `${productData.name} (Cadeiras Extras)` : productData.name,
+                purchaseMode: isExtraOnlyMode ? 'extra_only' : 'full',
+                isExtraTicketOnly: isExtraOnlyMode,
                 imageUrl: productData.imageUrl,
                 isSubscription: productData.isSubscription || false,
                 subscriptionFrequency: productData.subscriptionFrequency || null,
@@ -1788,6 +2172,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 availableProfessors: productData.availableProfessors || [],
                 coupon: appliedCoupon ? appliedCoupon.code : null,
                 hasSeatMap: !!productData.hasSeatMap,
+                multiSessionSingleCharge: Boolean(productData.multiSessionSingleCharge),
                 locationId: (productData.hasLocations && selectedLocation) ? selectedLocation.id : null,
                 locationName: (() => {
                     const all = getAllSelectedSeats();

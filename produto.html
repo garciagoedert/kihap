@@ -234,6 +234,15 @@
                                 </div>
                             </div>
 
+                            <!-- Multi-Session Single Charge Info Banner -->
+                            <div id="web-multi-session-banner" class="hidden p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-xs text-emerald-300 flex items-start gap-3">
+                                <i class="fas fa-layer-group text-emerald-400 text-base mt-0.5"></i>
+                                <div>
+                                    <p class="font-bold text-emerald-300 uppercase tracking-wider text-[11px]">Assento Multi-Sessão Liberado (Pague apenas 1x)</p>
+                                    <p class="text-emerald-200/80 mt-0.5 leading-relaxed">Você pode selecionar cadeiras em quantas sessões quiser pagando apenas uma única vez pelo maior número simultâneo de assentos por sessão. Se a mesma cadeira já estiver ocupada em outra sessão, escolha outro assento disponível sem custo adicional.</p>
+                                </div>
+                            </div>
+
                             <!-- Sessions Selector Pills -->
                             <div id="web-sessions-selector-container" class="space-y-2 hidden">
                                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">
@@ -291,6 +300,18 @@
                                     <p class="text-xs text-gray-400">Total de cadeiras:</p>
                                     <p id="web-selected-seats-count" class="text-lg font-black text-amber-400">0</p>
                                 </div>
+                            </div>
+
+                            <!-- Replicate Seats Across Sessions Bar -->
+                            <div id="web-replicate-seats-bar" class="hidden p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl space-y-2.5">
+                                <div class="flex items-center gap-2 text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                                    <i class="fas fa-copy text-indigo-400"></i>
+                                    <span>Replicar cadeiras desta sessão para:</span>
+                                </div>
+                                <div id="web-replicate-seats-buttons" class="flex flex-wrap gap-2">
+                                    <!-- Dynamic replicate buttons -->
+                                </div>
+                                <p id="web-replicate-feedback" class="hidden text-xs font-medium mt-1"></p>
                             </div>
                         </div>
 
@@ -432,7 +453,7 @@
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script src="js/script.js?v=3.2"></script>
     <script type="module" src="js/cart.js?v=3.2"></script>
-    <script type="module" src="js/produto.js?v=3.6"></script>
+    <script type="module" src="js/produto.js?v=3.9"></script>
 
     <!-- Dynamic Form Template -->
     <template id="form-template">

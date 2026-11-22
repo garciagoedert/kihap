@@ -98,19 +98,25 @@ const createMercadoPagoPreference = async (product, formDataList, totalAmount, s
         // Fluxo normal de Compra Avulsa (Checkout Pro)
         let subtotalCents = 0;
         formDataList.forEach(formData => {
-            subtotalCents += formData.priceData.amount;
+            const rawAmount = (formData.priceData && typeof formData.priceData.amount === 'number') ? formData.priceData.amount : 0;
+            subtotalCents += rawAmount;
         });
         const discountRatio = subtotalCents > 0 ? (totalAmount / subtotalCents) : 1;
 
-        const items = formDataList.map(formData => {
-            return {
-                id: product.id,
-                title: product.name,
-                unit_price: (formData.priceData.amount * discountRatio) / 100,
-                quantity: 1,
-                currency_id: 'BRL',
-                description: formData.variantName || 'Item da Loja'
-            };
+        const items = [];
+        formDataList.forEach(formData => {
+            const rawAmount = (formData.priceData && typeof formData.priceData.amount === 'number') ? formData.priceData.amount : 0;
+            const unitPrice = Math.round(rawAmount * discountRatio) / 100;
+            if (unitPrice > 0) {
+                items.push({
+                    id: product.id,
+                    title: product.name,
+                    unit_price: unitPrice,
+                    quantity: 1,
+                    currency_id: 'BRL',
+                    description: formData.variantName || (formData.priceData && formData.priceData.variantName) || 'Item da Loja'
+                });
+            }
         });
 
         const primaryBuyerData = formDataList[0];
@@ -185,12 +191,13 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
     cartItems.forEach(cartItem => {
         if(cartItem.formDataList) {
             cartItem.formDataList.forEach(formData => {
-                subtotalCents += formData.priceData.amount;
+                const rawAmount = (formData.priceData && typeof formData.priceData.amount === 'number') ? formData.priceData.amount : 0;
+                subtotalCents += rawAmount;
             });
         }
         if (cartItem.recommendedItems) {
             cartItem.recommendedItems.forEach(rec => {
-                subtotalCents += rec.amount;
+                subtotalCents += (typeof rec.amount === 'number' ? rec.amount : 0);
             });
         }
     });
@@ -202,27 +209,35 @@ const createCartMercadoPagoPreference = async (cartItems, totalAmount, saleDocId
     cartItems.forEach(cartItem => {
         if(cartItem.formDataList) {
             cartItem.formDataList.forEach(formData => {
-                items.push({
-                    id: cartItem.productId,
-                    title: cartItem.productName,
-                    unit_price: (formData.priceData.amount * discountRatio) / 100,
-                    quantity: 1,
-                    currency_id: 'BRL',
-                    description: (formData.priceData && formData.priceData.variantName) ? formData.priceData.variantName : 'Item da Loja'
-                });
+                const rawAmount = (formData.priceData && typeof formData.priceData.amount === 'number') ? formData.priceData.amount : 0;
+                const unitPrice = Math.round(rawAmount * discountRatio) / 100;
+                if (unitPrice > 0) {
+                    items.push({
+                        id: cartItem.productId,
+                        title: cartItem.productName,
+                        unit_price: unitPrice,
+                        quantity: 1,
+                        currency_id: 'BRL',
+                        description: (formData.priceData && formData.priceData.variantName) ? formData.priceData.variantName : 'Item da Loja'
+                    });
+                }
             });
         }
         
         if (cartItem.recommendedItems) {
             cartItem.recommendedItems.forEach(rec => {
-                items.push({
-                    id: rec.productId,
-                    title: rec.productName,
-                    unit_price: ((rec.amount / rec.quantity) * discountRatio) / 100,
-                    quantity: rec.quantity,
-                    currency_id: 'BRL',
-                    description: 'Comprado Junto'
-                });
+                const recQty = rec.quantity || 1;
+                const unitPrice = Math.round((rec.amount / recQty) * discountRatio) / 100;
+                if (unitPrice > 0) {
+                    items.push({
+                        id: rec.productId,
+                        title: rec.productName,
+                        unit_price: unitPrice,
+                        quantity: recQty,
+                        currency_id: 'BRL',
+                        description: 'Comprado Junto'
+                    });
+                }
             });
         }
     });

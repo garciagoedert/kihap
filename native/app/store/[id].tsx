@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, TextInput } from 'react-native';
+import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../src/services/firebase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
-import { ArrowLeft, ShoppingCart, Minus, Plus, Star, ShieldCheck, Calendar, Clock, Armchair, MapPin, Check, Ticket } from 'lucide-react-native';
+import { ArrowLeft, ShoppingCart, Minus, Plus, Star, ShieldCheck, Calendar, Clock, Armchair, MapPin, Check, Ticket, Copy, Layers } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
@@ -55,42 +55,10 @@ export default function ProductDetailScreen() {
     }
   }>({});
   const [lockingSeats, setLockingSeats] = useState(false);
+  const [replicatingSeats, setReplicatingSeats] = useState(false);
+  const [expandedAltNamesBySlot, setExpandedAltNamesBySlot] = useState<Record<string, boolean>>({});
   const [purchaseMode, setPurchaseMode] = useState<'full' | 'extra_only'>('full');
   const [hasExistingEnrollment, setHasExistingEnrollment] = useState(false);
-
-  // Flattened array of all chosen seats across all sessions
-  const allSelectedSeats = useMemo(() => {
-    const list: Array<{
-      seatId: string;
-      sessionId: string;
-      sessionName: string;
-      sessionLabel: string;
-      sessionDate?: string;
-      sessionTime?: string;
-      locationId?: string;
-      locationName?: string;
-      locationVenue?: string;
-      locationAddress?: string;
-    }> = [];
-
-    Object.entries(selectedSeatsBySession).forEach(([sessId, data]) => {
-      data.seats.forEach(seatId => {
-        list.push({
-          seatId,
-          sessionId: sessId,
-          sessionName: data.session?.name || 'Sessão',
-          sessionLabel: data.session?.label || data.session?.name || 'Sessão',
-          sessionDate: data.session?.date,
-          sessionTime: data.session?.time,
-          locationId: data.location?.id,
-          locationName: data.location?.name,
-          locationVenue: data.location?.venue,
-          locationAddress: data.location?.address
-        });
-      });
-    });
-    return list;
-  }, [selectedSeatsBySession]);
 
   const availableSessions = useMemo(() => {
     if (!product?.hasSeatMap) return [];
@@ -105,6 +73,140 @@ export default function ProductDetailScreen() {
       ? selectedLocation.seatMapConfig
       : (product.seatMapConfig || { rows: 8, seatsPerRow: 16 });
   }, [product, selectedLocation]);
+
+  // Flattened array of all chosen seats across all sessions (with multi-session slot pricing)
+  const allSelectedSeats = useMemo(() => {
+    const list: Array<{
+      seatId: string;
+      sessionId: string;
+      sessionName: string;
+      sessionLabel: string;
+      sessionDate?: string;
+      sessionTime?: string;
+      locationId?: string;
+      locationName?: string;
+      locationVenue?: string;
+      locationAddress?: string;
+      slotIndex: number;
+      slotKey: string;
+      isMultiSessionFree: boolean;
+    }> = [];
+
+    const isMultiFreeEnabled = Boolean(product?.multiSessionSingleCharge);
+    const orderedEntries: Array<[string, { session: any; location?: any; seats: string[] }]> = [];
+    const seenKeys = new Set<string>();
+
+    availableSessions.forEach((sess: any) => {
+      const key = sess?.id || 'default';
+      if (selectedSeatsBySession[key] && !seenKeys.has(key)) {
+        orderedEntries.push([key, selectedSeatsBySession[key]]);
+        seenKeys.add(key);
+      }
+    });
+    Object.entries(selectedSeatsBySession).forEach(([sessId, data]) => {
+      if (!seenKeys.has(sessId)) {
+        orderedEntries.push([sessId, data]);
+        seenKeys.add(sessId);
+      }
+    });
+
+    if (!isMultiFreeEnabled) {
+      let globalIdx = 0;
+      orderedEntries.forEach(([sessId, data]) => {
+        const scopeKey = data.location?.id || 'default';
+        data.seats.forEach(seatId => {
+          const slotIndex = globalIdx++;
+          list.push({
+            seatId,
+            sessionId: sessId,
+            sessionName: data.session?.name || 'Sessão',
+            sessionLabel: data.session?.label || data.session?.name || 'Sessão',
+            sessionDate: data.session?.date,
+            sessionTime: data.session?.time,
+            locationId: data.location?.id,
+            locationName: data.location?.name,
+            locationVenue: data.location?.venue,
+            locationAddress: data.location?.address,
+            slotIndex,
+            slotKey: `${scopeKey}::${slotIndex}`,
+            isMultiSessionFree: false
+          });
+        });
+      });
+      return list;
+    }
+
+    const seenSlotsByScope = new Map<string, Set<number>>();
+    const seatIdToSlotByScope = new Map<string, Map<string, number>>();
+
+    orderedEntries.forEach(([sessId, data]) => {
+      const scopeKey = data.location?.id || 'default';
+      if (!seenSlotsByScope.has(scopeKey)) {
+        seenSlotsByScope.set(scopeKey, new Set<number>());
+        seatIdToSlotByScope.set(scopeKey, new Map<string, number>());
+      }
+      const seenSlots = seenSlotsByScope.get(scopeKey)!;
+      const seatIdToSlot = seatIdToSlotByScope.get(scopeKey)!;
+
+      const usedInSession = new Set<number>();
+      const assignedSlots = new Map<string, number>();
+
+      // Fase A: alinha cadeiras repetidas ao mesmo slot já usado
+      data.seats.forEach((seatId) => {
+        if (seatIdToSlot.has(seatId)) {
+          const prefSlot = seatIdToSlot.get(seatId)!;
+          if (!usedInSession.has(prefSlot)) {
+            assignedSlots.set(seatId, prefSlot);
+            usedInSession.add(prefSlot);
+          }
+        }
+      });
+
+      // Fase B: assentos alternativos (caso o mesmo esteja ocupado) ou extras
+      data.seats.forEach((seatId) => {
+        if (assignedSlots.has(seatId)) return;
+        let s = 0;
+        while (usedInSession.has(s)) s++;
+        assignedSlots.set(seatId, s);
+        usedInSession.add(s);
+        if (!seatIdToSlot.has(seatId)) {
+          seatIdToSlot.set(seatId, s);
+        }
+      });
+
+      data.seats.forEach((seatId) => {
+        const slotIndex = assignedSlots.get(seatId)!;
+        const isFree = seenSlots.has(slotIndex);
+        seenSlots.add(slotIndex);
+        list.push({
+          seatId,
+          sessionId: sessId,
+          sessionName: data.session?.name || 'Sessão',
+          sessionLabel: data.session?.label || data.session?.name || 'Sessão',
+          sessionDate: data.session?.date,
+          sessionTime: data.session?.time,
+          locationId: data.location?.id,
+          locationName: data.location?.name,
+          locationVenue: data.location?.venue,
+          locationAddress: data.location?.address,
+          slotIndex,
+          slotKey: `${scopeKey}::${slotIndex}`,
+          isMultiSessionFree: isFree
+        });
+      });
+    });
+
+    return list;
+  }, [selectedSeatsBySession, availableSessions, product?.multiSessionSingleCharge]);
+
+  const paidSeatsCount = useMemo(
+    () => allSelectedSeats.filter((s) => !s.isMultiSessionFree).length,
+    [allSelectedSeats]
+  );
+  const freeMultiSessionCount = useMemo(
+    () => allSelectedSeats.filter((s) => s.isMultiSessionFree).length,
+    [allSelectedSeats]
+  );
 
   const activeSessionId = useMemo(() => {
     return selectedSession?.id || availableSessions[0]?.id || 'default';
@@ -183,7 +285,21 @@ export default function ProductDetailScreen() {
   }, [id]);
 
   useEffect(() => {
-    if (!userData?.uid || !id) return;
+    if (!userData?.uid || !id || !product) return;
+    const isSeatExtraEvent = Boolean(
+      product.hasSeatMap &&
+      (product.hasExtraTicketPrice ||
+        (product.extraTicketPrice || 0) > 0 ||
+        (product.hasLocations &&
+          Array.isArray(product.locations) &&
+          product.locations.some((loc: any) => (loc?.extraTicketPrice || 0) > 0)))
+    );
+    if (!isSeatExtraEvent) {
+      setHasExistingEnrollment(false);
+      setPurchaseMode('full');
+      return;
+    }
+
     const checkUserEnrollment = async () => {
       try {
         const q = query(
@@ -193,6 +309,7 @@ export default function ProductDetailScreen() {
         const snap = await getDocs(q);
         const found = snap.docs.some(d => {
           const order = d.data();
+          if (order.paymentStatus !== 'paid') return false;
           if (order.productId === id) return true;
           if (Array.isArray(order.items) && order.items.some((it: any) => it.productId === id)) return true;
           return false;
@@ -206,7 +323,7 @@ export default function ProductDetailScreen() {
       }
     };
     checkUserEnrollment();
-  }, [userData?.uid, id]);
+  }, [userData?.uid, id, product?.hasSeatMap, product?.hasExtraTicketPrice, product?.extraTicketPrice]);
 
   const handleSeatToggle = (seatId: string) => {
     const activeSess = selectedSession || availableSessions[0];
@@ -239,6 +356,96 @@ export default function ProductDetailScreen() {
     });
   };
 
+  const handleReplicateSeats = async (targetSessions: any[]) => {
+    if (!product?.id || replicatingSeats) return;
+    if (currentSessionSeats.length === 0) {
+      Alert.alert('Selecione ao menos uma cadeira', 'Escolha primeiro uma ou mais cadeiras na sessão atual antes de replicar para outra sessão.');
+      return;
+    }
+
+    const targets = targetSessions.filter((s) => (s?.id || 'default') !== activeSessionId);
+    if (targets.length === 0) return;
+
+    setReplicatingSeats(true);
+    try {
+      const now = Date.now();
+      const disabledSet = new Set<string>(activeSeatMapConfig?.disabledSeats || []);
+      const updatesBySessKey: { [k: string]: { session: any; location?: any; seats: string[] } } = {};
+      const conflicts: Array<{ session: any; occupied: string[] }> = [];
+      let totalCopied = 0;
+
+      for (const targetSess of targets) {
+        const targetKey = targetSess.id || 'default';
+        const docId = `${product.id}_${targetKey}`;
+        const snap = await getDoc(doc(db, 'productSeatReservations', docId));
+        const reservedMap = snap.exists() ? (snap.data().seats || {}) : {};
+
+        const availableToCopy: string[] = [];
+        const occupiedSeats: string[] = [];
+
+        currentSessionSeats.forEach((seatId) => {
+          const reservation = reservedMap[seatId];
+          const isDisabled =
+            disabledSet.has(seatId) ||
+            reservation?.status === 'disabled' ||
+            reservation?.status === 'blocked_admin';
+          const isBooked = reservation?.status === 'booked';
+          const isLocked = reservation?.status === 'locked' && reservation?.lockedUntil > now;
+
+          if (isDisabled || isBooked || isLocked) {
+            occupiedSeats.push(seatId);
+          } else {
+            availableToCopy.push(seatId);
+          }
+        });
+
+        if (availableToCopy.length > 0) {
+          const existingSeats = selectedSeatsBySession[targetKey]?.seats || [];
+          const merged = Array.from(new Set([...existingSeats, ...availableToCopy]));
+          updatesBySessKey[targetKey] = {
+            session: targetSess,
+            location: selectedLocation,
+            seats: merged
+          };
+          totalCopied += availableToCopy.length;
+        }
+
+        if (occupiedSeats.length > 0) {
+          conflicts.push({ session: targetSess, occupied: occupiedSeats });
+        }
+      }
+
+      if (Object.keys(updatesBySessKey).length > 0) {
+        setSelectedSeatsBySession((prev) => ({
+          ...prev,
+          ...updatesBySessKey
+        }));
+      }
+
+      if (conflicts.length > 0) {
+        setSelectedSession(conflicts[0].session);
+        const detailLines = conflicts
+          .map((c) => `• ${c.session.name || 'Sessão'}: ${c.occupied.join(', ')}`)
+          .join('\n');
+        Alert.alert(
+          'Algumas cadeiras já estão ocupadas',
+          `As seguintes cadeiras já estão reservadas em outra sessão:\n${detailLines}\n\nAbrimos essa sessão no mapa para você escolher outra cadeira disponível sem custo adicional.`
+        );
+      } else if (totalCopied > 0) {
+        const sessNames = targets.map((t) => t.name || 'Sessão').join(', ');
+        Alert.alert(
+          'Cadeiras replicadas!',
+          `Suas cadeiras foram replicadas para: ${sessNames}, sem cobrança adicional.`
+        );
+      }
+    } catch (err) {
+      console.warn('Erro ao replicar cadeiras:', err);
+      Alert.alert('Erro ao replicar', 'Não foi possível verificar as reservas da outra sessão. Tente selecioná-la manualmente.');
+    } finally {
+      setReplicatingSeats(false);
+    }
+  };
+
   useEffect(() => {
     if (!product) return;
     const defaultVariant = product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0
@@ -260,11 +467,40 @@ export default function ProductDetailScreen() {
       }
 
       setParticipants(prev => {
+        const findPrevSeatParticipant = (seatInfo: any, fallbackIdx: number) => {
+          if (seatInfo) {
+            const exact = prev.find(
+              (p) => p.seatId === seatInfo.seatId && p.sessionId === seatInfo.sessionId
+            );
+            if (exact) {
+              if (!exact.userName?.trim() && !seatInfo.isMultiSessionFree) {
+                const slotDonor = prev.find(
+                  (p) => p.multiSessionSlotKey === seatInfo.slotKey && p.userName?.trim()
+                );
+                if (slotDonor) {
+                  return { ...exact, userName: slotDonor.userName };
+                }
+              }
+              return exact;
+            }
+            if (!seatInfo.isMultiSessionFree) {
+              const slotDonor = prev.find(
+                (p) => p.multiSessionSlotKey === seatInfo.slotKey && p.userName?.trim()
+              );
+              if (slotDonor) {
+                return { ...slotDonor, ticketType: slotDonor.ticketType || 'inteira' };
+              }
+            }
+          }
+          return prev[fallbackIdx];
+        };
+
         const newList = [];
         if (isGraduation && purchaseMode === 'full') {
           // Participant 0: Aluno no tatame (sem cadeira)
+          const prevStudent = prev.find((p) => p.seatId === null) || prev[0];
           newList.push({
-            ...(prev[0] || {
+            ...(prevStudent || {
               userName: '',
               userPrograma: '',
               userGraduacao: '',
@@ -273,6 +509,9 @@ export default function ProductDetailScreen() {
               selectedVariant: defaultVariant
             }),
             seatId: null,
+            isMultiSessionFree: false,
+            multiSessionSlotIndex: null,
+            multiSessionSlotKey: null,
             sessionId: selectedSession?.id || null,
             sessionName: selectedSession?.name || null,
             sessionLabel: selectedSession?.label || selectedSession?.name || null,
@@ -284,12 +523,16 @@ export default function ProductDetailScreen() {
           // Participants 1..N: Cadeiras de acompanhantes
           for (let i = 0; i < allSelectedSeats.length; i++) {
             const seatInfo = allSelectedSeats[i];
+            const prevMatch = findPrevSeatParticipant(seatInfo, i + 1);
             newList.push({
-              ...(prev[i + 1] || {
+              ...(prevMatch || {
                 userName: '',
                 ticketType: 'inteira'
               }),
               seatId: seatInfo?.seatId || null,
+              isMultiSessionFree: Boolean(seatInfo?.isMultiSessionFree),
+              multiSessionSlotIndex: seatInfo ? seatInfo.slotIndex : null,
+              multiSessionSlotKey: seatInfo ? seatInfo.slotKey : null,
               sessionId: seatInfo?.sessionId || null,
               sessionName: seatInfo?.sessionName || null,
               sessionLabel: seatInfo?.sessionLabel || null,
@@ -303,12 +546,16 @@ export default function ProductDetailScreen() {
           // Apenas cadeiras de acompanhantes
           for (let i = 0; i < allSelectedSeats.length; i++) {
             const seatInfo = allSelectedSeats[i];
+            const prevMatch = findPrevSeatParticipant(seatInfo, i);
             newList.push({
-              ...(prev[i] || {
+              ...(prevMatch || {
                 userName: '',
                 ticketType: 'inteira'
               }),
               seatId: seatInfo?.seatId || null,
+              isMultiSessionFree: Boolean(seatInfo?.isMultiSessionFree),
+              multiSessionSlotIndex: seatInfo ? seatInfo.slotIndex : null,
+              multiSessionSlotKey: seatInfo ? seatInfo.slotKey : null,
               sessionId: seatInfo?.sessionId || null,
               sessionName: seatInfo?.sessionName || null,
               sessionLabel: seatInfo?.sessionLabel || null,
@@ -321,8 +568,9 @@ export default function ProductDetailScreen() {
         } else {
           for (let i = 0; i < count; i++) {
             const seatInfo = allSelectedSeats[i];
+            const prevMatch = findPrevSeatParticipant(seatInfo, i);
             newList.push({
-              ...(prev[i] || {
+              ...(prevMatch || {
                 userName: '',
                 userPrograma: '',
                 userGraduacao: '',
@@ -332,6 +580,9 @@ export default function ProductDetailScreen() {
                 kitSelections: {}
               }),
               seatId: seatInfo?.seatId || null,
+              isMultiSessionFree: Boolean(seatInfo?.isMultiSessionFree),
+              multiSessionSlotIndex: seatInfo ? seatInfo.slotIndex : null,
+              multiSessionSlotKey: seatInfo ? seatInfo.slotKey : null,
               sessionId: seatInfo?.sessionId || null,
               sessionName: seatInfo?.sessionName || null,
               sessionLabel: seatInfo?.sessionLabel || null,
@@ -366,7 +617,7 @@ export default function ProductDetailScreen() {
         return newList;
       });
     }
-  }, [allSelectedSeats, product, quantity]);
+  }, [allSelectedSeats, product, quantity, purchaseMode]);
 
   const updateParticipant = (index: number, updates: { [key: string]: any }) => {
     setParticipants(prev => {
@@ -404,12 +655,16 @@ export default function ProductDetailScreen() {
         // Cadeiras extras de acompanhantes (participantes 1 em diante)
         for (let i = 1; i < participants.length; i++) {
           const comp = participants[i];
+          const seatInfo = allSelectedSeats[i - 1];
+          if (comp?.isMultiSessionFree || seatInfo?.isMultiSessionFree) continue;
           const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || product.extraTicketHalfPrice) && comp?.ticketType === 'meia');
           total += isMeia ? effectiveExtraHalf : effectiveExtraPrice;
         }
       } else {
         // Apenas cadeiras de acompanhantes (todos os participantes)
-        participants.forEach(comp => {
+        participants.forEach((comp, i) => {
+          const seatInfo = allSelectedSeats[i];
+          if (comp?.isMultiSessionFree || seatInfo?.isMultiSessionFree) return;
           const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || product.extraTicketHalfPrice) && comp?.ticketType === 'meia');
           total += isMeia ? effectiveExtraHalf : effectiveExtraPrice;
         });
@@ -418,7 +673,9 @@ export default function ProductDetailScreen() {
     }
 
     let total = 0;
-    participants.forEach((p) => {
+    participants.forEach((p, i) => {
+      const seatInfo = product.hasSeatMap ? allSelectedSeats[i] : null;
+      if (p?.isMultiSessionFree || seatInfo?.isMultiSessionFree) return;
       const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice) && p.ticketType === 'meia');
       const pVariant = p?.selectedVariant || product.priceVariants?.[0];
       const basePrice = (product.priceType === 'variable' && pVariant)
@@ -449,11 +706,56 @@ export default function ProductDetailScreen() {
       }
     }
 
+    // Mapeia o participante pago por slot para herdar dados em assentos multi-sessão gratuitos se deixados em branco
+    const paidBySlot = new Map<string, any>();
+    participants.forEach((p, idx) => {
+      const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
+      const seatInfo = isGraduation
+        ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[idx - 1] : allSelectedSeats[idx]) : null)
+        : allSelectedSeats[idx];
+      const isMultiFree = Boolean(seatInfo?.isMultiSessionFree || p.isMultiSessionFree);
+      const slotIdx = seatInfo ? seatInfo.slotIndex : p.multiSessionSlotIndex;
+      const slotKey = seatInfo?.slotKey || p.multiSessionSlotKey || (typeof slotIdx === 'number' ? String(slotIdx) : undefined);
+      if (!isMultiFree && slotKey && !paidBySlot.has(slotKey)) {
+        paidBySlot.set(slotKey, p);
+      }
+    });
+
+    const resolvedParticipants = participants.map((p, idx) => {
+      const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
+      const seatInfo = isGraduation
+        ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[idx - 1] : allSelectedSeats[idx]) : null)
+        : allSelectedSeats[idx];
+      const isMultiFree = Boolean(seatInfo?.isMultiSessionFree || p.isMultiSessionFree);
+      const slotIdx = seatInfo ? seatInfo.slotIndex : p.multiSessionSlotIndex;
+      const slotKey = seatInfo?.slotKey || p.multiSessionSlotKey || (typeof slotIdx === 'number' ? String(slotIdx) : undefined);
+      if (!isMultiFree) return p;
+
+      const source = slotKey ? paidBySlot.get(slotKey) : undefined;
+      if (!source) return p;
+
+      return {
+        ...p,
+        userName: p.userName?.trim() ? p.userName : (source.userName || ''),
+        ...(!isExtra ? {
+          userPrograma: p.userPrograma || source.userPrograma || '',
+          userGraduacao: p.userGraduacao || source.userGraduacao || '',
+          userProfessor: p.userProfessor || source.userProfessor || '',
+          userSize: p.userSize || source.userSize || '',
+          selectedVariant: p.selectedVariant || source.selectedVariant,
+          kitSelections: (p.kitSelections && Object.keys(p.kitSelections).length > 0) ? p.kitSelections : (source.kitSelections || {})
+        } : {})
+      };
+    });
+
     if (product.controlStock) {
       const totalStock = getProductTotalStock(product);
       const physicalRequested = isGraduation
         ? (purchaseMode === 'full' ? 1 : 0)
-        : participants.length;
+        : resolvedParticipants.filter((p, idx) => {
+            const seatInfo = allSelectedSeats[idx];
+            return !(seatInfo?.isMultiSessionFree || p.isMultiSessionFree);
+          }).length;
 
       if (physicalRequested > 0 && (totalStock <= 0 || physicalRequested > totalStock)) {
         alert(
@@ -466,9 +768,10 @@ export default function ProductDetailScreen() {
 
       if (product.hasSizes) {
         const sizeDemand: Record<string, { display: string; qty: number }> = {};
-        participants.forEach((p, idx) => {
+        resolvedParticipants.forEach((p, idx) => {
           const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
-          if (!isExtra && p.userSize) {
+          const isMultiFree = Boolean(allSelectedSeats[idx]?.isMultiSessionFree || p.isMultiSessionFree);
+          if (!isExtra && !isMultiFree && p.userSize) {
             const raw = String(p.userSize).trim();
             const key = raw.toLowerCase();
             if (!sizeDemand[key]) sizeDemand[key] = { display: raw, qty: 0 };
@@ -494,9 +797,13 @@ export default function ProductDetailScreen() {
       : getEffectiveProductPrice(product, userData).price;
 
     // Basic validation
-    const incomplete = participants.some((p, idx) => {
+    const incomplete = resolvedParticipants.some((p, idx) => {
       const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
-      if (isExtra) {
+      const seatInfo = isGraduation
+        ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[idx - 1] : allSelectedSeats[idx]) : null)
+        : allSelectedSeats[idx];
+      const isMultiFree = Boolean(seatInfo?.isMultiSessionFree || p.isMultiSessionFree);
+      if (isExtra || isMultiFree) {
         return !p.userName?.trim();
       }
       return (
@@ -554,28 +861,38 @@ export default function ProductDetailScreen() {
       ? { price: selectedLocation.price, isPromo: false }
       : getEffectiveProductPrice(product, userData);
 
-    const formDataList = participants.map((p, idx) => {
+    const formDataList = resolvedParticipants.map((p, idx) => {
       const isExtra = isGraduation ? (purchaseMode === 'extra_only' || idx > 0) : false;
-      const isMeia = Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || (isExtra && product.extraTicketHalfPrice)) && p.ticketType === 'meia');
+      const seatInfo = isGraduation
+        ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[idx - 1] : allSelectedSeats[idx]) : null)
+        : allSelectedSeats[idx];
+      const isMultiFree = Boolean(seatInfo?.isMultiSessionFree || p.isMultiSessionFree);
+      const isMeia = !isMultiFree && Boolean((product.hasHalfPrice || selectedLocation?.halfPrice || (isExtra && product.extraTicketHalfPrice)) && p.ticketType === 'meia');
       const pVariant = p.selectedVariant || (product.priceType === 'variable' ? product.priceVariants?.[0] : null);
 
-      let selectedAmount = isExtra
-        ? effectiveExtraPrice
-        : (pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : effective.price);
+      let selectedAmount = isMultiFree
+        ? 0
+        : (isExtra
+            ? effectiveExtraPrice
+            : (pVariant ? getEffectiveVariantPrice(pVariant, userData, product).price : effective.price));
 
-      if (isMeia) {
+      if (!isMultiFree && isMeia) {
         selectedAmount = isExtra
           ? ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.extraTicketHalfPrice || product.halfPrice || Math.round(effectiveExtraPrice / 2)))
           : ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.halfPrice || Math.round(selectedAmount / 2)));
       }
 
-      const selectedVariantName = isExtra
-        ? (purchaseMode === 'extra_only' ? (isMeia ? 'Ingresso Acompanhante (Meia)' : 'Ingresso Acompanhante') : (isMeia ? 'Ingresso Adicional (Meia)' : 'Ingresso Adicional (Acompanhante)'))
-        : (pVariant ? (isMeia ? `${pVariant.name} (Meia)` : pVariant.name) : (isMeia ? 'Meia-Entrada' : undefined));
+      const selectedVariantName = isMultiFree
+        ? 'Cadeira Multi-Sessão (Inclusa)'
+        : (isExtra
+            ? (purchaseMode === 'extra_only' ? (isMeia ? 'Ingresso Acompanhante (Meia)' : 'Ingresso Acompanhante') : (isMeia ? 'Ingresso Adicional (Meia)' : 'Ingresso Adicional (Acompanhante)'))
+            : (pVariant ? (isMeia ? `${pVariant.name} (Meia)` : pVariant.name) : (isMeia ? 'Meia-Entrada' : undefined)));
 
-      const pixAmount = isMeia
-        ? (product.halfPricePix || undefined)
-        : (isExtra ? undefined : (pVariant?.pixPrice || product.pixPrice || undefined));
+      const pixAmount = isMultiFree
+        ? undefined
+        : (isMeia
+            ? (product.halfPricePix || undefined)
+            : (isExtra ? undefined : (pVariant?.pixPrice || product.pixPrice || undefined)));
       
       const priceData: any = {
         amount: selectedAmount,
@@ -584,15 +901,15 @@ export default function ProductDetailScreen() {
       };
 
       const { selectedVariant, ...rest } = p;
-      const seatInfo = isGraduation
-        ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[idx - 1] : allSelectedSeats[idx]) : null)
-        : allSelectedSeats[idx];
       return {
         ...rest,
         ticketType: isMeia ? 'meia' : 'inteira',
-        ticketTypeName: isMeia ? 'Meia-Entrada' : 'Inteira',
+        ticketTypeName: isMultiFree ? 'Incluso Multi-Sessão' : (isMeia ? 'Meia-Entrada' : 'Inteira'),
         isExtraTicket: isExtra,
         isMainParticipant: !isExtra,
+        isMultiSessionFree: isMultiFree,
+        multiSessionSlotIndex: seatInfo ? seatInfo.slotIndex : (p.multiSessionSlotIndex ?? null),
+        multiSessionSlotKey: seatInfo ? seatInfo.slotKey : (p.multiSessionSlotKey ?? null),
         ...(product.priceType === 'kit' && Array.isArray(product.kitItems) ? {
           kitItemsSnapshot: product.kitItems.map((k: any) => ({
             productId: k.productId || null,
@@ -626,28 +943,31 @@ export default function ProductDetailScreen() {
     const totalAmount = calculateTotal();
 
     const firstVariantPrice = product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0
-      ? getEffectiveVariantPrice(participants[0]?.selectedVariant || product.priceVariants[0], userData, product).price
+      ? getEffectiveVariantPrice(resolvedParticipants[0]?.selectedVariant || product.priceVariants[0], userData, product).price
       : effective.price;
 
     const summarySeats = allSelectedSeats.map(s => s.seatId);
     const summarySessions = Array.from(new Set(allSelectedSeats.map(s => s.sessionLabel).filter(Boolean)));
     const summaryLocations = Array.from(new Set(allSelectedSeats.map(s => s.locationName).filter(Boolean)));
 
+    const isExtraOnlyMode = isGraduation && purchaseMode === 'extra_only';
+
     addItem({
-      id: purchaseMode === 'extra_only' ? `${product.id}_extras` : product.id,
+      id: isExtraOnlyMode ? `${product.id}_extras` : product.id,
       productId: product.id,
-      name: purchaseMode === 'extra_only' ? `${product.name} (Ingressos Acompanhante)` : product.name,
-      productName: purchaseMode === 'extra_only' ? `${product.name} (Ingressos Acompanhante)` : product.name,
+      name: isExtraOnlyMode ? `${product.name} (Ingressos Acompanhante)` : product.name,
+      productName: isExtraOnlyMode ? `${product.name} (Ingressos Acompanhante)` : product.name,
       imageUrl: product.imageUrl,
       priceType: product.priceType || 'fixed',
-      price: purchaseMode === 'extra_only' ? effectiveExtraPrice : firstVariantPrice,
+      price: isExtraOnlyMode ? effectiveExtraPrice : firstVariantPrice,
       totalAmount,
-      purchaseMode,
-      isExtraTicketOnly: purchaseMode === 'extra_only',
+      purchaseMode: isExtraOnlyMode ? 'extra_only' : 'full',
+      isExtraTicketOnly: isExtraOnlyMode,
       hasSeatMap: Boolean(product.hasSeatMap),
-      hasExtraTicketPrice: Boolean(product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0),
+      multiSessionSingleCharge: Boolean(product.multiSessionSingleCharge),
+      hasExtraTicketPrice: isGraduation,
       extraTicketPrice: effectiveExtraPrice,
-      includedTicketsCount: purchaseMode === 'extra_only' ? 0 : ((product as any)?.includedTicketsCount ?? 1),
+      includedTicketsCount: isExtraOnlyMode ? 0 : ((product as any)?.includedTicketsCount ?? 1),
       selectedSeats: summarySeats,
       sessionId: allSelectedSeats[0]?.sessionId || selectedSession?.id || 'default',
       sessionLabel: summarySessions.join(' | ') || selectedSession?.label || null,
@@ -975,7 +1295,7 @@ export default function ProductDetailScreen() {
                       Escolha a Cidade / Local
                     </Text>
                   </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }} className="flex-row">
                     {product.locations.map((loc: any) => {
                       const isSelected = (selectedLocation?.id || product.locations[0]?.id) === loc.id;
                       return (
@@ -1027,6 +1347,33 @@ export default function ProductDetailScreen() {
                 </View>
               )}
 
+              {/* Banner informativo Multi-Sessão Cobrança Única */}
+              {Boolean(product.multiSessionSingleCharge) && availableSessions.length > 1 && (
+                <View
+                  style={{
+                    marginBottom: 16,
+                    padding: 14,
+                    borderRadius: 16,
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ecfdf5',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#a7f3d0',
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 10
+                  }}
+                >
+                  <Layers size={18} color="#10b981" style={{ marginTop: 2 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '900', color: isDark ? '#34d399' : '#047857', marginBottom: 2 }}>
+                      Assento Multi-Sessão Liberado
+                    </Text>
+                    <Text style={{ fontSize: 11, color: isDark ? '#d1fae5' : '#065f46', lineHeight: 16 }}>
+                      Escolha cadeiras em quantas sessões desejar pagando apenas 1x pelo maior número de assentos por sessão. Se a mesma cadeira estiver ocupada em outra sessão, você pode escolher outro assento disponível sem custo adicional.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               {/* Seletor de Sessões / Horários com contador de assentos acumulados */}
               {availableSessions.length > 0 && (
                 <View className="mb-4">
@@ -1036,7 +1383,7 @@ export default function ProductDetailScreen() {
                       Escolha o Horário / Sessão
                     </Text>
                   </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }} className="flex-row">
                     {availableSessions.map((sess: any) => {
                       const isSelected = (selectedSession?.id || availableSessions[0]?.id) === sess.id;
                       const sessionSeatsCount = selectedSeatsBySession[sess.id]?.seats?.length || 0;
@@ -1114,218 +1461,484 @@ export default function ProductDetailScreen() {
                 onSeatToggle={handleSeatToggle}
               />
 
+              {/* Replicar cadeiras para outra(s) sessão(ões) */}
+              {Boolean(product.multiSessionSingleCharge) && availableSessions.length > 1 && currentSessionSeats.length > 0 && (
+                <View
+                  style={{
+                    marginTop: 14,
+                    padding: 14,
+                    borderRadius: 16,
+                    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.12)' : '#eef2ff',
+                    borderWidth: 1,
+                    borderColor: isDark ? 'rgba(99, 102, 241, 0.35)' : '#c7d2fe'
+                  }}
+                >
+                  <View className="flex-row items-center gap-2 mb-2.5">
+                    <Copy size={14} color={isDark ? '#818cf8' : '#4f46e5'} />
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: isDark ? '#a5b4fc' : '#4338ca', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                      Replicar cadeiras desta sessão para:
+                    </Text>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }} className="flex-row">
+                    {availableSessions.filter((s: any) => (s?.id || 'default') !== activeSessionId).length >= 2 && (
+                      <TouchableOpacity
+                        disabled={replicatingSeats}
+                        onPress={() => handleReplicateSeats(availableSessions)}
+                        activeOpacity={0.8}
+                        style={{
+                          marginRight: 8,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 12,
+                          backgroundColor: '#4f46e5',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          opacity: replicatingSeats ? 0.6 : 1
+                        }}
+                      >
+                        {replicatingSeats ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Layers size={13} color="#fff" />
+                        )}
+                        <Text style={{ fontSize: 11, fontWeight: '900', color: '#ffffff' }}>
+                          Todas as sessões
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {availableSessions
+                      .filter((s: any) => (s?.id || 'default') !== activeSessionId)
+                      .map((targetSess: any) => (
+                        <TouchableOpacity
+                          key={`rep_${targetSess.id}`}
+                          disabled={replicatingSeats}
+                          onPress={() => handleReplicateSeats([targetSess])}
+                          activeOpacity={0.8}
+                          style={{
+                            marginRight: 8,
+                            paddingHorizontal: 12,
+                            paddingVertical: 8,
+                            borderRadius: 12,
+                            backgroundColor: isDark ? '#1e1b4b' : '#ffffff',
+                            borderWidth: 1,
+                            borderColor: isDark ? 'rgba(129, 140, 248, 0.45)' : '#a5b4fc',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 5,
+                            opacity: replicatingSeats ? 0.6 : 1
+                          }}
+                        >
+                          <Copy size={12} color={isDark ? '#a5b4fc' : '#4f46e5'} />
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? '#e0e7ff' : '#312e81' }}>
+                            {targetSess.name || 'Outra sessão'}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                  </ScrollView>
+                </View>
+              )}
+
               {/* Resumo visual de assentos selecionados entre todas as sessões */}
               {allSelectedSeats.length > 0 && (
                 <View 
                   style={{
                     marginTop: 16,
-                    padding: 16,
+                    padding: 14,
                     borderRadius: 16,
                     backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : 'rgba(254, 243, 199, 0.5)',
                     borderWidth: 1,
                     borderColor: isDark ? 'rgba(245, 158, 11, 0.25)' : '#fde68a'
                   }}
                 >
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Text className="text-[10px] font-black text-amber-500 uppercase tracking-wider">
-                      Assentos Selecionados ({allSelectedSeats.length}):
-                    </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '900', color: '#d97706', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                        Assentos Selecionados ({allSelectedSeats.length})
+                      </Text>
+                      {freeMultiSessionCount > 0 && (
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: isDark ? '#9ca3af' : '#6b7280', marginTop: 2 }}>
+                          {paidSeatsCount} {paidSeatsCount === 1 ? 'pago' : 'pagos'} • {freeMultiSessionCount} {freeMultiSessionCount === 1 ? 'incluso (R$ 0)' : 'inclusos (R$ 0)'}
+                        </Text>
+                      )}
+                    </View>
                     <TouchableOpacity
                       onPress={() => setSelectedSeatsBySession({})}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ flexShrink: 0, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: 'rgba(239, 68, 68, 0.12)' }}
                     >
-                      <Text className="text-[10px] font-bold text-red-400 uppercase">Limpar Seleção</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: '#ef4444', textTransform: 'uppercase' }}>
+                        Limpar
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                  <View className="flex-row flex-wrap gap-2">
-                    {allSelectedSeats.map((item) => (
-                      <View 
-                        key={`${item.sessionId}_${item.seatId}`} 
-                        style={{
-                          paddingHorizontal: 12,
-                          paddingVertical: 6,
-                          borderRadius: 12,
-                          backgroundColor: 'rgba(234, 179, 8, 0.15)',
-                          borderWidth: 1,
-                          borderColor: 'rgba(234, 179, 8, 0.35)',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 6
-                        }}
-                      >
-                        <Armchair size={12} color="#eab308" />
-                        <Text style={{ fontSize: 12, fontWeight: '900', color: '#eab308' }}>
-                          Cadeira {item.seatId}
-                          {getSeatSectorName(item.seatId, activeSeatMapConfig) ? ` (${getSeatSectorName(item.seatId, activeSeatMapConfig)})` : ''}
-                        </Text>
-                        <Text style={{ fontSize: 10, color: '#9ca3af', fontWeight: '600' }}>
-                          • {item.sessionName}
-                        </Text>
-                      </View>
-                    ))}
+
+                  <View style={{ gap: 8 }}>
+                    {allSelectedSeats.map((item) => {
+                      const isFreeChip = Boolean(item.isMultiSessionFree);
+                      const sectorName = getSeatSectorName(item.seatId, activeSeatMapConfig);
+                      const showStatusPill = isFreeChip || Boolean(product.multiSessionSingleCharge);
+                      return (
+                        <View 
+                          key={`${item.sessionId}_${item.seatId}`} 
+                          style={{
+                            width: '100%',
+                            paddingHorizontal: 12,
+                            paddingVertical: 9,
+                            borderRadius: 12,
+                            backgroundColor: isFreeChip
+                              ? (isDark ? 'rgba(16, 185, 129, 0.14)' : 'rgba(236, 253, 245, 0.9)')
+                              : (isDark ? 'rgba(234, 179, 8, 0.14)' : '#ffffff'),
+                            borderWidth: 1,
+                            borderColor: isFreeChip
+                              ? 'rgba(16, 185, 129, 0.45)'
+                              : (isDark ? 'rgba(234, 179, 8, 0.35)' : '#fcd34d'),
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 8
+                          }}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                            <Armchair size={14} color={isFreeChip ? '#10b981' : '#d97706'} style={{ flexShrink: 0 }} />
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text
+                                style={{ fontSize: 12, fontWeight: '900', color: isFreeChip ? '#059669' : '#b45309' }}
+                                numberOfLines={1}
+                              >
+                                Cadeira {item.seatId}{sectorName ? ` • ${sectorName}` : ''}
+                              </Text>
+                              <Text
+                                style={{ fontSize: 10, color: isDark ? '#9ca3af' : '#6b7280', fontWeight: '600', marginTop: 1 }}
+                                numberOfLines={1}
+                              >
+                                {item.sessionName}
+                              </Text>
+                            </View>
+                          </View>
+                          {showStatusPill && (
+                            <View
+                              style={{
+                                flexShrink: 0,
+                                paddingHorizontal: 8,
+                                paddingVertical: 3,
+                                borderRadius: 9999,
+                                backgroundColor: isFreeChip ? 'rgba(16, 185, 129, 0.22)' : 'rgba(245, 158, 11, 0.18)'
+                              }}
+                            >
+                              <Text style={{ fontSize: 9, fontWeight: '900', color: isFreeChip ? '#059669' : '#b45309' }}>
+                                {isFreeChip ? 'Incluso • R$ 0' : 'Pago'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               )}
             </View>
           )}
 
-          {/* Participant Info Fields */}
-          {participants.map((participant, index) => {
-            const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
-              ? selectedLocation.extraTicketPrice
-              : (product.extraTicketPrice || 0);
-            const isGraduation = Boolean(product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0));
-            const isStudent = isGraduation && purchaseMode === 'full' && index === 0;
-            const isExtra = isGraduation ? (purchaseMode === 'extra_only' || index > 0) : false;
-            const seatInfoForCard = isGraduation
-              ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[index - 1] : allSelectedSeats[index]) : null)
-              : allSelectedSeats[index];
+          {/* Participant Info Fields (Agrupado: 1 card por pessoa / slot em multi-sessão) */}
+          {(() => {
+            let visibleExtraNum = 0;
+            let visibleItemNum = 0;
 
-            return (
-              <View 
-                key={index} 
-                style={{
-                  marginBottom: 32,
-                  padding: 24,
-                  borderRadius: 24,
-                  borderWidth: 1,
-                  backgroundColor: isExtra 
-                    ? (isDark ? 'rgba(69, 26, 3, 0.25)' : 'rgba(254, 243, 199, 0.5)') 
-                    : (isDark ? '#121212' : '#f9fafb'),
-                  borderColor: isExtra 
-                    ? (isDark ? 'rgba(146, 64, 14, 0.35)' : '#fde68a') 
-                    : (isDark ? '#262626' : '#f3f4f6')
-                }}
-              >
-                <View className="flex-row items-center justify-between mb-4">
-                  <View className="flex-1 mr-2">
-                    <View className="flex-row items-center gap-2">
-                      <Text className={`text-xs font-black uppercase tracking-widest ${isExtra ? 'text-amber-600 dark:text-amber-400' : 'text-yellow-600 dark:text-yellow-500'}`}>
-                        {isStudent 
-                          ? 'Inscrição do Aluno' 
-                          : (isExtra 
-                              ? `Acompanhante ${isGraduation && purchaseMode === 'full' ? index : index + 1}` 
-                              : `Informações do Item ${index + 1}`)}
-                      </Text>
-                      {isStudent && (
-                        <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(234, 179, 8, 0.2)', borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.4)' }}>
-                          <Text style={{ fontSize: 9, fontWeight: '900', color: '#d97706' }}>
-                            🥋 Aluno (Tatame)
-                          </Text>
-                        </View>
-                      )}
-                      {isExtra && (
-                        <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.4)' }}>
-                          <Text style={{ fontSize: 9, fontWeight: '900', color: '#059669' }}>
-                            {formatCentsToCurrency(effectiveExtraPrice)}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    {isStudent && (
-                      <Text className="text-[10px] text-gray-400 font-semibold mt-0.5">
-                        Participação na graduação no tatame (cadeira na plateia não inclusa)
-                      </Text>
-                    )}
-                    {seatInfoForCard && (
-                      <Text className="text-[10px] text-gray-400 font-semibold mt-0.5" numberOfLines={1}>
-                        📅 {seatInfoForCard.sessionLabel} {seatInfoForCard.locationName ? `• 📍 ${seatInfoForCard.locationName}` : ''}
-                      </Text>
-                    )}
-                  </View>
-                  {seatInfoForCard?.seatId && (
-                    <View className="px-3 py-1 bg-yellow-500 rounded-full flex-row items-center gap-1.5 shadow-sm">
-                      <Armchair size={12} color="#000" />
-                      <Text className="text-xs font-black text-black">
-                        Cadeira {seatInfoForCard.seatId}
-                        {getSeatSectorName(seatInfoForCard.seatId, activeSeatMapConfig) ? ` • ${getSeatSectorName(seatInfoForCard.seatId, activeSeatMapConfig)}` : ''}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                
-                <View className="space-y-4">
-                  {/* Seletor de Tipo de Ingresso (Inteira vs Meia-Entrada) */}
-                  {(product.hasHalfPrice || Boolean(selectedLocation?.halfPrice) || (isExtra && product.extraTicketHalfPrice)) && (
-                    <View style={{ marginBottom: 12 }}>
-                      <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
-                        Tipo de Ingresso
-                      </Text>
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <TouchableOpacity
-                          onPress={() => updateParticipant(index, { ticketType: 'inteira' })}
-                          style={{
-                            flex: 1,
-                            paddingVertical: 10,
-                            paddingHorizontal: 12,
-                            borderRadius: 14,
-                            borderWidth: 1.5,
-                            backgroundColor: (participant.ticketType !== 'meia') ? (isDark ? 'rgba(234, 179, 8, 0.15)' : '#fef3c7') : (isDark ? '#1a1a1a' : '#ffffff'),
-                            borderColor: (participant.ticketType !== 'meia') ? '#eab308' : (isDark ? '#333333' : '#e5e7eb'),
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '800', color: (participant.ticketType !== 'meia') ? (isDark ? '#facc15' : '#b45309') : (isDark ? '#9ca3af' : '#4b5563') }}>
-                            Inteira
-                          </Text>
-                          <Text style={{ fontSize: 11, fontWeight: '900', color: (participant.ticketType !== 'meia') ? (isDark ? '#facc15' : '#b45309') : '#9ca3af' }}>
-                            {formatCentsToCurrency(isExtra ? ((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) : ((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)))}
-                          </Text>
-                        </TouchableOpacity>
+            return participants.map((participant, index) => {
+              const effectiveExtraPrice = (product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0)
+                ? selectedLocation.extraTicketPrice
+                : (product.extraTicketPrice || 0);
+              const isGraduation = Boolean(product.hasSeatMap && (product.hasExtraTicketPrice || product.extraTicketPrice > 0 || effectiveExtraPrice > 0));
+              const isStudent = isGraduation && purchaseMode === 'full' && index === 0;
+              const isExtra = isGraduation ? (purchaseMode === 'extra_only' || index > 0) : false;
+              const seatInfoForCard = isGraduation
+                ? (isExtra ? (purchaseMode === 'full' ? allSelectedSeats[index - 1] : allSelectedSeats[index]) : null)
+                : allSelectedSeats[index];
+              const isMultiFreeCard = Boolean(seatInfoForCard?.isMultiSessionFree || participant?.isMultiSessionFree);
 
-                        <TouchableOpacity
-                          onPress={() => updateParticipant(index, { ticketType: 'meia' })}
-                          style={{
-                            flex: 1,
-                            paddingVertical: 10,
-                            paddingHorizontal: 12,
-                            borderRadius: 14,
-                            borderWidth: 1.5,
-                            backgroundColor: (participant.ticketType === 'meia') ? (isDark ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff') : (isDark ? '#1a1a1a' : '#ffffff'),
-                            borderColor: (participant.ticketType === 'meia') ? '#a855f7' : (isDark ? '#333333' : '#e5e7eb'),
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                          }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '800', color: (participant.ticketType === 'meia') ? '#a855f7' : (isDark ? '#9ca3af' : '#4b5563') }}>
-                            Meia-Entrada
-                          </Text>
-                          <Text style={{ fontSize: 11, fontWeight: '900', color: (participant.ticketType === 'meia') ? '#a855f7' : '#9ca3af' }}>
-                            {formatCentsToCurrency(isExtra 
-                              ? ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.extraTicketHalfPrice || product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) / 2)))
-                              : ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)) / 2))))}
-                          </Text>
-                        </TouchableOpacity>
+              // Sessões extras inclusas no mesmo slot aparecem agrupadas dentro do card pago deste slot
+              if (isMultiFreeCard) return null;
+
+              if (isExtra) visibleExtraNum += 1;
+              else if (!isStudent) visibleItemNum += 1;
+
+              const slotKeyForCard = seatInfoForCard?.slotKey || participant?.multiSessionSlotKey || null;
+              const linkedEntries = (slotKeyForCard && seatInfoForCard)
+                ? participants
+                    .map((pItem, pIdx) => {
+                      const pIsExtra = isGraduation ? (purchaseMode === 'extra_only' || pIdx > 0) : false;
+                      const pSeat = isGraduation
+                        ? (pIsExtra ? (purchaseMode === 'full' ? allSelectedSeats[pIdx - 1] : allSelectedSeats[pIdx]) : null)
+                        : allSelectedSeats[pIdx];
+                      return { pIndex: pIdx, participant: pItem, seatInfo: pSeat };
+                    })
+                    .filter((entry) => entry.seatInfo?.slotKey === slotKeyForCard)
+                : [];
+
+              const isGroupedMultiSession = linkedEntries.length > 1;
+              const isAltExpanded = Boolean(slotKeyForCard && expandedAltNamesBySlot[slotKeyForCard]);
+              const hideStudentExtraFields = isExtra;
+
+              return (
+                <View 
+                  key={index} 
+                  style={{
+                    marginBottom: 32,
+                    padding: 24,
+                    borderRadius: 24,
+                    borderWidth: 1,
+                    backgroundColor: isExtra 
+                      ? (isDark ? 'rgba(69, 26, 3, 0.25)' : 'rgba(254, 243, 199, 0.5)') 
+                      : (isDark ? '#121212' : '#f9fafb'),
+                    borderColor: isExtra 
+                      ? (isDark ? 'rgba(146, 64, 14, 0.35)' : '#fde68a') 
+                      : (isDark ? '#262626' : '#f3f4f6')
+                  }}
+                >
+                  <View className="flex-row items-center justify-between mb-4">
+                    <View className="flex-1 mr-2">
+                      <View className="flex-row items-center flex-wrap gap-2">
+                        <Text className={`text-xs font-black uppercase tracking-widest ${isExtra ? 'text-amber-600 dark:text-amber-400' : 'text-yellow-600 dark:text-yellow-500'}`}>
+                          {isStudent 
+                            ? 'Inscrição do Aluno' 
+                            : (isExtra 
+                                ? `Acompanhante ${visibleExtraNum}` 
+                                : `Informações do Item ${visibleItemNum}`)}
+                        </Text>
+                        {isStudent && (
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(234, 179, 8, 0.2)', borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.4)' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: '#d97706' }}>
+                              Aluno (Tatame)
+                            </Text>
+                          </View>
+                        )}
+                        {isExtra && (
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(16, 185, 129, 0.2)', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: '#059669' }}>
+                              {formatCentsToCurrency(effectiveExtraPrice)}
+                            </Text>
+                          </View>
+                        )}
+                        {isGroupedMultiSession && (
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999, backgroundColor: 'rgba(16, 185, 129, 0.18)', borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.45)', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Layers size={10} color="#10b981" />
+                            <Text style={{ fontSize: 9, fontWeight: '900', color: '#10b981' }}>
+                              {linkedEntries.length} sessões • Paga 1x
+                            </Text>
+                          </View>
+                        )}
                       </View>
+                      {isStudent && (
+                        <Text className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                          Participação na graduação no tatame (cadeira na plateia não inclusa)
+                        </Text>
+                      )}
+                      {!isGroupedMultiSession && seatInfoForCard && (
+                        <Text className="text-[10px] text-gray-400 font-semibold mt-0.5" numberOfLines={2}>
+                          {seatInfoForCard.sessionLabel}{seatInfoForCard.locationName ? ` • ${seatInfoForCard.locationName}` : ''}
+                        </Text>
+                      )}
                     </View>
-                  )}
-
-                  <View>
-                    <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">
-                      {isExtra ? 'Nome do Acompanhante / Convidado' : 'Nome do Aluno'}
-                    </Text>
-                    <TextInput 
-                      value={participant.userName}
-                      onChangeText={(v) => updateParticipant(index, { userName: v })}
-                      placeholder={isExtra ? "Nome do convidado que ocupará o assento" : "Nome completo do aluno"}
-                      placeholderTextColor="#999"
-                      className="bg-white dark:bg-[#1a1a1a] p-4 rounded-2xl border border-gray-100 dark:border-white/10 text-gray-900 dark:text-white"
-                    />
+                    {!isGroupedMultiSession && seatInfoForCard?.seatId && (
+                      <View className="px-3 py-1 bg-yellow-500 rounded-full flex-row items-center gap-1.5 shadow-sm">
+                        <Armchair size={12} color="#000" />
+                        <Text className="text-xs font-black text-black">
+                          Cadeira {seatInfoForCard.seatId}
+                          {getSeatSectorName(seatInfoForCard.seatId, activeSeatMapConfig) ? ` • ${getSeatSectorName(seatInfoForCard.seatId, activeSeatMapConfig)}` : ''}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
-                  {isExtra && (
-                    <View style={{ padding: 12, backgroundColor: 'rgba(234, 179, 8, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.25)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ fontSize: 12 }}>🎟️</Text>
-                      <Text style={{ fontSize: 11, color: isDark ? '#fde68a' : '#b45309', fontWeight: '500', flex: 1 }}>
-                        Ingresso adicional para assistir ao evento. Não requer dados de graduação ou programa.
+                  {isGroupedMultiSession && (
+                    <View
+                      style={{
+                        marginBottom: 16,
+                        padding: 12,
+                        borderRadius: 16,
+                        backgroundColor: isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(236, 253, 245, 0.9)',
+                        borderWidth: 1,
+                        borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#a7f3d0',
+                        gap: 8
+                      }}
+                    >
+                      <Text style={{ fontSize: 10, fontWeight: '900', color: isDark ? '#34d399' : '#047857', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Sessões e cadeiras incluídas neste ingresso:
                       </Text>
+                      {linkedEntries.map((entry, eIdx) => {
+                        const sInfo = entry.seatInfo;
+                        if (!sInfo) return null;
+                        const sectorName = getSeatSectorName(sInfo.seatId, activeSeatMapConfig);
+                        const isFreeRow = Boolean(sInfo.isMultiSessionFree);
+                        return (
+                          <View
+                            key={`${sInfo.sessionId}_${sInfo.seatId}`}
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              paddingVertical: 6,
+                              paddingHorizontal: 10,
+                              borderRadius: 12,
+                              backgroundColor: isDark ? 'rgba(0,0,0,0.28)' : '#ffffff',
+                              borderWidth: 1,
+                              borderColor: isFreeRow
+                                ? (isDark ? 'rgba(16, 185, 129, 0.35)' : '#a7f3d0')
+                                : (isDark ? 'rgba(234, 179, 8, 0.35)' : '#fde68a'),
+                              gap: 8
+                            }}
+                          >
+                            <View style={{ flex: 1, minWidth: 0 }}>
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#e5e7eb' : '#111827' }} numberOfLines={2}>
+                                {sInfo.sessionLabel || sInfo.sessionName}
+                                {sInfo.locationName ? ` • ${sInfo.locationName}` : ''}
+                              </Text>
+                              <Text style={{ fontSize: 10, fontWeight: '800', color: isFreeRow ? '#10b981' : '#d97706', marginTop: 1 }} numberOfLines={1}>
+                                Cadeira {sInfo.seatId}{sectorName ? ` • ${sectorName}` : ''}
+                              </Text>
+                            </View>
+                            <View
+                              style={{
+                                flexShrink: 0,
+                                paddingHorizontal: 8,
+                                paddingVertical: 3,
+                                borderRadius: 9999,
+                                backgroundColor: isFreeRow ? 'rgba(16, 185, 129, 0.18)' : 'rgba(234, 179, 8, 0.18)'
+                              }}
+                            >
+                              <Text style={{ fontSize: 9, fontWeight: '900', color: isFreeRow ? '#10b981' : '#d97706' }}>
+                                {isFreeRow ? 'Incluso • R$ 0,00' : `${eIdx + 1}ª sessão`}
+                              </Text>
+                            </View>
+                          </View>
+                        );
+                      })}
                     </View>
                   )}
+                  
+                  <View className="space-y-4">
+                    {/* Seletor de Tipo de Ingresso (Inteira vs Meia-Entrada) */}
+                    {(product.hasHalfPrice || Boolean(selectedLocation?.halfPrice) || (isExtra && product.extraTicketHalfPrice)) && (
+                      <View style={{ marginBottom: 12 }}>
+                        <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1.5 ml-1">
+                          Tipo de Ingresso
+                        </Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity
+                            onPress={() => updateParticipant(index, { ticketType: 'inteira' })}
+                            style={{
+                              flex: 1,
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
+                              borderRadius: 14,
+                              borderWidth: 1.5,
+                              backgroundColor: (participant.ticketType !== 'meia') ? (isDark ? 'rgba(234, 179, 8, 0.15)' : '#fef3c7') : (isDark ? '#1a1a1a' : '#ffffff'),
+                              borderColor: (participant.ticketType !== 'meia') ? '#eab308' : (isDark ? '#333333' : '#e5e7eb'),
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between'
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, fontWeight: '800', color: (participant.ticketType !== 'meia') ? (isDark ? '#facc15' : '#b45309') : (isDark ? '#9ca3af' : '#4b5563') }}>
+                              Inteira
+                            </Text>
+                            <Text style={{ fontSize: 11, fontWeight: '900', color: (participant.ticketType !== 'meia') ? (isDark ? '#facc15' : '#b45309') : '#9ca3af' }}>
+                              {formatCentsToCurrency(isExtra ? ((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) : ((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)))}
+                            </Text>
+                          </TouchableOpacity>
 
-                  {!isExtra && product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0 && (
+                          <TouchableOpacity
+                            onPress={() => updateParticipant(index, { ticketType: 'meia' })}
+                            style={{
+                              flex: 1,
+                              paddingVertical: 10,
+                              paddingHorizontal: 12,
+                              borderRadius: 14,
+                              borderWidth: 1.5,
+                              backgroundColor: (participant.ticketType === 'meia') ? (isDark ? 'rgba(168, 85, 247, 0.15)' : '#f3e8ff') : (isDark ? '#1a1a1a' : '#ffffff'),
+                              borderColor: (participant.ticketType === 'meia') ? '#a855f7' : (isDark ? '#333333' : '#e5e7eb'),
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between'
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, fontWeight: '800', color: (participant.ticketType === 'meia') ? '#a855f7' : (isDark ? '#9ca3af' : '#4b5563') }}>
+                              Meia-Entrada
+                            </Text>
+                            <Text style={{ fontSize: 11, fontWeight: '900', color: (participant.ticketType === 'meia') ? '#a855f7' : '#9ca3af' }}>
+                              {formatCentsToCurrency(isExtra 
+                                ? ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.extraTicketHalfPrice || product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.extraTicketPrice && selectedLocation.extraTicketPrice > 0) ? selectedLocation.extraTicketPrice : (product.extraTicketPrice || 0)) / 2)))
+                                : ((selectedLocation?.halfPrice && selectedLocation.halfPrice > 0) ? selectedLocation.halfPrice : (product.halfPrice || Math.round(((product.hasLocations && selectedLocation?.price && selectedLocation.price > 0) ? selectedLocation.price : (product.price || 0)) / 2))))}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+
+                    <View>
+                      <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">
+                        {isExtra ? 'Nome do Acompanhante / Convidado' : 'Nome do Aluno'}
+                      </Text>
+                      <TextInput 
+                        value={participant.userName}
+                        onChangeText={(v) => updateParticipant(index, { userName: v })}
+                        placeholder={isExtra ? 'Nome do convidado que ocupará o assento' : 'Nome completo do aluno'}
+                        placeholderTextColor="#999"
+                        className="bg-white dark:bg-[#1a1a1a] p-4 rounded-2xl border border-gray-100 dark:border-white/10 text-gray-900 dark:text-white"
+                      />
+                    </View>
+
+                    {isGroupedMultiSession && slotKeyForCard && (
+                      <View style={{ gap: 8 }}>
+                        <View style={{ padding: 12, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.25)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Layers size={15} color="#10b981" />
+                          <Text style={{ fontSize: 11, color: isDark ? '#a7f3d0' : '#065f46', fontWeight: '600', flex: 1 }}>
+                            Este nome será usado em todas as {linkedEntries.length} sessões incluídas sem custo adicional.
+                          </Text>
+                        </View>
+
+                        <TouchableOpacity
+                          onPress={() => setExpandedAltNamesBySlot(prev => ({ ...prev, [slotKeyForCard]: !prev[slotKeyForCard] }))}
+                          activeOpacity={0.7}
+                          style={{ paddingVertical: 4, paddingHorizontal: 4 }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#93c5fd' : '#2563eb' }}>
+                            {isAltExpanded ? 'Ocultar nomes por sessão' : 'Outra pessoa ocupará alguma sessão?'}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {isAltExpanded && (
+                          <View style={{ gap: 10, padding: 12, borderRadius: 16, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#ffffff', borderWidth: 1, borderColor: isDark ? '#262626' : '#e5e7eb' }}>
+                            {linkedEntries.slice(1).map((entry) => (
+                              <View key={`alt_${entry.pIndex}`}>
+                                <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">
+                                  Nome em {entry.seatInfo?.sessionName || 'outra sessão'} (Cadeira {entry.seatInfo?.seatId})
+                                </Text>
+                                <TextInput
+                                  value={entry.participant.userName}
+                                  onChangeText={(v) => updateParticipant(entry.pIndex, { userName: v })}
+                                  placeholder="Deixe em branco para manter o mesmo nome"
+                                  placeholderTextColor="#999"
+                                  className="bg-white dark:bg-[#1a1a1a] p-3.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white text-xs"
+                                />
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    )}
+
+                    {!isGroupedMultiSession && isExtra && (
+                      <View style={{ padding: 12, backgroundColor: 'rgba(234, 179, 8, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(234, 179, 8, 0.25)', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Ticket size={14} color={isDark ? '#fde68a' : '#b45309'} />
+                        <Text style={{ fontSize: 11, color: isDark ? '#fde68a' : '#b45309', fontWeight: '500', flex: 1 }}>
+                          Ingresso adicional para assistir ao evento. Não requer dados de graduação ou programa.
+                        </Text>
+                      </View>
+                    )}
+
+                  {!hideStudentExtraFields && product.priceType === 'variable' && product.priceVariants && product.priceVariants.length > 0 && (
                     <View>
                       <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">
                         {product.variantsLabel || 'Opção'}
@@ -1354,7 +1967,7 @@ export default function ProductDetailScreen() {
                     </View>
                   )}
 
-                  {!isExtra && (
+                  {!hideStudentExtraFields && (
                     <View>
                       <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Programa</Text>
                       <View className="flex-row flex-wrap">
@@ -1378,7 +1991,7 @@ export default function ProductDetailScreen() {
                     </View>
                   )}
 
-                  {!isExtra && (participant.userPrograma === 'tradicional' || participant.userPrograma === 'littles') && (
+                  {!hideStudentExtraFields && (participant.userPrograma === 'tradicional' || participant.userPrograma === 'littles') && (
                     <View>
                       <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Graduação</Text>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row py-1">
@@ -1395,7 +2008,7 @@ export default function ProductDetailScreen() {
                     </View>
                   )}
 
-                  {!isExtra && product.hasSizes && product.sizes && (
+                  {!hideStudentExtraFields && product.hasSizes && product.sizes && (
                     <View>
                       <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Tamanho</Text>
                       <View className="flex-row flex-wrap">
@@ -1442,7 +2055,7 @@ export default function ProductDetailScreen() {
                     </View>
                   )}
 
-                  {!isExtra && product.priceType === 'kit' && Array.isArray(product.kitItems) && product.kitItems.some((k: any) => Array.isArray(k.options) && k.options.length > 0) && (
+                  {!hideStudentExtraFields && product.priceType === 'kit' && Array.isArray(product.kitItems) && product.kitItems.some((k: any) => Array.isArray(k.options) && k.options.length > 0) && (
                     <View className="space-y-3">
                       <Text className="text-[10px] font-bold text-gray-400 uppercase ml-1">Opções dos Itens do Kit</Text>
                       {product.kitItems.map((kItem: any, kIdx: number) => {
@@ -1485,10 +2098,10 @@ export default function ProductDetailScreen() {
                     </View>
                   )}
 
-                  {!isExtra && product.askProfessor && (
+                  {!hideStudentExtraFields && product.askProfessor && (
                     <View>
                       <Text className="text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Professor Responsável</Text>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8 }} className="flex-row">
                         {product.availableProfessors && product.availableProfessors.length > 0 ? (
                           product.availableProfessors.map((profName: string, i: number) => (
                             <TouchableOpacity 
@@ -1515,8 +2128,9 @@ export default function ProductDetailScreen() {
                   )}
                 </View>
               </View>
-            );
-          })}
+              );
+            });
+          })()}
 
           {/* Benefits */}
           <View className="flex-row justify-between mb-8">
@@ -1541,17 +2155,17 @@ export default function ProductDetailScreen() {
         style={{ paddingBottom: Math.max(insets.bottom, 24) }}
         className="px-6 pt-6 bg-white dark:bg-[#0a0a0a] border-t border-gray-100 dark:border-white/5 shadow-2xl"
       >
-        <View className="flex-row items-center justify-between mb-6">
+        <View className="flex-row items-center justify-between mb-6" style={{ gap: 12 }}>
           {product.hasSeatMap ? (
-            <View className="flex-row items-center gap-2">
-              <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center border border-yellow-500/20">
+            <View className="flex-row items-center gap-2" style={{ flexShrink: 1, maxWidth: '42%', minWidth: 0 }}>
+              <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center border border-yellow-500/20" style={{ flexShrink: 0 }}>
                 <Armchair size={18} color="#eab308" />
               </View>
-              <View>
+              <View style={{ flexShrink: 1, minWidth: 0 }}>
                 <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                   Cadeiras ({allSelectedSeats.length})
                 </Text>
-                <Text className="text-xs font-black text-gray-900 dark:text-white max-w-[150px]" numberOfLines={1}>
+                <Text className="text-xs font-black text-gray-900 dark:text-white" numberOfLines={1}>
                   {allSelectedSeats.length > 0 ? allSelectedSeats.map(s => s.seatId).join(', ') : 'Nenhuma'}
                 </Text>
               </View>
@@ -1578,15 +2192,21 @@ export default function ProductDetailScreen() {
             </View>
           )}
           
-          <View className="items-end">
-            <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+          <View className="items-end" style={{ flex: 1, minWidth: 0 }}>
+            <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1" style={{ textAlign: 'right' }} numberOfLines={2}>
               {product.hasSeatMap && (product.hasExtraTicketPrice || ((product.hasLocations && selectedLocation?.extraTicketPrice) ? selectedLocation.extraTicketPrice > 0 : product.extraTicketPrice > 0))
                 ? (purchaseMode === 'extra_only'
-                    ? `${allSelectedSeats.length}x Cadeira Extra`
+                    ? (freeMultiSessionCount > 0
+                        ? `${paidSeatsCount}x Cadeira Extra (${freeMultiSessionCount === 1 ? '+1 inclusa' : `+${freeMultiSessionCount} inclusas`})`
+                        : `${allSelectedSeats.length}x Cadeira Extra`)
                     : (allSelectedSeats.length > 0
-                        ? `1x Inscrição + ${allSelectedSeats.length}x Cadeira`
+                        ? (freeMultiSessionCount > 0
+                            ? `1x Inscrição + ${paidSeatsCount}x Cadeira (${freeMultiSessionCount === 1 ? '+1 inclusa' : `+${freeMultiSessionCount} inclusas`})`
+                            : `1x Inscrição + ${allSelectedSeats.length}x Cadeira`)
                         : '1x Inscrição do Aluno'))
-                : 'Total'}
+                : (product.hasSeatMap && freeMultiSessionCount > 0
+                    ? `${paidSeatsCount}x Cadeira (${freeMultiSessionCount === 1 ? '+1 multi-sessão' : `+${freeMultiSessionCount} multi-sessão`})`
+                    : 'Total')}
             </Text>
             <Text className="text-xl font-black text-gray-900 dark:text-white">
               {(calculateTotal() / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

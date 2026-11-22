@@ -18,7 +18,7 @@ export interface SeatConfig {
   cols?: number;
   stageLabel?: string;
   disabledSeats?: string[];
-  layoutType?: 'theater' | 'gym_sides' | 'arena_4_sides';
+  layoutType?: 'theater' | 'gym_sides' | 'arena_4_sides' | 'arena_u_shape';
   topRows?: number;
   bottomRows?: number;
   sideCols?: number;
@@ -113,6 +113,13 @@ export default function SeatMapSelector({
   const bottomRows = Math.min(Math.max(1, rawBottom), isUShape ? Math.max(1, numRows - 1) : maxBlockRows);
   const sideCols = Math.min(Math.max(1, rawSide), Math.max(1, Math.floor((numCols - 2) / 2)));
   const midRowsCount = Math.max(0, numRows - topRows - bottomRows);
+
+  // Geometria proporcional exata em px (cadeira 28 + 2*2 margin + 4 gap = 36px; rótulo = 16px)
+  const seatSlotPitch = 36;
+  const totalRowWidth = numCols * seatSlotPitch + 36;
+  const sidePanelWidth = sideCols * seatSlotPitch + 16;
+  const arenaMidGap = 8;
+  const tatameWidth = Math.max(60, totalRowWidth - sidePanelWidth * 2 - arenaMidGap * 2);
 
   useEffect(() => {
     if (!productId) return;
@@ -554,24 +561,24 @@ export default function SeatMapSelector({
           ) : null}
 
           {(layoutType === 'arena_4_sides' || layoutType === 'arena_u_shape') ? (
-            <View style={{ flexDirection: 'column', alignItems: 'center', gap: 16, minWidth: '100%' }}>
+            <View style={{ flexDirection: 'column', alignItems: 'center', gap: 8, minWidth: '100%' }}>
               {/* 1. Setor Superior (Norte) - Não exibido no Formato em U */}
               {(!isUShape && (activeSectorFilter === 'all' || activeSectorFilter === 'top')) ? (
                 <View style={{ flexDirection: 'column', alignItems: 'center' }}>
                   <View style={{
                     marginBottom: 6,
-                    paddingHorizontal: 12,
-                    paddingVertical: 4,
+                    paddingHorizontal: 10,
+                    paddingVertical: 3,
                     backgroundColor: 'rgba(79, 70, 229, 0.1)',
                     borderWidth: 1,
                     borderColor: 'rgba(79, 70, 229, 0.3)',
                     borderRadius: 8,
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 5
+                    gap: 4
                   }}>
-                    <ArrowUp size={11} color="#4f46e5" />
-                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#4f46e5', textTransform: 'uppercase' }}>
+                    <ArrowUp size={10} color="#4f46e5" />
+                    <Text style={{ fontSize: 9, fontWeight: '900', color: '#4f46e5', textTransform: 'uppercase' }}>
                       Setor Superior (Norte)
                     </Text>
                   </View>
@@ -595,30 +602,50 @@ export default function SeatMapSelector({
                       );
                     })}
                   </View>
+                  {activeSectorFilter === 'top' ? (
+                    <View style={{
+                      marginTop: 8,
+                      width: Math.max(180, numCols * seatSlotPitch - 4),
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      borderRadius: 14,
+                      borderWidth: 1.5,
+                      borderStyle: 'dashed',
+                      borderColor: 'rgba(234, 179, 8, 0.55)',
+                      backgroundColor: 'rgba(234, 179, 8, 0.08)',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Text style={{ fontSize: 9, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {stageLabel}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               ) : null}
 
               {/* 2. Miolo: Setor Oeste + Tatame Central + Setor Leste */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'left' || activeSectorFilter === 'right') ? (
-                <View style={{ flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'stretch', justifyContent: 'center', gap: arenaMidGap }}>
                   {/* Setor Oeste (Lateral) */}
                   {(activeSectorFilter === 'all' || activeSectorFilter === 'left') ? (
-                    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'column', alignItems: 'center', minWidth: sidePanelWidth }}>
                       <View style={{
-                        marginBottom: 6,
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
+                        height: 18,
+                        marginBottom: 4,
+                        paddingHorizontal: 6,
                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
                         borderWidth: 1,
                         borderColor: 'rgba(245, 158, 11, 0.3)',
                         borderRadius: 6,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 4
+                        justifyContent: 'center',
+                        gap: 3
                       }}>
-                        <ArrowLeft size={10} color="#d97706" />
-                        <Text style={{ fontSize: 9, fontWeight: '900', color: '#d97706', textTransform: 'uppercase' }}>
-                          Oeste (Lateral)
+                        <ArrowLeft size={9} color="#d97706" />
+                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#d97706', textTransform: 'uppercase' }}>
+                          Oeste
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'column', gap: 4 }}>
@@ -642,23 +669,88 @@ export default function SeatMapSelector({
                     </View>
                   ) : null}
 
-                  {/* Tatame Central da Arena / Palco (Acompanha toda a extensão das fileiras laterais) */}
-                  {activeSectorFilter === 'all' ? (
+                  {/* Referência compacta de Tatame ao filtrar Oeste */}
+                  {activeSectorFilter === 'left' ? (
                     <View style={{
+                      width: 52,
+                      marginTop: 22,
                       alignSelf: 'stretch',
-                      paddingHorizontal: 12,
-                      paddingVertical: 16,
-                      borderRadius: 20,
+                      paddingHorizontal: 6,
+                      paddingVertical: 12,
+                      borderRadius: 16,
                       borderWidth: 1.5,
                       borderStyle: 'dashed',
-                      borderColor: 'rgba(234, 179, 8, 0.5)',
+                      borderColor: 'rgba(234, 179, 8, 0.55)',
                       backgroundColor: 'rgba(234, 179, 8, 0.08)',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      minWidth: 130,
-                      maxWidth: 160
+                      justifyContent: 'center'
                     }}>
+                      <Text style={{ fontSize: 8, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center' }}>
+                        {stageLabel}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* Tatame Central da Arena / Palco (preenche todo o vão entre Oeste e Leste até rente ao Setor Sul) */}
+                  {activeSectorFilter === 'all' ? (
+                    <View style={{
+                      width: tatameWidth,
+                      minHeight: midRowsCount === 0 ? 72 : undefined,
+                      marginTop: midRowsCount > 0 ? 22 : 0,
+                      alignSelf: 'stretch',
+                      paddingHorizontal: 10,
+                      paddingTop: 14,
+                      paddingBottom: 8,
+                      borderRadius: 18,
+                      borderWidth: 1.5,
+                      borderStyle: 'dashed',
+                      borderColor: 'rgba(234, 179, 8, 0.55)',
+                      backgroundColor: 'rgba(234, 179, 8, 0.08)',
+                      alignItems: 'center',
+                      justifyContent: bottomRows > 0 ? 'space-between' : 'center'
+                    }}>
+                      {bottomRows > 0 ? <View /> : null}
                       <Text style={{ fontSize: 10, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1.2, textAlign: 'center' }}>
+                        {stageLabel}
+                      </Text>
+                      {bottomRows > 0 ? (
+                        <View style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 9999,
+                          backgroundColor: 'rgba(5, 150, 105, 0.12)',
+                          borderWidth: 1,
+                          borderColor: 'rgba(5, 150, 105, 0.3)',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 4
+                        }}>
+                          <ArrowDown size={9} color="#059669" />
+                          <Text style={{ fontSize: 8, fontWeight: '900', color: '#059669', textTransform: 'uppercase' }}>
+                            Frente do Tatame
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
+
+                  {/* Referência compacta de Tatame ao filtrar Leste */}
+                  {activeSectorFilter === 'right' ? (
+                    <View style={{
+                      width: 52,
+                      marginTop: 22,
+                      alignSelf: 'stretch',
+                      paddingHorizontal: 6,
+                      paddingVertical: 12,
+                      borderRadius: 16,
+                      borderWidth: 1.5,
+                      borderStyle: 'dashed',
+                      borderColor: 'rgba(234, 179, 8, 0.55)',
+                      backgroundColor: 'rgba(234, 179, 8, 0.08)',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Text style={{ fontSize: 8, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center' }}>
                         {stageLabel}
                       </Text>
                     </View>
@@ -666,23 +758,24 @@ export default function SeatMapSelector({
 
                   {/* Setor Leste (Lateral) */}
                   {(activeSectorFilter === 'all' || activeSectorFilter === 'right') ? (
-                    <View style={{ flexDirection: 'column', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'column', alignItems: 'center', minWidth: sidePanelWidth }}>
                       <View style={{
-                        marginBottom: 6,
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
+                        height: 18,
+                        marginBottom: 4,
+                        paddingHorizontal: 6,
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         borderWidth: 1,
                         borderColor: 'rgba(37, 99, 235, 0.3)',
                         borderRadius: 6,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 4
+                        justifyContent: 'center',
+                        gap: 3
                       }}>
-                        <Text style={{ fontSize: 9, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase' }}>
-                          Leste (Lateral)
+                        <Text style={{ fontSize: 8, fontWeight: '900', color: '#2563eb', textTransform: 'uppercase' }}>
+                          Leste
                         </Text>
-                        <ArrowRight size={10} color="#2563eb" />
+                        <ArrowRight size={9} color="#2563eb" />
                       </View>
                       <View style={{ flexDirection: 'column', gap: 4 }}>
                         {Array.from({ length: midRowsCount }).map((_, idx) => {
@@ -707,26 +800,28 @@ export default function SeatMapSelector({
                 </View>
               ) : null}
 
-              {/* 3. Setor Inferior (Sul) */}
+              {/* 3. Setor Inferior (Sul) - Fileiras coladas diretamente ao Tatame; rótulo abaixo apontando para cima */}
               {(activeSectorFilter === 'all' || activeSectorFilter === 'bottom') ? (
                 <View style={{ flexDirection: 'column', alignItems: 'center' }}>
-                  <View style={{
-                    marginBottom: 6,
-                    paddingHorizontal: 12,
-                    paddingVertical: 4,
-                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
-                    borderWidth: 1,
-                    borderColor: 'rgba(5, 150, 105, 0.3)',
-                    borderRadius: 8,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 5
-                  }}>
-                    <ArrowDown size={11} color="#059669" />
-                    <Text style={{ fontSize: 10, fontWeight: '900', color: '#059669', textTransform: 'uppercase' }}>
-                      Setor Sul (Frontal)
-                    </Text>
-                  </View>
+                  {activeSectorFilter === 'bottom' ? (
+                    <View style={{
+                      marginBottom: 6,
+                      width: Math.max(180, numCols * seatSlotPitch - 4),
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      borderRadius: 14,
+                      borderWidth: 1.5,
+                      borderStyle: 'dashed',
+                      borderColor: 'rgba(234, 179, 8, 0.55)',
+                      backgroundColor: 'rgba(234, 179, 8, 0.08)',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Text style={{ fontSize: 9, fontWeight: '900', color: '#b45309', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {stageLabel} — Frente
+                      </Text>
+                    </View>
+                  ) : null}
                   <View style={{ flexDirection: 'column', gap: 4 }}>
                     {Array.from({ length: bottomRows }).map((_, idx) => {
                       const r = Math.max(0, numRows - bottomRows + idx);
@@ -747,6 +842,23 @@ export default function SeatMapSelector({
                         </View>
                       );
                     })}
+                  </View>
+                  <View style={{
+                    marginTop: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 3,
+                    backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                    borderWidth: 1,
+                    borderColor: 'rgba(5, 150, 105, 0.3)',
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4
+                  }}>
+                    <ArrowUp size={10} color="#059669" />
+                    <Text style={{ fontSize: 9, fontWeight: '900', color: '#059669', textTransform: 'uppercase' }}>
+                      Setor Sul (Frontal ao Tatame)
+                    </Text>
                   </View>
                 </View>
               ) : null}

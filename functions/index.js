@@ -1083,7 +1083,7 @@ async function validateCartStock(cartItems) {
             : [{}];
 
         for (const itemFormData of forms) {
-            if (itemFormData && itemFormData.isExtraTicket === true) {
+            if (itemFormData && (itemFormData.isExtraTicket === true || itemFormData.isMultiSessionFree === true)) {
                 continue;
             }
             const itemSize = (itemFormData && (itemFormData.userSize || itemFormData.size)) || null;
@@ -1151,6 +1151,65 @@ async function validateCartStock(cartItems) {
     }
 }
 
+function resolveSanitizedProductName(productData, rawName) {
+    const isSeatEventWithExtras = Boolean(
+        productData &&
+        productData.hasSeatMap &&
+        (productData.hasExtraTicketPrice ||
+            (productData.extraTicketPrice || 0) > 0 ||
+            (productData.hasLocations &&
+                Array.isArray(productData.locations) &&
+                productData.locations.some(loc => (loc && loc.extraTicketPrice || 0) > 0)))
+    );
+    if (!isSeatEventWithExtras && productData && productData.name) {
+        return productData.name;
+    }
+    return rawName || (productData && productData.name) || 'Produto';
+}
+
+async function validateMultiSessionCartItems(cartItems) {
+    for (const cartItem of (cartItems || [])) {
+        const forms = Array.isArray(cartItem.formDataList) ? cartItem.formDataList : [];
+        const freeItems = forms.filter(f => f && f.isMultiSessionFree === true);
+        if (freeItems.length === 0) continue;
+
+        const productSnap = await db.collection('products').doc(cartItem.productId).get();
+        if (!productSnap.exists) {
+            throw new Error(`Produto "${cartItem.productName || cartItem.productId}" não encontrado.`);
+        }
+        const productData = productSnap.data();
+        if (!productData.multiSessionSingleCharge) {
+            throw new Error('A opção de assento multi-sessão não está habilitada para este produto.');
+        }
+        if (freeItems.some(f => !f.seatId)) {
+            throw new Error('Cobrança multi-sessão inválida para os assentos selecionados.');
+        }
+
+        const byLocation = new Map();
+        for (const form of forms) {
+            if (!form || !form.seatId) continue;
+            const locKey = form.locationId || cartItem.locationId || 'default';
+            if (!byLocation.has(locKey)) {
+                byLocation.set(locKey, { sessionCounts: new Map(), paidSeatCount: 0 });
+            }
+            const locBucket = byLocation.get(locKey);
+            const sessKey = form.sessionId || cartItem.sessionId || 'default';
+            locBucket.sessionCounts.set(sessKey, (locBucket.sessionCounts.get(sessKey) || 0) + 1);
+            if (!form.isMultiSessionFree) {
+                locBucket.paidSeatCount += 1;
+            }
+        }
+
+        for (const [, locBucket] of byLocation.entries()) {
+            const counts = Array.from(locBucket.sessionCounts.values());
+            const maxSeatsInAnySession = counts.length > 0 ? Math.max(...counts) : 0;
+            if (locBucket.paidSeatCount < maxSeatsInAnySession) {
+                throw new Error('Cobrança multi-sessão inválida para os assentos selecionados.');
+            }
+        }
+    }
+}
+
 exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) => {
     console.log('[createCartCheckoutSession] Iniciando a execução.');
     res.set('Access-Control-Allow-Origin', '*');
@@ -1168,8 +1227,9 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
 
     try {
         await validateCartStock(cartItems);
+        await validateMultiSessionCartItems(cartItems);
     } catch (stockErr) {
-        console.warn('[createCartCheckoutSession] Bloqueado por validação de estoque:', stockErr.message);
+        console.warn('[createCartCheckoutSession] Bloqueado por validação:', stockErr.message);
         return res.status(400).json({ error: stockErr.message });
     }
 
@@ -1199,7 +1259,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             if (cartItem.formDataList) {
                 for (const itemFormData of cartItem.formDataList) {
                     const priceData = itemFormData.priceData;
-                    const amount = priceData ? priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length);
+                    const amount = (priceData && typeof priceData.amount === 'number') ? priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length);
                     if (priceData && priceData.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
                         calculatedPixDiscount += (amount - Number(priceData.pixAmount));
                     } else if (pixDiscountEnabled && pixDiscountPercentage > 0) {
@@ -1235,13 +1295,16 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                 const productSnap = await productRef.get();
                 if (!productSnap.exists) continue;
                 const product = productSnap.data();
+                const cleanProductName = resolveSanitizedProductName(product, cartItem.productName);
+                cartItem.productName = cleanProductName;
+                cartItem.name = cleanProductName;
 
                 for (const itemFormData of cartItem.formDataList) {
                     let saleData = {
                         ...itemFormData,
                         ...globalUserData,
                         productId: cartItem.productId,
-                        productName: cartItem.productName,
+                        productName: cleanProductName,
                         amountTotal: 0,
                         currency: 'brl',
                         paymentStatus: 'paid',
@@ -1308,7 +1371,7 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
         for (const cartItem of cartItems) {
             if (cartItem.formDataList) {
                 for (const itemFormData of cartItem.formDataList) {
-                    subtotalCents += itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length);
+                    subtotalCents += (itemFormData.priceData && typeof itemFormData.priceData.amount === 'number') ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length);
                 }
             }
             if (cartItem.recommendedItems) {
@@ -1330,6 +1393,9 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
             if(!productDoc.exists) continue;
 
             const productData = productDoc.data();
+            const cleanProductName = resolveSanitizedProductName(productData, cartItem.productName);
+            cartItem.productName = cleanProductName;
+            cartItem.name = cleanProductName;
             // Pega o mpAccountId do primeiro produto que tiver um conta customizada
             if (mpAccountId === 'default' && productData.mpAccountId && productData.mpAccountId !== 'default') {
                 mpAccountId = productData.mpAccountId;
@@ -1346,8 +1412,8 @@ exports.createCartCheckoutSession = functions.https.onRequest(async (req, res) =
                     ...itemFormData,   // Dados específicos deste item (Tamanho, Idade, etc) - Mantém o userName do participante
                     payerName: globalUserData.userName || null, // Guarda explicitamente o nome do pagador
                     productId: cartItem.productId,
-                    productName: cartItem.productName,
-                    amountTotal: Math.round((itemFormData.priceData ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length)) * discountRatio),
+                    productName: cleanProductName,
+                    amountTotal: Math.round(((itemFormData.priceData && typeof itemFormData.priceData.amount === 'number') ? itemFormData.priceData.amount : (cartItem.totalAmount / cartItem.formDataList.length)) * discountRatio),
                     currency: 'brl',
                     paymentStatus: 'pending',
                     paymentMethod: selectedPaymentMethod,
@@ -1478,6 +1544,9 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
             const productDoc = await productRef.get();
             if (!productDoc.exists) continue;
             const product = productDoc.data();
+            const cleanProductName = resolveSanitizedProductName(product, cartItem.productName);
+            cartItem.productName = cleanProductName;
+            cartItem.name = cleanProductName;
 
             for (const itemFormData of cartItem.formDataList) {
                 let saleData = {
@@ -1485,7 +1554,7 @@ exports.processCartFreePurchase = functions.https.onRequest(async (req, res) => 
                     ...itemFormData,
                     payerName: globalUserData.userName || null,
                     productId: cartItem.productId,
-                    productName: cartItem.productName,
+                    productName: cleanProductName,
                     amountTotal: 0,
                     currency: 'brl',
                     paymentStatus: 'paid',
@@ -1636,7 +1705,7 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
         let calculatedPixDiscount = 0;
         for (const formData of formDataList) {
             const priceData = formData.priceData;
-            const amount = priceData ? priceData.amount : 0;
+            const amount = (priceData && typeof priceData.amount === 'number') ? priceData.amount : 0;
             if (priceData && priceData.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
                 calculatedPixDiscount += (amount - Number(priceData.pixAmount));
             } else if (pixDiscountEnabled && pixDiscountPercentage > 0) {

@@ -125,7 +125,7 @@ export default function CheckoutScreen() {
       if (item.formDataList && Array.isArray(item.formDataList)) {
         item.formDataList.forEach((form: any) => {
           const priceData = form.priceData;
-          const amount = priceData?.amount || (item.totalAmount / item.formDataList.length);
+          const amount = (priceData && typeof priceData.amount === 'number') ? priceData.amount : (item.totalAmount / item.formDataList.length);
           if (priceData?.pixAmount && Number(priceData.pixAmount) > 0 && Number(priceData.pixAmount) < amount) {
             hasExplicit = true;
             pixDisc += (amount - Number(priceData.pixAmount));
