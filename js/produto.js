@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const recommendedProductsList = document.getElementById('recommended-products-list');
 
     // Seat Map DOM elements
+    const productMainContainer = document.getElementById('product-main-container');
+    const productLeftCol = document.getElementById('product-left-col');
+    const productRightCol = document.getElementById('product-right-col');
     const seatMapSection = document.getElementById('seat-map-section');
     const seatMapNotice = document.getElementById('seat-map-notice');
     const webLocationsContainer = document.getElementById('web-locations-selector-container');
@@ -96,8 +99,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const webLocationVenueText = document.getElementById('web-location-venue-text');
     const webSessionsContainer = document.getElementById('web-sessions-selector-container');
     const webSessionsList = document.getElementById('web-sessions-list');
+    const webStageHeader = document.getElementById('web-stage-header');
     const webStageLabel = document.getElementById('web-stage-label');
+    const webSeatGridScroll = document.getElementById('web-seat-grid-scroll');
+    const webSeatScrollHint = document.getElementById('web-seat-scroll-hint');
     const webSeatGridContainer = document.getElementById('web-seat-grid-container');
+
+    const updateSeatScrollHint = () => {
+        if (!webSeatGridScroll || !webSeatScrollHint) return;
+        const needsScroll = webSeatGridScroll.scrollWidth > webSeatGridScroll.clientWidth + 6;
+        webSeatScrollHint.classList.toggle('hidden', !needsScroll);
+    };
+    window.addEventListener('resize', updateSeatScrollHint);
     const webSelectedSeatsBar = document.getElementById('web-selected-seats-bar');
     const webSelectedSeatsChips = document.getElementById('web-selected-seats-chips');
     const webSelectedSeatsCount = document.getElementById('web-selected-seats-count');
@@ -483,6 +496,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const initSeatMap = (product) => {
         if (!product.hasSeatMap) {
+            if (productMainContainer) {
+                productMainContainer.classList.remove('max-w-[1440px]');
+                productMainContainer.classList.add('max-w-7xl');
+            }
+            if (productLeftCol) {
+                productLeftCol.classList.remove('lg:col-span-8');
+                productLeftCol.classList.add('lg:col-span-7');
+            }
+            if (productRightCol) {
+                productRightCol.classList.remove('lg:col-span-4');
+                productRightCol.classList.add('lg:col-span-5');
+            }
             if (seatMapSection) seatMapSection.classList.add('hidden');
             if (seatMapNotice) seatMapNotice.classList.add('hidden');
             if (webPurchaseModeContainer) webPurchaseModeContainer.classList.add('hidden');
@@ -490,6 +515,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (productMainContainer) {
+            productMainContainer.classList.remove('max-w-7xl');
+            productMainContainer.classList.add('max-w-[1440px]');
+        }
+        if (productLeftCol) {
+            productLeftCol.classList.remove('lg:col-span-7');
+            productLeftCol.classList.add('lg:col-span-8');
+        }
+        if (productRightCol) {
+            productRightCol.classList.remove('lg:col-span-5');
+            productRightCol.classList.add('lg:col-span-4');
+        }
         if (seatMapSection) seatMapSection.classList.remove('hidden');
         if (seatMapNotice) seatMapNotice.classList.remove('hidden');
         if (quantitySelectorContainer) quantitySelectorContainer.classList.add('hidden');
@@ -768,21 +805,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderWebSessionButtons = (sessions, product) => {
         if (!webSessionsList) return;
+        const useGrid = sessions.length >= 4;
+        webSessionsList.className = useGrid ? 'seat-sessions-grid' : 'seat-pill-list';
         webSessionsList.innerHTML = '';
         sessions.forEach((sess) => {
             const isSelected = selectedSession && selectedSession.id === sess.id;
             const count = selectedSeatsBySession[sess.id]?.seats?.length || 0;
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 ${
-                isSelected
-                    ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
-            }`;
-            const countBadge = count > 0 
-                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black ${isSelected ? 'bg-black/20 text-black' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">${count}</span>` 
+            const countBadge = count > 0
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black shrink-0 ${isSelected ? 'bg-black/20 text-black' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">${count}</span>`
                 : '';
-            btn.innerHTML = `<i class="fas fa-calendar-day mr-1"></i> <span>${sess.label || sess.name || 'Sessão'}</span> ${countBadge}`;
+
+            if (useGrid) {
+                btn.className = `w-full min-w-0 px-3 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-wide transition-all flex items-center justify-between gap-2 text-left cursor-pointer ${
+                    isSelected
+                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+                }`;
+                btn.innerHTML = `<span class="flex items-center gap-2 min-w-0"><i class="fas fa-calendar-day shrink-0"></i><span class="leading-snug break-words">${sess.label || sess.name || 'Sessão'}</span></span>${countBadge}`;
+            } else {
+                btn.className = `px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                    isSelected
+                        ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
+                }`;
+                btn.innerHTML = `<i class="fas fa-calendar-day mr-1"></i> <span>${sess.label || sess.name || 'Sessão'}</span> ${countBadge}`;
+            }
+
             btn.addEventListener('click', () => {
                 if (selectedSession && selectedSession.id === sess.id) return;
                 selectedSession = sess;
@@ -831,6 +881,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = Date.now();
         const myId = getUserIdentifier();
 
+        if (webStageHeader) {
+            const isArenaLayout = layoutType === 'arena_4_sides' || layoutType === 'arena_u_shape';
+            webStageHeader.classList.toggle('hidden', isArenaLayout);
+        }
+
         const currentSessionSeats = (selectedSession && selectedSeatsBySession[selectedSession.id]?.seats) || [];
 
         webSeatGridContainer.innerHTML = '';
@@ -859,7 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
             seatBtn.dataset.seatId = seatId;
             seatBtn.title = `Cadeira ${seatId}${sector ? ` (${sector})` : ''}`;
 
-            let btnClass = 'w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
+            let btnClass = 'shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ';
 
             if (status === 'selected') {
                 btnClass += 'bg-amber-500 text-black border-2 border-amber-300 font-black shadow-lg shadow-amber-500/30 scale-105';
@@ -915,7 +970,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     rDiv.className = 'flex items-center gap-1 justify-center';
 
                     const lblLeft = document.createElement('span');
-                    lblLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                    lblLeft.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                     lblLeft.textContent = rowLetter;
                     rDiv.appendChild(lblLeft);
 
@@ -925,7 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     const lblRight = document.createElement('span');
-                    lblRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                    lblRight.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                     lblRight.textContent = rowLetter;
                     rDiv.appendChild(lblRight);
 
@@ -941,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2a. Setor Oeste (Esquerda)
             const leftSectorDiv = document.createElement('div');
-            leftSectorDiv.className = 'flex flex-col items-center';
+            leftSectorDiv.className = 'flex flex-col items-center shrink-0';
             leftSectorDiv.innerHTML = `
                 <div class="h-5 px-2 mb-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
                     <i class="fas fa-arrow-left text-[8px]"></i> Oeste
@@ -955,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 rDiv.className = 'flex items-center gap-1 justify-end';
 
                 const lbl = document.createElement('span');
-                lbl.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lbl.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                 lbl.textContent = rowLetter;
                 rDiv.appendChild(lbl);
 
@@ -989,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2c. Setor Leste (Direita)
             const rightSectorDiv = document.createElement('div');
-            rightSectorDiv.className = 'flex flex-col items-center';
+            rightSectorDiv.className = 'flex flex-col items-center shrink-0';
             rightSectorDiv.innerHTML = `
                 <div class="h-5 px-2 mb-1 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[10px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1 shadow-sm">
                     Leste <i class="fas fa-arrow-right text-[8px]"></i>
@@ -1008,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const lbl = document.createElement('span');
-                lbl.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lbl.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                 lbl.textContent = rowLetter;
                 rDiv.appendChild(lbl);
 
@@ -1030,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 rDiv.className = 'flex items-center gap-1 justify-center';
 
                 const lblLeft = document.createElement('span');
-                lblLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lblLeft.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                 lblLeft.textContent = rowLetter;
                 rDiv.appendChild(lblLeft);
 
@@ -1040,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const lblRight = document.createElement('span');
-                lblRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                lblRight.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                 lblRight.textContent = rowLetter;
                 rDiv.appendChild(lblRight);
 
@@ -1066,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 rowDiv.className = 'flex items-center gap-1.5 sm:gap-2 justify-center';
 
                 const labelLeft = document.createElement('span');
-                labelLeft.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                labelLeft.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                 labelLeft.textContent = rowLetter;
                 rowDiv.appendChild(labelLeft);
 
@@ -1076,13 +1131,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const labelRight = document.createElement('span');
-                labelRight.className = 'w-5 text-center text-xs font-black text-gray-500 select-none';
+                labelRight.className = 'w-5 shrink-0 text-center text-xs font-black text-gray-500 select-none';
                 labelRight.textContent = rowLetter;
                 rowDiv.appendChild(labelRight);
 
                 webSeatGridContainer.appendChild(rowDiv);
             }
         }
+
+        requestAnimationFrame(() => updateSeatScrollHint());
     };
 
     const toggleSeat = (seatId) => {

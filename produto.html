@@ -2,7 +2,7 @@
 <html lang="pt-BR" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0">
     <!-- Permissões de Rede Universais (CSP) para Web e Mobile -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
     
@@ -37,6 +37,61 @@
     
     <!-- Stripe.js CDN -->
     <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        #seat-map-section {
+            container-type: inline-size;
+            container-name: seatmap;
+        }
+        .seat-pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            flex-wrap: balance;
+            gap: 0.5rem;
+        }
+        .seat-sessions-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.5rem;
+        }
+        @container seatmap (min-width: 440px) {
+            .seat-sessions-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        @container seatmap (min-width: 720px) {
+            .seat-sessions-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        .seat-grid-scroll {
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+            scrollbar-gutter: stable;
+            -webkit-overflow-scrolling: touch;
+        }
+        .seat-grid-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .seat-grid-scroll::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 9999px;
+        }
+        .seat-grid-scroll::-webkit-scrollbar-thumb {
+            background: rgba(245, 158, 11, 0.45);
+            border-radius: 9999px;
+        }
+        .seat-grid-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(245, 158, 11, 0.75);
+        }
+        .seat-grid-inner {
+            width: max-content;
+            margin-inline: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: safe center;
+            gap: 0.5rem;
+        }
+    </style>
 </head>
 <body class="antialiased bg-[#0b101d] text-gray-100 min-h-screen flex flex-col font-sans selection:bg-amber-500 selection:text-black">
 
@@ -44,7 +99,7 @@
     <div id="header-container"></div>
 
     <main class="flex-grow pt-28 sm:pt-36 pb-20">
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section id="product-main-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Product Loading Skeleton -->
             <div id="product-loading" class="py-20 text-center space-y-4">
@@ -74,7 +129,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
                     <!-- LEFT COLUMN: Media Gallery & Product Specs (Cols 1-7) -->
-                    <div class="lg:col-span-7 space-y-8">
+                    <div id="product-left-col" class="lg:col-span-7 min-w-0 space-y-8">
                         
                         <!-- Main Product Media Gallery Card -->
                         <div class="bg-[#121929] p-6 rounded-3xl border border-gray-800/80 shadow-2xl space-y-4 relative group">
@@ -178,42 +233,43 @@
                         </div>
 
                         <!-- Interactive Seat Map Card (Cinema Style) -->
-                        <div id="seat-map-section" class="bg-[#121929] p-6 sm:p-8 rounded-3xl border border-gray-800/80 shadow-xl space-y-6 hidden">
+                        <div id="seat-map-section" class="bg-[#121929] p-4 sm:p-6 lg:p-8 rounded-3xl border border-gray-800/80 shadow-xl space-y-6 hidden min-w-0">
                             <!-- Header with icon and title -->
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
-                                <div>
+                                <div class="min-w-0">
                                     <span class="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl text-xs font-black uppercase tracking-wider inline-flex items-center gap-1.5">
                                         <i class="fas fa-couch"></i> Escolha seu Lugar
                                     </span>
                                     <h2 class="text-xl sm:text-2xl font-black text-white mt-2">Mapa de Assentos do Evento</h2>
                                     <p class="text-xs text-gray-400 mt-0.5">Selecione uma sessão e clique nas cadeiras desejadas</p>
                                 </div>
-                                <div id="web-lock-timer-badge" class="hidden px-3.5 py-1.5 bg-purple-500/20 border border-purple-500/40 rounded-xl text-xs font-bold text-purple-300 flex items-center gap-2">
+                                <div id="web-lock-timer-badge" class="hidden shrink-0 self-start sm:self-center px-3.5 py-1.5 bg-purple-500/20 border border-purple-500/40 rounded-xl text-xs font-bold text-purple-300 flex items-center gap-2">
                                     <i class="fas fa-clock animate-pulse"></i>
                                     <span>Reservado por: <strong id="web-lock-timer-text" class="text-white">15:00</strong></span>
+                                </div>
                             </div>
 
                             <!-- Seletor de Tipo de Compra: Inscrição Completa vs Apenas Ingressos Acompanhante -->
-                            <div id="web-purchase-mode-container" class="hidden p-4 bg-gray-900/80 border border-gray-800 rounded-2xl space-y-3">
+                            <div id="web-purchase-mode-container" class="hidden p-4 bg-gray-900/80 border border-gray-800 rounded-2xl space-y-3 min-w-0">
                                 <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
                                     <i class="fas fa-ticket-alt text-amber-400"></i> O que você deseja adquirir?
                                 </label>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <button type="button" id="btn-mode-full" class="p-3.5 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-left transition-all cursor-pointer">
-                                        <div class="flex items-center justify-between">
+                                    <button type="button" id="btn-mode-full" class="min-w-0 w-full p-3.5 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-left transition-all cursor-pointer">
+                                        <div class="flex items-center justify-between gap-2">
                                             <span class="font-bold text-xs text-white flex items-center gap-1.5">
-                                                <i class="fas fa-user-graduate text-amber-400"></i> Inscrição do Aluno
+                                                <i class="fas fa-user-graduate text-amber-400 shrink-0"></i> Inscrição do Aluno
                                             </span>
-                                            <i class="fas fa-check-circle text-amber-400 text-sm" id="icon-mode-full"></i>
+                                            <i class="fas fa-check-circle text-amber-400 text-sm shrink-0" id="icon-mode-full"></i>
                                         </div>
                                         <p class="text-[11px] text-gray-400 mt-1" id="desc-mode-full">Graduação no tatame (cadeira não inclusa)</p>
                                     </button>
-                                    <button type="button" id="btn-mode-extra" class="p-3.5 rounded-xl border border-gray-700 bg-gray-800/40 text-left hover:border-gray-600 transition-all cursor-pointer">
-                                        <div class="flex items-center justify-between">
+                                    <button type="button" id="btn-mode-extra" class="min-w-0 w-full p-3.5 rounded-xl border border-gray-700 bg-gray-800/40 text-left hover:border-gray-600 transition-all cursor-pointer">
+                                        <div class="flex items-center justify-between gap-2">
                                             <span class="font-bold text-xs text-white flex items-center gap-1.5">
-                                                <i class="fas fa-chair text-emerald-400"></i> Apenas Cadeira Extra
+                                                <i class="fas fa-chair text-emerald-400 shrink-0"></i> Apenas Cadeira Extra
                                             </span>
-                                            <i class="far fa-circle text-gray-500 text-sm" id="icon-mode-extra"></i>
+                                            <i class="far fa-circle text-gray-500 text-sm shrink-0" id="icon-mode-extra"></i>
                                         </div>
                                         <p class="text-[11px] text-gray-400 mt-1" id="desc-mode-extra">Ingressos para acompanhantes assistirem</p>
                                     </button>
@@ -221,40 +277,40 @@
                             </div>
 
                             <!-- Locations / Cities Selector Pills -->
-                            <div id="web-locations-selector-container" class="space-y-2 hidden">
+                            <div id="web-locations-selector-container" class="space-y-2 hidden min-w-0">
                                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                     <i class="fas fa-map-marker-alt text-amber-500"></i> Cidade / Local
                                 </label>
-                                <div id="web-locations-list" class="flex flex-wrap gap-2">
+                                <div id="web-locations-list" class="seat-pill-list">
                                     <!-- Dynamic location buttons -->
                                 </div>
-                                <div id="web-selected-location-info" class="hidden text-xs text-gray-400 bg-gray-900/60 border border-gray-800 rounded-xl p-3 flex items-center gap-2">
-                                    <i class="fas fa-landmark text-amber-400"></i>
-                                    <span id="web-location-venue-text"></span>
+                                <div id="web-selected-location-info" class="hidden text-xs text-gray-400 bg-gray-900/60 border border-gray-800 rounded-xl p-3 flex items-center gap-2 min-w-0">
+                                    <i class="fas fa-landmark text-amber-400 shrink-0"></i>
+                                    <span id="web-location-venue-text" class="min-w-0"></span>
                                 </div>
                             </div>
 
                             <!-- Multi-Session Single Charge Info Banner -->
-                            <div id="web-multi-session-banner" class="hidden p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-xs text-emerald-300 flex items-start gap-3">
-                                <i class="fas fa-layer-group text-emerald-400 text-base mt-0.5"></i>
-                                <div>
+                            <div id="web-multi-session-banner" class="hidden p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-xs text-emerald-300 flex items-start gap-3 min-w-0">
+                                <i class="fas fa-layer-group text-emerald-400 text-base mt-0.5 shrink-0"></i>
+                                <div class="min-w-0 flex-1">
                                     <p class="font-bold text-emerald-300 uppercase tracking-wider text-[11px]">Assento Multi-Sessão Liberado (Pague apenas 1x)</p>
                                     <p class="text-emerald-200/80 mt-0.5 leading-relaxed">Você pode selecionar cadeiras em quantas sessões quiser pagando apenas uma única vez pelo maior número simultâneo de assentos por sessão. Se a mesma cadeira já estiver ocupada em outra sessão, escolha outro assento disponível sem custo adicional.</p>
                                 </div>
                             </div>
 
                             <!-- Sessions Selector Pills -->
-                            <div id="web-sessions-selector-container" class="space-y-2 hidden">
+                            <div id="web-sessions-selector-container" class="space-y-2 hidden min-w-0">
                                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">
                                     Sessão / Horário
                                 </label>
-                                <div id="web-sessions-list" class="flex flex-wrap gap-2">
+                                <div id="web-sessions-list" class="seat-pill-list">
                                     <!-- Dynamic session buttons -->
                                 </div>
                             </div>
 
                             <!-- Screen / Stage Indicator -->
-                            <div class="relative py-2 text-center">
+                            <div id="web-stage-header" class="relative py-2 text-center">
                                 <div class="mx-auto w-4/5 h-2.5 rounded-full bg-gradient-to-r from-amber-500/20 via-amber-400 to-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
                                 <p id="web-stage-label" class="text-[11px] font-black uppercase tracking-widest text-amber-400 mt-2">
                                     PALCO / TATAME PRINCIPAL
@@ -282,21 +338,27 @@
                             </div>
 
                             <!-- Interactive Grid -->
-                            <div class="overflow-x-auto pb-4 pt-2">
-                                <div id="web-seat-grid-container" class="min-w-fit mx-auto flex flex-col items-center gap-2">
-                                    <!-- Rows and Seat buttons generated by JS -->
+                            <div class="bg-[#0a0f1c]/90 border border-gray-800/80 rounded-2xl p-3 sm:p-5 space-y-2">
+                                <div id="web-seat-scroll-hint" class="hidden text-[11px] text-amber-300/90 font-semibold flex items-center justify-center gap-1.5 pb-1">
+                                    <i class="fas fa-arrows-left-right text-[10px]"></i>
+                                    <span>Deslize lateralmente para visualizar todas as cadeiras</span>
+                                </div>
+                                <div id="web-seat-grid-scroll" class="seat-grid-scroll pb-3 pt-1">
+                                    <div id="web-seat-grid-container" class="seat-grid-inner">
+                                        <!-- Rows and Seat buttons generated by JS -->
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Selected Seats Summary Bar -->
                             <div id="web-selected-seats-bar" class="p-4 bg-gray-800/60 rounded-2xl border border-gray-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hidden">
-                                <div>
+                                <div class="min-w-0 flex-1">
                                     <p class="text-xs text-gray-400">Assentos selecionados:</p>
                                     <div id="web-selected-seats-chips" class="flex flex-wrap gap-1.5 mt-1">
                                         <!-- Chips e.g. A-1, A-2 -->
                                     </div>
                                 </div>
-                                <div class="text-left sm:text-right">
+                                <div class="shrink-0 text-left sm:text-right">
                                     <p class="text-xs text-gray-400">Total de cadeiras:</p>
                                     <p id="web-selected-seats-count" class="text-lg font-black text-amber-400">0</p>
                                 </div>
@@ -308,7 +370,7 @@
                                     <i class="fas fa-copy text-indigo-400"></i>
                                     <span>Replicar cadeiras desta sessão para:</span>
                                 </div>
-                                <div id="web-replicate-seats-buttons" class="flex flex-wrap gap-2">
+                                <div id="web-replicate-seats-buttons" class="seat-pill-list">
                                     <!-- Dynamic replicate buttons -->
                                 </div>
                                 <p id="web-replicate-feedback" class="hidden text-xs font-medium mt-1"></p>
@@ -318,7 +380,7 @@
                     </div>
 
                     <!-- RIGHT COLUMN: Buy Box Sidebar (Cols 8-12 - Mercado Livre / Amazon Style) -->
-                    <div class="lg:col-span-5 sticky top-24 space-y-6">
+                    <div id="product-right-col" class="lg:col-span-5 min-w-0 lg:sticky lg:top-24 space-y-6">
                         
                         <!-- Main Buy Box Card -->
                         <div class="bg-[#121929] p-6 rounded-3xl border border-gray-800/90 shadow-2xl space-y-6 relative overflow-hidden">
@@ -453,7 +515,7 @@
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script src="js/script.js?v=3.2"></script>
     <script type="module" src="js/cart.js?v=3.2"></script>
-    <script type="module" src="js/produto.js?v=3.9"></script>
+    <script type="module" src="js/produto.js?v=4.0"></script>
 
     <!-- Dynamic Form Template -->
     <template id="form-template">
