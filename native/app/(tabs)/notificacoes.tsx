@@ -1,20 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, Alert, TextInput, Modal } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { collection, query, where, onSnapshot, orderBy, limit, addDoc, serverTimestamp, Timestamp, doc, getDoc, setDoc, updateDoc, arrayUnion, getDocs } from 'firebase/firestore';
-import { db } from '../../src/services/firebase';
+import { httpsCallable } from 'firebase/functions';
+import * as Haptics from 'expo-haptics';
+import { db, functions } from '../../src/services/firebase';
 import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
-import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock, ArrowLeft, Activity, Plus, ChevronRight, Check, Clock, ChevronDown } from 'lucide-react-native';
+import { Heart, Award, CreditCard, MessageCircle, Bell, CheckCheck, Flame, Trophy, Calendar, Sparkles, AlertCircle, User, Lock, ArrowLeft, Activity, Plus, ChevronRight, Check, Clock, ChevronDown, Share2, Shield, Users, Target, RefreshCw } from 'lucide-react-native';
+import ShareableCardModal, { ShareableCardData } from '../../src/components/ShareableCardModal';
+import Emoji from '../../src/components/Emoji';
+import {
+  AVATAR_FRAMES,
+  getCurrentMonthKey,
+  getCurrentWeekKey,
+  getEffectiveKihapcoins,
+  normalizeUnitDisplay,
+  normalizeUnitKey,
+  publishAchievementIfPublic,
+} from '../../src/utils/engagement';
+import { getPhysicalTestScore, subscribeUserPhysicalTests } from '../../src/utils/physicalTests';
+
+const WORKOUT_FOCUS_TAGS = ['Chutes', 'Formas', 'Luta', 'Condicionamento', 'Foco'];
+
 export default function NotificacoesScreen() {
   const router = useRouter();
-  const { user, userData } = useAuth();
+  const { subTab } = useLocalSearchParams<{ subTab?: string }>();
+  const { user, userData, linkedProfiles } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
   const [activeSubTab, setActiveSubTab] = useState<'ofensivas' | 'emblemas' | 'teste-fisico'>('ofensivas');
-  const [ofensivaSubTab, setOfensivaSubTab] = useState<'ofensiva' | 'ranking'>('ofensiva');
+  const [ofensivaSubTab, setOfensivaSubTab] = useState<'ofensiva' | 'ranking' | 'copa'>('ofensiva');
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -35,6 +53,32 @@ export default function NotificacoesScreen() {
   const [rankingFilter, setRankingFilter] = useState<'current' | 'longest'>('current');
   const [rankingUnit, setRankingUnit] = useState<string>('todos');
   const [rankingLoading, setRankingLoading] = useState(false);
+
+  // Social engagement states (Shareable Cards, Cheers, Copa das Unidades, Post-workout Feedback, Streak Duo)
+  const [shareCardData, setShareCardData] = useState<ShareableCardData | null>(null);
+  const [sentCheersToday, setSentCheersToday] = useState<Set<string>>(new Set());
+  const [sendingCheerUid, setSendingCheerUid] = useState<string | null>(null);
+  const [copaStandings, setCopaStandings] = useState<any[]>([]);
+  const [copaLoading, setCopaLoading] = useState(false);
+  const [todayFeedback, setTodayFeedback] = useState<any | null>(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [selectedFocusTags, setSelectedFocusTags] = useState<string[]>([]);
+  const [streakDuos, setStreakDuos] = useState<any[]>([]);
+  const [duoModalVisible, setDuoModalVisible] = useState(false);
+  const [duoCandidates, setDuoCandidates] = useState<any[]>([]);
+  const [duoLoading, setDuoLoading] = useState(false);
+
+  useEffect(() => {
+    if (subTab === 'copa') {
+      setActiveSubTab('ofensivas');
+      setOfensivaSubTab('copa');
+    } else if (subTab === 'ranking') {
+      setActiveSubTab('ofensivas');
+      setOfensivaSubTab('ranking');
+    } else if (subTab === 'teste-fisico') {
+      setActiveSubTab('teste-fisico');
+    }
+  }, [subTab]);
 
   const filters = [
     { id: 'all', label: 'Tudo' },
@@ -221,6 +265,11 @@ export default function NotificacoesScreen() {
         let current = 0;
         let longest = 0;
         let prevDateStr = null;
+        let shieldsPool = Number(userData?.streakShields || 0);
+        const existingShielded = new Set<string>(
+          Array.isArray(userData?.shieldedDates) ? userData.shieldedDates : []
+        );
+        const newlyShielded: string[] = [];
 
         for (const dateStr of sortedDates) {
           if (!prevDateStr) {
@@ -231,6 +280,12 @@ export default function NotificacoesScreen() {
             const diffTime = Math.abs(curr.getTime() - prev.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             if (diffDays <= 5) {
+              current += 1;
+            } else if (diffDays <= 10 && existingShielded.has(dateStr)) {
+              current += 1;
+            } else if (diffDays <= 10 && shieldsPool > 0) {
+              shieldsPool -= 1;
+              newlyShielded.push(dateStr);
               current += 1;
             } else {
               current = 1;
@@ -249,10 +304,41 @@ export default function NotificacoesScreen() {
 
         currentStreak = current;
         if (diffDaysToday > 5) {
-          currentStreak = 0;
+          if (diffDaysToday <= 10 && existingShielded.has(todayStr)) {
+            // Protegido previamente pelo escudo
+          } else if (diffDaysToday <= 10 && shieldsPool > 0) {
+            shieldsPool -= 1;
+            newlyShielded.push(todayStr);
+          } else {
+            currentStreak = 0;
+          }
         }
         longestStreak = longest;
         lastAttendanceDate = lastDateStr;
+
+        const streakUpdates: any = {
+          currentStreak,
+          longestStreak,
+          lastAttendanceDate,
+        };
+        if (newlyShielded.length > 0) {
+          streakUpdates.streakShields = shieldsPool;
+          streakUpdates.shieldedDates = arrayUnion(...newlyShielded);
+        }
+
+        await updateDoc(userRef, streakUpdates);
+
+        if ([5, 10, 20, 30, 50, 100].includes(currentStreak)) {
+          publishAchievementIfPublic(user, userData, {
+            type: 'streak_milestone',
+            title: 'Marco de Ofensiva!',
+            subtitle: `Completou ${currentStreak} aulas em sequência com a chama acesa!`,
+            icon: '🔥',
+            metricValue: `${currentStreak} dias`,
+            dedupeKey: `streak_${currentStreak}`,
+          });
+        }
+        return;
       }
 
       await updateDoc(userRef, {
@@ -330,10 +416,12 @@ export default function NotificacoesScreen() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      let rankingList = snapshot.docs.map(docSnap => ({
-        uid: docSnap.id,
-        ...docSnap.data()
-      }));
+      let rankingList = snapshot.docs
+        .map(docSnap => ({
+          uid: docSnap.id,
+          ...docSnap.data()
+        }))
+        .filter((u: any) => u.socialPrivacy !== 'private' || u.uid === user?.uid);
 
       // Filter by unitId/unidadeId/unit/unidade in JavaScript
       if (rankingUnit !== 'todos') {
@@ -351,7 +439,200 @@ export default function NotificacoesScreen() {
     });
 
     return () => unsubscribe();
-  }, [activeSubTab, rankingFilter, rankingUnit]);
+  }, [activeSubTab, rankingFilter, rankingUnit, user?.uid]);
+
+  // Listen to cheers sent today
+  useEffect(() => {
+    if (!user?.uid) return;
+    const todayStr = getLocalDateStr(new Date());
+    const cheersQ = query(
+      collection(db, 'kihap_cheers'),
+      where('senderUid', '==', user.uid)
+    );
+    const unsub = onSnapshot(
+      cheersQ,
+      (snap) => {
+        const receivers = new Set<string>();
+        snap.forEach((d) => {
+          const cData = d.data();
+          if (cData.dateStr === todayStr && cData.receiverUid) {
+            receivers.add(cData.receiverUid);
+          }
+        });
+        setSentCheersToday(receivers);
+      },
+      () => {}
+    );
+    return () => unsub();
+  }, [user?.uid]);
+
+  // Listen to today's post-workout feedback
+  useEffect(() => {
+    if (!user?.uid) return;
+    const todayStr = getLocalDateStr(new Date());
+    const unsub = onSnapshot(
+      doc(db, 'workout_feedback', `${user.uid}_${todayStr}`),
+      (snap) => {
+        setTodayFeedback(snap.exists() ? snap.data() : null);
+      },
+      () => {}
+    );
+    return () => unsub();
+  }, [user?.uid]);
+
+  // Listen to Streak Duos
+  useEffect(() => {
+    if (!user?.uid) return;
+    const duoQ = query(
+      collection(db, 'streak_duos'),
+      where('memberIds', 'array-contains', user.uid)
+    );
+    const unsub = onSnapshot(
+      duoQ,
+      (snap) => {
+        setStreakDuos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      () => {}
+    );
+    return () => unsub();
+  }, [user?.uid]);
+
+  // Load Copa das Unidades when tab active
+  const fetchCopa = async (forceRefresh = false) => {
+    if (!user?.uid) return;
+    setCopaLoading(true);
+    try {
+      const monthKey = getCurrentMonthKey();
+      if (!forceRefresh) {
+        const cacheSnap = await getDoc(doc(db, 'copa_unidades_snapshots', monthKey));
+        if (cacheSnap.exists() && Array.isArray(cacheSnap.data()?.standings)) {
+          setCopaStandings(cacheSnap.data().standings);
+        }
+      }
+      const getCopaFn = httpsCallable(functions, 'getCopaUnidades');
+      const res: any = await getCopaFn({ monthKey, forceRefresh });
+      if (Array.isArray(res?.data?.standings)) {
+        setCopaStandings(res.data.standings);
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar Copa das Unidades:', err);
+    } finally {
+      setCopaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSubTab === 'ofensivas' && ofensivaSubTab === 'copa' && copaStandings.length === 0) {
+      fetchCopa(false);
+    }
+  }, [activeSubTab, ofensivaSubTab]);
+
+  const handleSendCheer = async (receiverUid: string, kind: 'kihap' | 'nudge') => {
+    if (!user?.uid || sendingCheerUid) return;
+    setSendingCheerUid(receiverUid);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    try {
+      const cheerFn = httpsCallable(functions, 'sendKihapCheer');
+      await cheerFn({ receiverUid, kind });
+      setSentCheersToday((prev) => new Set(prev).add(receiverUid));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (err: any) {
+      Alert.alert('Aviso', err?.message || 'Não foi possível enviar o incentivo.');
+    } finally {
+      setSendingCheerUid(null);
+    }
+  };
+
+  const handleSubmitFeedback = async (mood: 'incrivel' | 'desafiador' | 'tranquilo') => {
+    if (!user?.uid || submittingFeedback) return;
+    setSubmittingFeedback(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    try {
+      const submitFn = httpsCallable(functions, 'submitWorkoutFeedback');
+      const res: any = await submitFn({
+        mood,
+        focusTags: selectedFocusTags,
+        className: attendedClassTemplate?.name || currentSelectedTodayClass?.name || '',
+        dateStr: getLocalDateStr(new Date()),
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      if (res?.data?.coinsAwarded) {
+        Alert.alert('Treino Registrado! 🔥', `Você ganhou +${res.data.coinsAwarded} Kihapcoins pelo seu diário pós-treino!`);
+      }
+    } catch (err: any) {
+      Alert.alert('Erro', err?.message || 'Não foi possível registrar seu diário.');
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const openDuoPicker = async () => {
+    setDuoModalVisible(true);
+    setDuoLoading(true);
+    try {
+      const map = new Map<string, any>();
+      (linkedProfiles || []).forEach((p: any) => {
+        if (p?.uid && p.uid !== user?.uid) {
+          map.set(p.uid, { ...p, isFamily: true });
+        }
+      });
+
+      if (user?.uid) {
+        const followsSnap = await getDocs(
+          query(collection(db, 'follows'), where('followerId', '==', user.uid), limit(25))
+        );
+        const fIds = followsSnap.docs.map((d) => d.data()?.followingId).filter(Boolean);
+        await Promise.all(
+          fIds.map(async (fUid) => {
+            if (!map.has(fUid)) {
+              const uSnap = await getDoc(doc(db, 'users', fUid));
+              if (uSnap.exists()) {
+                const uData = uSnap.data();
+                if (uData.socialPrivacy !== 'private') {
+                  map.set(fUid, { uid: fUid, ...uData });
+                }
+              }
+            }
+          })
+        );
+      }
+
+      setDuoCandidates(Array.from(map.values()));
+    } catch (err) {
+      console.warn('Erro ao buscar parceiros:', err);
+    } finally {
+      setDuoLoading(false);
+    }
+  };
+
+  const handleDuoAction = async (
+    action: 'invite' | 'accept' | 'decline' | 'remove' | 'claim_weekly_bonus',
+    payload: { partnerUid?: string; duoId?: string }
+  ) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    try {
+      const duoFn = httpsCallable(functions, 'manageStreakDuo');
+      const res: any = await duoFn({ action, ...payload });
+      if (action === 'invite') {
+        setDuoModalVisible(false);
+        Alert.alert(
+          res?.data?.status === 'active' ? 'Parceiro Ativado! 🤝' : 'Convite Enviado! 🥋',
+          res?.data?.status === 'active'
+            ? 'Dupla em família ativada com sucesso!'
+            : 'Seu colega recebeu uma notificação para aceitar a dupla.'
+        );
+      } else if (action === 'claim_weekly_bonus') {
+        const coins = res?.data?.coinsAwarded || 0;
+        if (coins > 0) {
+          Alert.alert('Bônus em Dupla! 🎉', `Vocês dois treinaram esta semana e você ganhou +${coins} Kihapcoins!`);
+        } else {
+          Alert.alert('Bônus já resgatado', 'Você já resgatou o bônus da dupla nesta semana.');
+        }
+      }
+    } catch (err: any) {
+      Alert.alert('Atenção', err?.message || 'Não foi possível completar a ação.');
+    }
+  };
 
   // Fetch notifications
   useEffect(() => {
@@ -420,69 +701,26 @@ export default function NotificacoesScreen() {
   const [showAddForm, setShowAddForm] = useState(true);
 
   useEffect(() => {
-    if (!user) {
+    const evoId = userData?.evoMemberId ?? userData?.matricula ?? null;
+    if (!user?.uid && !evoId) {
+      setPhysicalTests([]);
       setPhysicalTestsLoading(false);
       return;
     }
 
-    const evoId = userData?.evoMemberId;
-    const evoIdNum = evoId && !isNaN(Number(evoId)) ? Number(evoId) : null;
-    const testsCol = collection(db, 'physicalTests');
-
-    let unsubEvo: (() => void) | null = null;
-    let unsubUser: (() => void) | null = null;
-
-    let evoTests: any[] = [];
-    let userTests: any[] = [];
-
-    const mergeAndSetTests = () => {
-      const map = new Map<string, any>();
-      [...evoTests, ...userTests].forEach(item => {
-        if (item.id) map.set(item.id, item);
-      });
-      const list = Array.from(map.values());
-      list.sort((a, b) => {
-        const dateA = a.date?.toMillis ? a.date.toMillis() : (a.date?.seconds ? a.date.seconds * 1000 : (a.date ? new Date(a.date).getTime() : 0));
-        const dateB = b.date?.toMillis ? b.date.toMillis() : (b.date?.seconds ? b.date.seconds * 1000 : (b.date ? new Date(b.date).getTime() : 0));
-        return dateB - dateA;
-      });
-      setPhysicalTests(list);
-      setPhysicalTestsLoading(false);
-    };
-
-    if (evoIdNum !== null) {
-      const qEvo = query(
-        testsCol,
-        where('evoMemberId', '==', evoIdNum),
-        limit(50)
-      );
-      unsubEvo = onSnapshot(qEvo, (snapshot) => {
-        evoTests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        mergeAndSetTests();
-      }, (err) => {
-        console.error("Error fetching evo physical tests:", err);
+    setPhysicalTestsLoading(true);
+    return subscribeUserPhysicalTests(
+      {
+        uid: user?.uid,
+        evoMemberId: evoId,
+        includeUserSubcollection: true,
+      },
+      (list) => {
+        setPhysicalTests(list);
         setPhysicalTestsLoading(false);
-      });
-    }
-
-    const qUser = query(
-      testsCol,
-      where('userId', '==', user.uid),
-      limit(50)
+      }
     );
-    unsubUser = onSnapshot(qUser, (snapshot) => {
-      userTests = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      mergeAndSetTests();
-    }, (err) => {
-      console.error("Error fetching user physical tests:", err);
-      setPhysicalTestsLoading(false);
-    });
-
-    return () => {
-      if (unsubEvo) unsubEvo();
-      if (unsubUser) unsubUser();
-    };
-  }, [user?.uid, userData?.evoMemberId]);
+  }, [user?.uid, userData?.evoMemberId, userData?.matricula]);
 
   const handleSaveTest = async () => {
     if (!testScoreInput.trim()) {
@@ -527,6 +765,17 @@ export default function NotificacoesScreen() {
         createdAt: serverTimestamp()
       });
 
+      if (scoreNum >= maxPhysicalScore && scoreNum > 0) {
+        publishAchievementIfPublic(user, userData, {
+          type: 'physical_pr',
+          title: 'Novo Recorde no Teste Físico!',
+          subtitle: 'Superou sua própria marca de condicionamento físico na Kihap.',
+          icon: '⚡',
+          metricValue: `${scoreNum} pts`,
+          dedupeKey: `physical_${scoreNum}_${dateObj.toISOString().slice(0, 10)}`,
+        });
+      }
+
       setTestScoreInput('');
       const now = new Date();
       const d = String(now.getDate()).padStart(2, '0');
@@ -563,7 +812,7 @@ export default function NotificacoesScreen() {
   };
 
   const maxPhysicalScore = physicalTests.length > 0
-    ? Math.max(...physicalTests.map(t => Number(t.score) || 0))
+    ? Math.max(...physicalTests.map(t => Number(getPhysicalTestScore(t)) || 0))
     : 0;
   const latestPhysicalTest = physicalTests.length > 0 ? physicalTests[0] : null;
 
@@ -590,7 +839,8 @@ export default function NotificacoesScreen() {
     const lastDateStr = userData?.lastAttendanceDate;
     if (!lastDateStr) {
       return {
-        message: "Faça seu primeiro check-in de aula para iniciar sua ofensiva! 🥋",
+        message: "Faça seu primeiro check-in de aula para iniciar sua ofensiva!",
+        emoji: "🥋" as const,
         urgencyColor: "text-blue-500",
         bgClass: "bg-blue-500/10 border-blue-500/20",
         iconColor: "#3b82f6"
@@ -602,7 +852,8 @@ export default function NotificacoesScreen() {
     
     if (lastDateStr === todayStr) {
       return {
-        message: "Excelente! Você fez aula hoje. Ofensiva garantida por mais 5 dias! 🛡️",
+        message: "Excelente! Você fez aula hoje. Ofensiva garantida por mais 5 dias!",
+        emoji: "🛡️" as const,
         urgencyColor: "text-emerald-500",
         bgClass: "bg-emerald-500/10 border-emerald-500/20",
         iconColor: "#10b981"
@@ -617,21 +868,24 @@ export default function NotificacoesScreen() {
 
     if (daysRemaining > 1) {
       return {
-        message: `Faltam ${daysRemaining} dias para fazer aula e manter sua chama acesa! ⏳`,
+        message: `Faltam ${daysRemaining} dias para fazer aula e manter sua chama acesa!`,
+        emoji: "⏳" as const,
         urgencyColor: "text-orange-500",
         bgClass: "bg-orange-500/10 border-orange-500/20",
         iconColor: "#f97316"
       };
     } else if (daysRemaining === 1) {
       return {
-        message: "Atenção: Você tem apenas 1 dia para fazer aula ou sua ofensiva será zerada! ⚠️",
+        message: "Atenção: Você tem apenas 1 dia para fazer aula ou sua ofensiva será zerada!",
+        emoji: "⚠️" as const,
         urgencyColor: "text-rose-500",
         bgClass: "bg-rose-500/10 border-rose-500/20",
         iconColor: "#f43f5e"
       };
     } else {
       return {
-        message: "Sua ofensiva expirou. Faça check-in na próxima aula para recomeçar! 🔄",
+        message: "Sua ofensiva expirou. Faça check-in na próxima aula para recomeçar!",
+        emoji: "🔄" as const,
         urgencyColor: "text-gray-500",
         bgClass: "bg-gray-500/10 border-gray-500/20",
         iconColor: "#6b7280"
@@ -722,18 +976,18 @@ export default function NotificacoesScreen() {
             shadowRadius: 2,
             elevation: 2,
           } : null}
-          className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
+          className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-1.5"
         >
-          <Flame size={14} color={ofensivaSubTab === 'ofensiva' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
+          <Flame size={13} color={ofensivaSubTab === 'ofensiva' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
           <Text
             style={{ 
               fontFamily: 'NeueMachina-Ultrabold',
               color: ofensivaSubTab === 'ofensiva' ? '#fff' : '#888',
-              paddingRight: 2,
             }}
-            className="text-[11px] uppercase tracking-normal"
+            className="text-[10px] uppercase tracking-normal"
+            numberOfLines={1}
           >
-            Minha Ofensiva
+            Ofensiva
           </Text>
         </TouchableOpacity>
 
@@ -747,18 +1001,43 @@ export default function NotificacoesScreen() {
             shadowRadius: 2,
             elevation: 2,
           } : null}
-          className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-2"
+          className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-1.5"
         >
-          <Trophy size={14} color={ofensivaSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 5 }} />
+          <Trophy size={13} color={ofensivaSubTab === 'ranking' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
           <Text
             style={{ 
               fontFamily: 'NeueMachina-Ultrabold',
               color: ofensivaSubTab === 'ranking' ? '#fff' : '#888',
-              paddingRight: 4,
             }}
-            className="text-[11px] uppercase tracking-normal"
+            className="text-[10px] uppercase tracking-normal"
+            numberOfLines={1}
           >
             Ranking
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setOfensivaSubTab('copa')}
+          style={ofensivaSubTab === 'copa' ? {
+            backgroundColor: isDark ? '#262626' : '#000',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.18,
+            shadowRadius: 2,
+            elevation: 2,
+          } : null}
+          className="flex-1 py-2 rounded-xl items-center justify-center flex-row px-1.5"
+        >
+          <Users size={13} color={ofensivaSubTab === 'copa' ? '#eab308' : '#888'} style={{ marginRight: 4 }} />
+          <Text
+            style={{ 
+              fontFamily: 'NeueMachina-Ultrabold',
+              color: ofensivaSubTab === 'copa' ? '#fff' : '#888',
+            }}
+            className="text-[10px] uppercase tracking-normal"
+            numberOfLines={1}
+          >
+            Copa
           </Text>
         </TouchableOpacity>
       </View>
@@ -882,7 +1161,7 @@ export default function NotificacoesScreen() {
                 : 'bg-[#eab308] border-yellow-400 shadow-yellow-500/25'
             }`}
           >
-            {/* Top Row: Status (left) & Recorde (right) */}
+            {/* Top Row: Status (left) & Shield / Share / Recorde (right) */}
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
                 <View className={`w-2 h-2 rounded-full mr-1.5 ${isDark ? 'bg-yellow-400' : 'bg-black'}`} />
@@ -896,14 +1175,65 @@ export default function NotificacoesScreen() {
                 </Text>
               </View>
 
-              <View className={`px-2.5 py-0.5 rounded-full ${isDark ? 'bg-yellow-500/15 border border-yellow-500/30' : 'bg-black/10'}`}>
+              <View className="flex-row items-center gap-1.5">
+                <TouchableOpacity
+                  onPress={() => router.push('/clube-coins')}
+                  className={`px-2 py-1 rounded-full flex-row items-center ${isDark ? 'bg-white/10 border border-white/15' : 'bg-black/10'}`}
+                >
+                  <Shield size={11} color={isDark ? '#eab308' : '#000'} style={{ marginRight: 3 }} />
+                  <Text
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className={`text-[9px] uppercase ${isDark ? 'text-yellow-400' : 'text-black'}`}
+                  >
+                    {Number(userData?.streakShields || 0)}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setShareCardData({
+                      mode: 'streak',
+                      studentName: userData?.name || userData?.nome || 'Aluno Kihap',
+                      belt: userData?.belt || userData?.graduacao || 'Aluno Kihap',
+                      unit: normalizeUnitDisplay(userData?.unidade || userData?.unit || userData?.unitId),
+                      title: 'Ofensiva Kihap',
+                      metricValue: `${userData?.currentStreak || 0}`,
+                      metricLabel: (userData?.currentStreak || 0) === 1 ? 'Dia de Ofensiva' : 'Dias de Ofensiva',
+                      subtitle: `Recorde pessoal: ${userData?.longestStreak || 0} dias no tatame!`,
+                      avatarUrl:
+                        userData?.photoURL ||
+                        userData?.profilePicture ||
+                        userData?.photoUrl ||
+                        userData?.avatar,
+                      roleLabel: userData?.isInstructor
+                        ? 'Instrutor Kihap'
+                        : userData?.isAdmin
+                          ? 'Equipe Kihap'
+                          : 'Atleta Kihap',
+                      stats: [
+                        { label: 'Recorde', value: `${userData?.longestStreak || 0}d` },
+                        { label: 'Escudos', value: `${Number(userData?.streakShields || 0)}/3` },
+                        { label: 'Coins', value: String(getEffectiveKihapcoins(userData)) },
+                      ],
+                    })
+                  }
+                  className={`w-7 h-7 rounded-full items-center justify-center ${isDark ? 'bg-white/10' : 'bg-black/15'}`}
+                >
+                  <Share2 size={13} color={isDark ? '#eab308' : '#000'} />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View className="items-center mb-1">
+              <View className={`px-2.5 py-0.5 rounded-full flex-row items-center gap-1 ${isDark ? 'bg-yellow-500/15 border border-yellow-500/30' : 'bg-black/10'}`}>
+                <Emoji symbol="🏆" size={11} />
                 <Text 
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                   className={`text-[9px] uppercase tracking-widest ${
                     isDark ? 'text-yellow-400' : 'text-black'
                   }`}
                 >
-                  🏆 RECORDE: {userData?.longestStreak || 0} {userData?.longestStreak === 1 ? 'DIA' : 'DIAS'}
+                  RECORDE: {userData?.longestStreak || 0} {userData?.longestStreak === 1 ? 'DIA' : 'DIAS'}
                 </Text>
               </View>
             </View>
@@ -956,33 +1286,42 @@ export default function NotificacoesScreen() {
               >
                 {userData?.currentStreak || 0} {userData?.currentStreak === 1 ? 'DIA' : 'DIAS'}
               </Text>
-              <Text 
-                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                className={`text-[10px] uppercase tracking-[3px] text-center ${
-                  isDark ? 'text-gray-400' : 'text-black/75'
-                }`}
-              >
-                DE OFENSIVA DE AULAS 🔥
-              </Text>
+              <View className="flex-row items-center justify-center gap-1.5">
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className={`text-[10px] uppercase tracking-[3px] text-center ${
+                    isDark ? 'text-gray-400' : 'text-black/75'
+                  }`}
+                >
+                  DE OFENSIVA DE AULAS
+                </Text>
+                <Emoji symbol="🔥" size={12} />
+              </View>
             </View>
 
             {/* Bottom Integrated Status Advice Bar */}
-            <View 
-              className={`mt-3 p-3 rounded-2xl flex-row items-center border ${
-                isDark 
-                  ? 'bg-white/5 border-white/10' 
-                  : 'bg-black/10 border-black/10'
-              }`}
-            >
-              <AlertCircle size={15} color={isDark ? '#eab308' : '#000'} style={{ marginRight: 8 }} />
-              <Text 
-                className={`text-[11px] font-semibold flex-1 leading-snug ${
-                  isDark ? 'text-gray-300' : 'text-black'
-                }`}
-              >
-                {getStreakStatus().message}
-              </Text>
-            </View>
+            {(() => {
+              const streakStatus = getStreakStatus();
+              return (
+                <View 
+                  className={`mt-3 p-3 rounded-2xl flex-row items-center border ${
+                    isDark 
+                      ? 'bg-white/5 border-white/10' 
+                      : 'bg-black/10 border-black/10'
+                  }`}
+                >
+                  <AlertCircle size={15} color={isDark ? '#eab308' : '#000'} style={{ marginRight: 8 }} />
+                  <Text 
+                    className={`text-[11px] font-semibold flex-1 leading-snug ${
+                      isDark ? 'text-gray-300' : 'text-black'
+                    }`}
+                  >
+                    {streakStatus.message}
+                  </Text>
+                  <Emoji symbol={streakStatus.emoji} size={15} style={{ marginLeft: 6 }} />
+                </View>
+              );
+            })()}
           </View>
 
           {/* Week Attendance Visualizer */}
@@ -1169,29 +1508,132 @@ export default function NotificacoesScreen() {
 
             {/* Botões de Ação */}
             {isCheckedInToday ? (
-              <View className="flex-row items-center justify-between pt-1">
-                <View className="flex-1 mr-3">
-                  <Text className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    Sua presença já foi confirmada para hoje. Bom treino! 🔥
-                  </Text>
-                  {upcomingNextClass && (
-                    <Text className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-                      Próxima aula: {upcomingDayLabel} às {upcomingNextClass.time}
+              <View className="pt-1">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1 mr-3">
+                    <View className="flex-row items-center gap-1.5">
+                      <Text className="text-xs text-gray-600 dark:text-gray-400 font-medium shrink">
+                        Sua presença já foi confirmada para hoje. Bom treino!
+                      </Text>
+                      <Emoji symbol="🔥" size={13} />
+                    </View>
+                    {upcomingNextClass && (
+                      <Text className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+                        Próxima aula: {upcomingDayLabel} às {upcomingNextClass.time}
+                      </Text>
+                    )}
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => router.push('/atividades')}
+                    activeOpacity={0.8}
+                    className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5"
+                  >
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-[10px] uppercase tracking-wider text-gray-700 dark:text-gray-300"
+                    >
+                      Grade
                     </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Termômetro Pós-Treino (1 toque) */}
+                <View className="mt-4 pt-3.5 border-t border-gray-100 dark:border-white/10">
+                  {todayFeedback ? (
+                    <View className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-2xl flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-1.5 flex-1 mr-2">
+                        <Text className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          ✓ Como foi hoje:
+                        </Text>
+                        <Emoji
+                          symbol={
+                            todayFeedback.mood === 'incrivel'
+                              ? '🔥'
+                              : todayFeedback.mood === 'desafiador'
+                                ? '💪'
+                                : '😊'
+                          }
+                          size={13}
+                        />
+                        <Text className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                          {todayFeedback.mood === 'incrivel'
+                            ? 'Incrível'
+                            : todayFeedback.mood === 'desafiador'
+                              ? 'Desafiador'
+                              : 'Tranquilo'}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center gap-0.5">
+                        <Text className="text-[10px] font-black text-emerald-500">+5</Text>
+                        <Emoji symbol="⚡" size={11} />
+                      </View>
+                    </View>
+                  ) : (
+                    <View>
+                      <View className="flex-row items-center justify-between mb-2">
+                        <Text
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                        >
+                          Como foi seu treino hoje?
+                        </Text>
+                        <View className="flex-row items-center gap-0.5">
+                          <Text className="text-[10px] font-black text-yellow-600 dark:text-yellow-400">
+                            +5 Coins
+                          </Text>
+                          <Emoji symbol="⚡" size={11} />
+                        </View>
+                      </View>
+                      <View className="flex-row flex-wrap gap-1.5 mb-2.5">
+                        {WORKOUT_FOCUS_TAGS.map((tag) => {
+                          const activeTag = selectedFocusTags.includes(tag);
+                          return (
+                            <TouchableOpacity
+                              key={tag}
+                              onPress={() =>
+                                setSelectedFocusTags((prev) =>
+                                  prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                                )
+                              }
+                              className={`px-2.5 py-1 rounded-full border ${
+                                activeTag
+                                  ? 'bg-yellow-500/20 border-yellow-500'
+                                  : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'
+                              }`}
+                            >
+                              <Text
+                                className={`text-[10px] font-bold ${
+                                  activeTag ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-500 dark:text-gray-400'
+                                }`}
+                              >
+                                {tag}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      <View className="flex-row gap-2">
+                        {[
+                          { id: 'incrivel' as const, emoji: '🔥', label: 'Incrível' },
+                          { id: 'desafiador' as const, emoji: '💪', label: 'Desafiador' },
+                          { id: 'tranquilo' as const, emoji: '😊', label: 'Tranquilo' },
+                        ].map((m) => (
+                          <TouchableOpacity
+                            key={m.id}
+                            disabled={submittingFeedback}
+                            onPress={() => handleSubmitFeedback(m.id)}
+                            className="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-white/10 flex-row items-center justify-center gap-1 border border-gray-200 dark:border-white/10"
+                          >
+                            <Emoji symbol={m.emoji} size={12} />
+                            <Text className="text-[11px] font-bold text-gray-900 dark:text-white">
+                              {m.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
                   )}
                 </View>
-                <TouchableOpacity 
-                  onPress={() => router.push('/atividades')}
-                  activeOpacity={0.8}
-                  className="px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5"
-                >
-                  <Text 
-                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                    className="text-[10px] uppercase tracking-wider text-gray-700 dark:text-gray-300"
-                  >
-                    Grade
-                  </Text>
-                </TouchableOpacity>
               </View>
             ) : isClassToday ? (
               <View className="space-y-2">
@@ -1291,7 +1733,7 @@ export default function NotificacoesScreen() {
           </View>
 
           {/* Gamified Explanation Banner */}
-          <View className="bg-yellow-500/5 dark:bg-yellow-500/10 p-5 rounded-3xl border border-yellow-500/20 mb-6">
+          <View className="bg-yellow-500/5 dark:bg-yellow-500/10 p-5 rounded-3xl border border-yellow-500/20 mb-5">
             <View className="flex-row items-center mb-2.5">
               <Sparkles size={16} color="#eab308" style={{ marginRight: 7 }} />
               <Text 
@@ -1302,11 +1744,181 @@ export default function NotificacoesScreen() {
               </Text>
             </View>
             <Text className="text-[12px] font-medium text-gray-600 dark:text-gray-400 leading-relaxed">
-              Cada check-in de aula realizado acende a sua chama! Você precisa realizar uma nova aula a cada 5 dias para manter a sua chama acesa e aumentar sua ofensiva.
+              Cada check-in de aula realizado acende a sua chama! Você precisa realizar uma nova aula a cada 5 dias para manter a sua chama acesa e aumentar sua ofensiva. Se precisar faltar, seu Escudo de Chama (Clube de Coins) protege por até 10 dias.
             </Text>
           </View>
+
+          {/* Parceiro de Tatame (Ofensiva em Dupla / Família) */}
+          <View className="bg-white dark:bg-[#141414] p-5 rounded-3xl border border-gray-200/70 dark:border-white/10 mb-5 shadow-sm">
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center">
+                <View className="w-8 h-8 rounded-xl bg-yellow-500/10 items-center justify-center mr-2.5">
+                  <Users size={16} color="#eab308" />
+                </View>
+                <View>
+                  <Text
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-xs uppercase tracking-wider text-gray-900 dark:text-white"
+                  >
+                    Parceiro de Tatame
+                  </Text>
+                  <View className="flex-row items-center gap-0.5 flex-wrap">
+                    <Text className="text-[10px] text-gray-400">
+                      Ofensiva em dupla ou família (+15
+                    </Text>
+                    <Emoji symbol="⚡" size={11} />
+                    <Text className="text-[10px] text-gray-400">
+                      /semana)
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {(() => {
+              const activeDuo = streakDuos.find((d) => d.status === 'active');
+              const incomingInvite = streakDuos.find((d) => d.status === 'pending' && d.initiatedBy !== user?.uid);
+              const outgoingInvite = streakDuos.find((d) => d.status === 'pending' && d.initiatedBy === user?.uid);
+
+              if (incomingInvite) {
+                const inviterUid = incomingInvite.initiatedBy;
+                const inviter = incomingInvite.members?.[inviterUid] || {};
+                return (
+                  <View className="bg-yellow-500/10 p-3.5 rounded-2xl border border-yellow-500/30">
+                    <View className="flex-row items-start gap-1.5 mb-2">
+                      <Emoji symbol="🤝" size={14} style={{ marginTop: 1 }} />
+                      <Text className="text-xs font-bold text-gray-900 dark:text-white flex-1">
+                        {inviter.name || 'Um colega'} convidou você para serem Parceiros de Tatame!
+                      </Text>
+                    </View>
+                    <View className="flex-row gap-2">
+                      <TouchableOpacity
+                        onPress={() => handleDuoAction('accept', { duoId: incomingInvite.id })}
+                        className="flex-1 bg-[#eab308] py-2.5 rounded-xl items-center"
+                      >
+                        <Text className="text-xs font-black text-black uppercase">Aceitar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDuoAction('decline', { duoId: incomingInvite.id })}
+                        className="flex-1 bg-gray-200 dark:bg-white/10 py-2.5 rounded-xl items-center"
+                      >
+                        <Text className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">Recusar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              }
+
+              if (outgoingInvite) {
+                const partnerUid = (outgoingInvite.memberIds || []).find((id: string) => id !== user?.uid);
+                const partner = outgoingInvite.members?.[partnerUid] || {};
+                return (
+                  <View className="bg-gray-50 dark:bg-white/5 p-3.5 rounded-2xl flex-row items-center justify-between">
+                    <Text className="text-xs font-semibold text-gray-600 dark:text-gray-300 flex-1 mr-2">
+                      Convite enviado para {partner.name || 'colega'} (aguardando aceite).
+                    </Text>
+                    <TouchableOpacity onPress={() => handleDuoAction('remove', { duoId: outgoingInvite.id })}>
+                      <Text className="text-[11px] font-bold text-red-500">Cancelar</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+
+              if (activeDuo) {
+                const partnerUid = (activeDuo.memberIds || []).find((id: string) => id !== user?.uid);
+                const partner = activeDuo.members?.[partnerUid] || {};
+                return (
+                  <View>
+                    <View className="bg-gray-50 dark:bg-white/5 p-3.5 rounded-2xl flex-row items-center justify-between mb-3">
+                      <View className="flex-row items-center flex-1 mr-2">
+                        <View className="w-10 h-10 rounded-full bg-yellow-500/20 items-center justify-center mr-3">
+                          <Emoji symbol="🤝" size={20} />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-xs font-bold text-gray-900 dark:text-white" numberOfLines={1}>
+                            Dupla com {partner.name || 'Parceiro'}
+                          </Text>
+                          <Text className="text-[10px] text-gray-400">
+                            {activeDuo.isFamily ? 'Ofensiva em Família ativa' : 'Parceria ativa esta semana'}
+                          </Text>
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() =>
+                          Alert.alert('Desfazer Dupla', 'Deseja encerrar esta parceria de tatame?', [
+                            { text: 'Cancelar', style: 'cancel' },
+                            { text: 'Encerrar', style: 'destructive', onPress: () => handleDuoAction('remove', { duoId: activeDuo.id }) },
+                          ])
+                        }
+                      >
+                        <Text className="text-[10px] font-bold text-gray-400">Trocar</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => handleDuoAction('claim_weekly_bonus', { duoId: activeDuo.id })}
+                      className="bg-[#eab308] py-3 rounded-xl flex-row items-center justify-center gap-1"
+                    >
+                      <Text
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-black text-[11px] uppercase tracking-wider"
+                      >
+                        Resgatar Bônus da Dupla (+15
+                      </Text>
+                      <Emoji symbol="⚡" size={12} />
+                      <Text
+                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                        className="text-black text-[11px] uppercase tracking-wider"
+                      >
+                        )
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }
+
+              return (
+                <TouchableOpacity
+                  onPress={openDuoPicker}
+                  className="bg-gray-50 dark:bg-white/5 border border-dashed border-yellow-500/40 py-3.5 px-4 rounded-2xl flex-row items-center justify-between"
+                >
+                  <Text className="text-xs font-bold text-gray-700 dark:text-gray-300 flex-1 mr-2">
+                    Convide um familiar ou colega para manter a ofensiva junto!
+                  </Text>
+                  <View className="bg-yellow-500 px-3 py-1 rounded-lg">
+                    <Text className="text-[10px] font-black text-black uppercase">Escolher</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })()}
+          </View>
+
+          {/* Atalho Missões Semanais */}
+          <TouchableOpacity
+            onPress={() => router.push('/missoes')}
+            activeOpacity={0.85}
+            className="bg-black dark:bg-[#1a1a1a] p-4 rounded-3xl border border-yellow-500/30 flex-row items-center justify-between mb-6"
+          >
+            <View className="flex-row items-center flex-1 mr-3">
+              <View className="w-10 h-10 rounded-2xl bg-yellow-500/20 items-center justify-center mr-3">
+                <Target size={19} color="#eab308" />
+              </View>
+              <View className="flex-1">
+                <Text
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-xs text-white uppercase"
+                >
+                  Missões & Quiz da Semana
+                </Text>
+                <Text className="text-[11px] text-gray-400 mt-0.5">
+                  Ganhe Kihapcoins extra e desbloqueie recompensas!
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color="#eab308" />
+          </TouchableOpacity>
         </ScrollView>
-      ) : (
+      ) : ofensivaSubTab === 'ranking' ? (
         <View className="flex-1">
           {rankingLoading ? (
             <View className="flex-1 px-6">
@@ -1442,7 +2054,17 @@ export default function NotificacoesScreen() {
 
                 // Resolve unit display label
                 const displayUnit = item.unitId || item.unidadeId || item.unit || item.unidade || 'KIHAP';
-                const capitalizedUnit = displayUnit.charAt(0).toUpperCase() + displayUnit.slice(1);
+                const capitalizedUnit = normalizeUnitDisplay(displayUnit);
+                const frameMeta = AVATAR_FRAMES[item.avatarFrame || 'none'] || AVATAR_FRAMES.none;
+                const alreadyCheered = sentCheersToday.has(item.uid);
+
+                let needsNudge = false;
+                if (item.lastAttendanceDate && (item.currentStreak || 0) > 0) {
+                  const lastD = new Date(item.lastAttendanceDate + 'T12:00:00');
+                  const todayD = new Date(getLocalDateStr(new Date()) + 'T12:00:00');
+                  const diffDays = Math.floor((todayD.getTime() - lastD.getTime()) / 86400000);
+                  needsNudge = diffDays >= 3 && diffDays <= 5;
+                }
 
                 return (
                   <View
@@ -1460,13 +2082,18 @@ export default function NotificacoesScreen() {
                       shadowRadius: 1.5,
                       elevation: isMe ? 2 : 0.5,
                     }}
-                    className="flex-row items-center px-4 py-3 rounded-2xl mb-2.5 justify-between"
+                    className="flex-row items-center px-3.5 py-3 rounded-2xl mb-2.5 justify-between"
                   >
-                    <View className="flex-row items-center flex-1">
+                    <TouchableOpacity
+                      disabled={isMe}
+                      onPress={() => router.push(`/user/${item.uid}`)}
+                      activeOpacity={0.8}
+                      className="flex-row items-center flex-1"
+                    >
                       {/* Rank Indicator */}
-                      <View className="w-8 items-center justify-center mr-2">
+                      <View className="w-7 items-center justify-center mr-1.5">
                         {isMedal ? (
-                          <Text className="text-xl">{rankLabel}</Text>
+                          <Emoji symbol={rankLabel} size={20} />
                         ) : (
                           <Text 
                             style={{ fontFamily: 'NeueMachina-Ultrabold' }}
@@ -1477,26 +2104,33 @@ export default function NotificacoesScreen() {
                         )}
                       </View>
 
-                      {/* Avatar */}
-                      <View className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-white/10 mr-3">
+                      {/* Avatar with optional equipped frame */}
+                      <View
+                        style={
+                          frameMeta.id !== 'none'
+                            ? { borderColor: frameMeta.ringColor, borderWidth: 2.5 }
+                            : undefined
+                        }
+                        className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-white/10 mr-2.5"
+                      >
                         <Image source={displayPhoto} className="w-full h-full object-cover" />
                       </View>
 
                       {/* Name & Unit info */}
-                      <View className="flex-1 pr-2">
+                      <View className="flex-1 pr-1.5">
                         <View className="flex-row items-center">
                           <Text 
                             style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                            className={`text-[13px] uppercase ${isMe ? 'text-[#ca8a04] dark:text-[#facc15]' : 'text-gray-900 dark:text-white'}`}
+                            className={`text-[12px] uppercase ${isMe ? 'text-[#ca8a04] dark:text-[#facc15]' : 'text-gray-900 dark:text-white'}`}
                             numberOfLines={1}
                           >
                             {item.name || item.nome || 'Aluno'}
                           </Text>
                           {isMe && (
-                            <View className="bg-[#eab308] px-2 py-0.5 rounded-full ml-1.5">
+                            <View className="bg-[#eab308] px-1.5 py-0.5 rounded-full ml-1.5">
                               <Text 
                                 style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                                className="text-black text-[8px] uppercase tracking-wider"
+                                className="text-black text-[7px] uppercase tracking-wider"
                               >
                                 Você
                               </Text>
@@ -1507,17 +2141,41 @@ export default function NotificacoesScreen() {
                           {capitalizedUnit}
                         </Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
 
-                    {/* Streak indicator */}
-                    <View className="flex-row items-center bg-yellow-500/15 dark:bg-yellow-500/20 px-3 py-1.5 rounded-full border border-yellow-500/30">
-                      <Flame size={14} color="#eab308" style={{ marginRight: 4 }} />
-                      <Text 
-                        style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                        className="text-xs text-[#ca8a04] dark:text-[#facc15]"
-                      >
-                        {score}
-                      </Text>
+                    <View className="flex-row items-center gap-1.5">
+                      {!isMe && (
+                        <TouchableOpacity
+                          disabled={alreadyCheered || sendingCheerUid === item.uid}
+                          onPress={() => handleSendCheer(item.uid, needsNudge ? 'nudge' : 'kihap')}
+                          className={`px-2.5 py-1.5 rounded-full border items-center justify-center ${
+                            alreadyCheered
+                              ? 'bg-emerald-500/10 border-emerald-500/30'
+                              : needsNudge
+                                ? 'bg-orange-500/15 border-orange-500/40'
+                                : 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10'
+                          }`}
+                        >
+                          {alreadyCheered ? (
+                            <Text className="text-[10px] font-black text-emerald-500">
+                              ✓
+                            </Text>
+                          ) : (
+                            <Emoji symbol={needsNudge ? '🔥' : '🥋'} size={13} />
+                          )}
+                        </TouchableOpacity>
+                      )}
+
+                      {/* Streak indicator */}
+                      <View className="flex-row items-center bg-yellow-500/15 dark:bg-yellow-500/20 px-2.5 py-1.5 rounded-full border border-yellow-500/30">
+                        <Flame size={13} color="#eab308" style={{ marginRight: 3 }} />
+                        <Text 
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-xs text-[#ca8a04] dark:text-[#facc15]"
+                        >
+                          {score}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 );
@@ -1531,6 +2189,112 @@ export default function NotificacoesScreen() {
             />
           )}
         </View>
+      ) : (
+        /* Copa das Unidades */
+        <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+          {renderOfensivaSubSelector()}
+
+          <View className="bg-[#eab308] rounded-3xl p-5 mb-5 shadow-lg">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-[10px] text-black/80 uppercase tracking-widest"
+              >
+                COPA DAS UNIDADES • {getCurrentMonthKey()}
+              </Text>
+              <TouchableOpacity
+                onPress={() => fetchCopa(true)}
+                className="bg-black/15 px-2.5 py-1 rounded-full flex-row items-center"
+              >
+                <RefreshCw size={11} color="#000" style={{ marginRight: 4 }} />
+                <Text className="text-[9px] font-black text-black uppercase">Atualizar</Text>
+              </TouchableOpacity>
+            </View>
+            <Text
+              style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+              className="text-xl text-black uppercase tracking-tight"
+            >
+              Toda aula conta para sua unidade!
+            </Text>
+            <Text className="text-xs text-black/80 font-medium mt-1">
+              Pontuação justa baseada na média de presenças por aluno ativo da unidade.
+            </Text>
+          </View>
+
+          {copaLoading && copaStandings.length === 0 ? (
+            <View className="py-16 items-center justify-center">
+              <ActivityIndicator size="large" color="#eab308" />
+            </View>
+          ) : copaStandings.length === 0 ? (
+            <View className="bg-white dark:bg-[#141414] p-8 rounded-3xl border border-gray-100 dark:border-white/10 items-center">
+              <Trophy size={40} color="#9ca3af" style={{ marginBottom: 10 }} />
+              <Text className="text-sm font-bold text-gray-600 dark:text-gray-300 text-center">
+                Toque em Atualizar para carregar o placar deste mês.
+              </Text>
+            </View>
+          ) : (
+            copaStandings.map((unit, idx) => {
+              const medals = ['🥇', '🥈', '🥉'];
+              const myUnitSlug = normalizeUnitKey(
+                userData?.unitId || userData?.unidadeId || userData?.unit || userData?.unidade || ''
+              );
+              const isMyUnit = unit.unitId === myUnitSlug;
+
+              return (
+                <View
+                  key={unit.unitId}
+                  className={`p-4 rounded-2xl mb-2.5 border flex-row items-center justify-between ${
+                    isMyUnit
+                      ? 'bg-yellow-500/15 border-yellow-500'
+                      : 'bg-white dark:bg-[#141414] border-gray-100 dark:border-white/10'
+                  }`}
+                >
+                  <View className="flex-row items-center flex-1 mr-3">
+                    <View className="w-8 items-center justify-center mr-2">
+                      {idx < 3 ? (
+                        <Emoji symbol={medals[idx]} size={20} />
+                      ) : (
+                        <Text
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-xs text-gray-400"
+                        >
+                          #{idx + 1}
+                        </Text>
+                      )}
+                    </View>
+                    <View className="flex-1">
+                      <View className="flex-row items-center">
+                        <Text
+                          style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                          className="text-sm text-gray-900 dark:text-white uppercase"
+                        >
+                          {unit.unitName}
+                        </Text>
+                        {isMyUnit && (
+                          <View className="bg-yellow-500 px-2 py-0.5 rounded-full ml-2">
+                            <Text className="text-[8px] font-black text-black uppercase">Sua Unidade</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text className="text-[11px] text-gray-400 mt-0.5">
+                        {unit.totalCheckins} check-ins • {unit.participatingStudents} alunos ativos no mês
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="bg-yellow-500/15 px-3 py-1.5 rounded-full border border-yellow-500/30">
+                    <Text
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-xs text-yellow-600 dark:text-yellow-400"
+                    >
+                      {unit.score} pts
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
       )}
     </View>
   ) : activeSubTab === 'emblemas' ? (
@@ -1651,6 +2415,45 @@ export default function NotificacoesScreen() {
                   </Text>
                 </View>
               </View>
+              {latestPhysicalTest && (
+                <TouchableOpacity
+                  onPress={() =>
+                    setShareCardData({
+                      mode: 'physical',
+                      studentName: userData?.name || userData?.nome || 'Aluno Kihap',
+                      belt: userData?.belt || userData?.graduacao || 'Aluno Kihap',
+                      unit: normalizeUnitDisplay(userData?.unidade || userData?.unit || userData?.unitId),
+                      title: 'Teste Físico Kihap',
+                      metricValue: `${latestPhysicalTest.score}`,
+                      metricLabel: `Pontos (Recorde: ${maxPhysicalScore})`,
+                      subtitle: 'Evolução e condicionamento físico no tatame!',
+                      avatarUrl:
+                        userData?.photoURL ||
+                        userData?.profilePicture ||
+                        userData?.photoUrl ||
+                        userData?.avatar,
+                      roleLabel: userData?.isInstructor
+                        ? 'Instrutor Kihap'
+                        : userData?.isAdmin
+                          ? 'Equipe Kihap'
+                          : 'Atleta Kihap',
+                      stats: [
+                        { label: 'Recorde', value: `${maxPhysicalScore} pts` },
+                        { label: 'Ofensiva', value: `${userData?.currentStreak || 0}d` },
+                        {
+                          label: 'Unidade',
+                          value: normalizeUnitDisplay(
+                            userData?.unidade || userData?.unit || userData?.unitId
+                          ),
+                        },
+                      ],
+                    })
+                  }
+                  className="bg-red-500/10 border border-red-500/25 w-10 h-10 rounded-2xl items-center justify-center ml-2"
+                >
+                  <Share2 size={17} color="#ef4444" />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* 3 Metric Cards */}
@@ -1685,7 +2488,7 @@ export default function NotificacoesScreen() {
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                   className="text-base text-red-500 mt-0.5"
                 >
-                  {latestPhysicalTest ? `${latestPhysicalTest.score} pts` : '--'}
+                  {latestPhysicalTest ? `${getPhysicalTestScore(latestPhysicalTest) ?? '--'} pts` : '--'}
                 </Text>
               </View>
 
@@ -1820,12 +2623,15 @@ export default function NotificacoesScreen() {
           {/* Histórico de Testes */}
           <View className="mb-6">
             <View className="flex-row items-center justify-between mb-4 px-1">
-              <Text 
-                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest"
-              >
-                📈 Histórico de Testes
-              </Text>
+              <View className="flex-row items-center gap-1.5">
+                <Emoji symbol="📈" size={13} />
+                <Text 
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-widest"
+                >
+                  Histórico de Testes
+                </Text>
+              </View>
               <Text 
                 style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                 className="text-[10px] text-gray-400 uppercase tracking-wider"
@@ -1886,7 +2692,7 @@ export default function NotificacoesScreen() {
                         style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                         className="text-lg text-red-500"
                       >
-                        {test.score}
+                        {getPhysicalTestScore(test) ?? '--'}
                       </Text>
                     </View>
                   </View>
@@ -1974,6 +2780,94 @@ export default function NotificacoesScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal Escolher Parceiro de Tatame */}
+      <Modal
+        visible={duoModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDuoModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/60 items-center justify-center p-5">
+          <View className="bg-white dark:bg-[#141414] rounded-3xl p-6 w-full max-w-sm border border-gray-200/80 dark:border-white/10 shadow-2xl">
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-1 mr-2">
+                <Text
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-base text-gray-900 dark:text-white uppercase"
+                >
+                  Escolher Parceiro
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Familiares vinculados ou colegas que você segue
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setDuoModalVisible(false)} className="p-1">
+                <Text className="text-gray-400 font-bold text-lg">✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {duoLoading ? (
+              <ActivityIndicator size="large" color="#eab308" className="my-8" />
+            ) : duoCandidates.length === 0 ? (
+              <View className="py-6 items-center">
+                <Text className="text-xs text-gray-400 text-center leading-relaxed">
+                  Siga colegas no Ranking ou na aba Descobrir para convidá-los como Parceiro de Tatame!
+                </Text>
+              </View>
+            ) : (
+              <ScrollView className="max-h-72" showsVerticalScrollIndicator={false}>
+                {duoCandidates.map((cand) => (
+                  <TouchableOpacity
+                    key={cand.uid}
+                    onPress={() => handleDuoAction('invite', { partnerUid: cand.uid })}
+                    className="p-3.5 rounded-2xl mb-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 flex-row items-center justify-between"
+                  >
+                    <View className="flex-1 mr-2">
+                      <Text className="text-xs font-bold text-gray-900 dark:text-white" numberOfLines={1}>
+                        {cand.name || cand.nome || 'Aluno Kihap'}
+                      </Text>
+                      {cand.isFamily ? (
+                        <View className="flex-row items-center gap-1 mt-0.5">
+                          <Emoji symbol="👨‍👩‍👧" size={12} />
+                          <Text className="text-[10px] text-gray-400 uppercase">
+                            Perfil da Família (ativa na hora)
+                          </Text>
+                        </View>
+                      ) : (
+                        <Text className="text-[10px] text-gray-400 uppercase mt-0.5">
+                          {normalizeUnitDisplay(cand.unidade || cand.unit || cand.unitId)}
+                        </Text>
+                      )}
+                    </View>
+                    <View className="bg-yellow-500 px-3 py-1 rounded-lg">
+                      <Text className="text-[10px] font-black text-black uppercase">Convidar</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setDuoModalVisible(false)}
+              className="mt-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5 items-center justify-center"
+            >
+              <Text
+                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                className="text-xs uppercase tracking-wider text-gray-600 dark:text-gray-300"
+              >
+                Fechar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <ShareableCardModal
+        visible={!!shareCardData}
+        onClose={() => setShareCardData(null)}
+        cardData={shareCardData}
+      />
     </View>
   );
 }

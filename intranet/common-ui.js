@@ -442,6 +442,11 @@ function isPageAllowedForUser(pageKey, user) {
         return isAdministrativo;
     }
 
+    // Engajamento & Coins
+    if (pageKey === 'engajamento.html') {
+        return isInstructor || isAdministrativo || isMarketing;
+    }
+
     // Tatame
     if (pageKey === 'tatame.html' || pageKey === 'planificador.html') {
         return isInstructor || isColarinhoPreto || isAdministrativo;
@@ -928,7 +933,7 @@ async function loadComponents(pageSpecificSetup) {
     }
 
     // Configurações de Cache
-    const CACHE_VERSION = '1.1.9'; 
+    const CACHE_VERSION = '1.2.0'; 
     const getCached = (key) => {
         const item = localStorage.getItem(`kihap_intranet_${key}`);
         if (item) {
@@ -956,7 +961,8 @@ async function loadComponents(pageSpecificSetup) {
         'grade.html',
         'relatorios.html',
         'snapshots-history.html',
-        'gerenciar-emblemas.html'
+        'gerenciar-emblemas.html',
+        'engajamento.html'
     ];
 
     // Páginas específicas da Store
@@ -1159,6 +1165,7 @@ async function loadComponents(pageSpecificSetup) {
                 'pedidos.html',
                 'chat.html',
                 'feed.html',
+                'engajamento.html',
                 'store.html',
                 'checkin.html',
                 'suporte.html',

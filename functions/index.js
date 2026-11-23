@@ -23,6 +23,21 @@ const { sendPushNotification, getPushStats } = require('./notifications.js');
 exports.sendPushNotification = sendPushNotification;
 exports.getPushStats = getPushStats;
 
+const {
+    sendKihapCheer,
+    claimMissionReward,
+    redeemCoinReward,
+    getCopaUnidades,
+    submitWorkoutFeedback,
+    manageStreakDuo,
+} = require('./engagement.js');
+exports.sendKihapCheer = sendKihapCheer;
+exports.claimMissionReward = claimMissionReward;
+exports.redeemCoinReward = redeemCoinReward;
+exports.getCopaUnidades = getCopaUnidades;
+exports.submitWorkoutFeedback = submitWorkoutFeedback;
+exports.manageStreakDuo = manageStreakDuo;
+
 const { getGoogleAdsData } = require('./google-ads.js');
 exports.getGoogleAdsData = functions.https.onCall(getGoogleAdsData);
 

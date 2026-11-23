@@ -6,9 +6,11 @@ import { useColorScheme } from 'nativewind';
 import RenderHtml from 'react-native-render-html';
 import { WebView } from 'react-native-webview';
 import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import * as Haptics from 'expo-haptics';
 import { db } from '../services/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'expo-router';
+import Emoji from './Emoji';
 
 const getYoutubeVideoId = (url: string): string | null => {
   if (!url) return null;
@@ -46,6 +48,7 @@ interface FeedCardProps {
     authorId: string;
     isHtml?: boolean;
     likes?: string[];
+    reactions?: Record<string, string[]>;
     targetUnit?: string;
     targetUnits?: string[];
     targetAudience?: string;
@@ -72,13 +75,17 @@ export default function FeedCard({ post }: FeedCardProps) {
   const [likesCount, setLikesCount] = useState(
     Array.isArray(post.likes) ? post.likes.length : 0
   );
+  const [localReactions, setLocalReactions] = useState<Record<string, string[]>>(
+    post.reactions || {}
+  );
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   // Sync state when post prop changes (real-time updates)
   useEffect(() => {
     setIsLiked(Array.isArray(post.likes) ? post.likes.includes(user?.uid || '') : false);
     setLikesCount(Array.isArray(post.likes) ? post.likes.length : 0);
-  }, [post.likes, user?.uid]);
+    setLocalReactions(post.reactions || {});
+  }, [post.likes, post.reactions, user?.uid]);
 
   // Dynamically calculate image aspect ratio for edge-to-edge Instagram style
   useEffect(() => {
@@ -117,6 +124,35 @@ export default function FeedCard({ post }: FeedCardProps) {
       // Revert state on error
       setIsLiked(!newLikedState);
       setLikesCount(prev => !newLikedState ? prev + 1 : prev - 1);
+    }
+  };
+
+  const handleReaction = async (reactionKey: string) => {
+    if (!user) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
+    const currentList = Array.isArray(localReactions[reactionKey]) ? localReactions[reactionKey] : [];
+    const alreadyReacted = currentList.includes(user.uid);
+    const nextList = alreadyReacted
+      ? currentList.filter((id) => id !== user.uid)
+      : [...currentList, user.uid];
+
+    setLocalReactions((prev) => ({
+      ...prev,
+      [reactionKey]: nextList,
+    }));
+
+    try {
+      const postRef = doc(db, 'feed', post.id);
+      await updateDoc(postRef, {
+        [`reactions.${reactionKey}`]: alreadyReacted ? arrayRemove(user.uid) : arrayUnion(user.uid),
+      });
+    } catch (error) {
+      console.error('Error updating reaction:', error);
+      setLocalReactions((prev) => ({
+        ...prev,
+        [reactionKey]: currentList,
+      }));
     }
   };
 
@@ -254,9 +290,10 @@ export default function FeedCard({ post }: FeedCardProps) {
             <View className="flex-row items-center gap-1.5">
               <Text className="text-gray-900 dark:text-white font-bold text-[13px]">{post.authorName}</Text>
               {isStaffPost && (
-                <View className="px-1.5 py-0.5 bg-amber-500/15 dark:bg-amber-400/15 rounded border border-amber-500/30">
+                <View className="flex-row items-center gap-1 px-1.5 py-0.5 bg-amber-500/15 dark:bg-amber-400/15 rounded border border-amber-500/30">
+                  <Emoji symbol="🔒" size={10} />
                   <Text className="text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                    🔒 Staff
+                    Staff
                   </Text>
                 </View>
               )}
@@ -375,19 +412,50 @@ export default function FeedCard({ post }: FeedCardProps) {
 
       {/* Actions */}
       <View className="flex-row items-center justify-between px-4 py-3 border-t border-gray-50 dark:border-white/5">
-        <View className="flex-row items-center space-x-2">
-          <TouchableOpacity onPress={handleLike} className="flex-row items-center py-2 px-1">
+        <View className="flex-row items-center gap-2 flex-wrap">
+          <TouchableOpacity onPress={handleLike} className="flex-row items-center py-1.5 px-2.5 rounded-full bg-gray-50 dark:bg-white/5">
             <Heart 
-              size={22} 
+              size={19} 
               color={isLiked ? '#ef4444' : (isDark ? '#aaa' : '#666')} 
               fill={isLiked ? '#ef4444' : 'transparent'} 
             />
             {likesCount > 0 && (
-              <Text className={`ml-2 text-[13px] font-bold ${isLiked ? 'text-red-500' : 'text-gray-400'}`}>
+              <Text className={`ml-1.5 text-[12px] font-bold ${isLiked ? 'text-red-500' : 'text-gray-400'}`}>
                 {likesCount}
               </Text>
             )}
           </TouchableOpacity>
+
+          {[
+            { key: 'kihap', emoji: '🥋' },
+            { key: 'fire', emoji: '🔥' },
+            { key: 'clap', emoji: '👏' },
+          ].map((rx) => {
+            const arr: string[] = Array.isArray(localReactions[rx.key]) ? localReactions[rx.key] : [];
+            const reacted = Boolean(user?.uid && arr.includes(user.uid));
+            return (
+              <TouchableOpacity
+                key={rx.key}
+                onPress={() => handleReaction(rx.key)}
+                className={`flex-row items-center py-1.5 px-2.5 rounded-full border ${
+                  reacted
+                    ? 'bg-yellow-500/15 border-yellow-500/40'
+                    : 'bg-gray-50 dark:bg-white/5 border-transparent'
+                }`}
+              >
+                <Emoji symbol={rx.emoji} size={15} />
+                {arr.length > 0 && (
+                  <Text
+                    className={`ml-1 text-[11px] font-bold ${
+                      reacted ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-400'
+                    }`}
+                  >
+                    {arr.length}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
     </View>

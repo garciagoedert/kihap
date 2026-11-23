@@ -47,6 +47,81 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        /* Native <dialog> modals: never set display unconditionally so [hidden]/closed state works */
+        dialog.kihap-modal {
+            padding: 0;
+            background: transparent;
+            border: none;
+            max-width: calc(100vw - 1.5rem);
+            max-height: 94vh;
+            overflow: visible;
+            color: inherit;
+        }
+        dialog.kihap-modal[open] {
+            display: flex;
+            margin: auto;
+        }
+        dialog.kihap-modal:modal {
+            overscroll-behavior: contain;
+        }
+        dialog.kihap-modal::backdrop {
+            background: rgba(0, 0, 0, 0.62);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            overflow: hidden;
+            overscroll-behavior: contain;
+        }
+
+        /* User modal tabs */
+        .user-modal-tablist {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none;
+        }
+        .user-modal-tablist::-webkit-scrollbar {
+            display: none;
+        }
+        .user-modal-tab {
+            position: relative;
+            flex: none;
+        }
+        .user-modal-tab[aria-selected="true"] {
+            color: #FF9800;
+        }
+        .user-modal-tab[aria-selected="true"]::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 0;
+            border-block-end: 3px solid #FF9800;
+            border-radius: 999px 999px 0 0;
+        }
+        .user-modal-tab:focus-visible,
+        dialog.kihap-modal button:focus-visible,
+        dialog.kihap-modal input:focus-visible,
+        dialog.kihap-modal select:focus-visible {
+            outline: 2px solid #FF9800;
+            outline-offset: 2px;
+        }
+        dialog.kihap-modal input[type="text"],
+        dialog.kihap-modal input[type="email"],
+        dialog.kihap-modal input[type="password"],
+        dialog.kihap-modal input[type="number"],
+        dialog.kihap-modal input[type="date"],
+        dialog.kihap-modal select {
+            font-size: max(1rem, 1em);
+        }
+        @media (min-width: 640px) {
+            dialog.kihap-modal input[type="text"],
+            dialog.kihap-modal input[type="email"],
+            dialog.kihap-modal input[type="password"],
+            dialog.kihap-modal input[type="number"],
+            dialog.kihap-modal input[type="date"],
+            dialog.kihap-modal select {
+                font-size: 0.875rem;
+            }
+        }
     </style>
 </head>
 
@@ -272,190 +347,155 @@
             </div>
 
             <!-- Add/Edit User Modal -->
-            <div id="user-modal"
-                class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden glass-blur-heavy p-3 sm:p-6 overflow-y-auto">
-                <div class="bg-white dark:bg-[#1a1a1a] p-5 sm:p-8 rounded-3xl shadow-2xl w-full max-w-6xl border border-gray-200 dark:border-gray-800 transform transition-all my-auto max-h-[94vh] flex flex-col">
-                    <div class="flex justify-between items-center mb-6 shrink-0">
-                        <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-                                <i class="fas fa-user-plus text-2xl"></i>
+            <dialog id="user-modal" aria-labelledby="form-title" closedby="closerequest" class="kihap-modal w-full max-w-4xl">
+                <div class="bg-white dark:bg-[#1a1a1a] rounded-3xl shadow-2xl w-full border border-gray-200 dark:border-gray-800 max-h-[92vh] flex flex-col overflow-hidden">
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center px-5 sm:px-8 pt-5 sm:pt-7 pb-4 shrink-0">
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            <div class="w-11 h-11 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shrink-0">
+                                <i class="fas fa-user-plus text-xl" aria-hidden="true"></i>
                             </div>
-                            <h2 id="form-title" class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Novo Colaborador</h2>
+                            <div class="min-w-0">
+                                <h2 id="form-title" class="text-xl sm:text-2xl font-black text-gray-900 dark:text-white tracking-tight truncate">Novo Colaborador</h2>
+                                <p id="modal-user-subtitle" class="hidden text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5"></p>
+                            </div>
                         </div>
-                        <button type="button" id="close-modal-btn"
-                            class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-500 transition-all">
-                            <i class="fas fa-times text-xl"></i>
+                        <button type="button" id="close-modal-btn" aria-label="Fechar modal"
+                            class="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-red-500 transition-all shrink-0 cursor-pointer">
+                            <i class="fas fa-times text-xl" aria-hidden="true"></i>
                         </button>
                     </div>
 
-                    <form id="user-form" class="space-y-6 overflow-y-auto pr-1 sm:pr-2 custom-scrollbar flex-1">
-                        <input type="hidden" id="user-email-hidden">
+                    <!-- Modal 3-Tab Navigation -->
+                    <div id="user-modal-tablist"
+                        class="user-modal-tablist border-b border-gray-200 dark:border-gray-800 px-5 sm:px-8 gap-2 sm:gap-5 shrink-0"
+                        role="tablist"
+                        focusgroup="tablist nomemory"
+                        aria-label="Seções do usuário">
+                        <button type="button" role="tab" id="modal-tab-acesso" data-modal-tab="acesso"
+                            aria-selected="true" focusgroupstart
+                            class="user-modal-tab px-3 py-3 text-xs font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer">
+                            <i class="fas fa-id-card mr-1.5" aria-hidden="true"></i>Informações de Acesso
+                        </button>
+                        <button type="button" role="tab" id="modal-tab-permissoes" data-modal-tab="permissoes"
+                            aria-selected="false" tabindex="-1"
+                            class="user-modal-tab px-3 py-3 text-xs font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer">
+                            <i class="fas fa-shield-alt mr-1.5" aria-hidden="true"></i>Atribuições & Permissões
+                        </button>
+                        <button type="button" role="tab" id="modal-tab-graduacao" data-modal-tab="graduacao"
+                            aria-selected="false" tabindex="-1"
+                            class="user-modal-tab px-3 py-3 text-xs font-extrabold uppercase tracking-wider text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors cursor-pointer">
+                            <i class="fas fa-medal mr-1.5" aria-hidden="true"></i>Graduação
+                        </button>
+                    </div>
 
-                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                            <!-- Basic Info Section -->
-                            <div class="lg:col-span-4 space-y-5">
-                                <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Informações de Acesso</h3>
-                                <div class="space-y-4">
+                    <form id="user-form" aria-labelledby="form-title" class="flex flex-col flex-1 min-h-0">
+                        <input type="hidden" id="user-email-hidden" name="userId">
+
+                        <div class="flex-1 overflow-y-auto custom-scrollbar">
+                            <!-- Tab 1: Informações Básicas & Acesso -->
+                            <div id="modal-panel-acesso" role="tabpanel" aria-labelledby="modal-tab-acesso">
+                                <div class="p-5 sm:p-8 space-y-6">
                                     <!-- Profile Photo Upload -->
                                     <div>
-                                        <label class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Foto de Perfil</label>
-                                        <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/20 p-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+                                        <label for="profile-photo-input" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Foto de Perfil</label>
+                                        <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/20 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700">
                                             <div class="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg shadow-md overflow-hidden shrink-0">
-                                                <img id="profile-preview-img" class="hidden absolute inset-0 w-full h-full object-cover z-10">
+                                                <img id="profile-preview-img" alt="Foto de perfil do usuário" class="hidden absolute inset-0 w-full h-full object-cover z-10">
                                                 <span id="profile-preview-initials" class="relative z-0">U</span>
                                             </div>
                                             <div class="flex flex-col gap-1.5">
-                                                <input type="file" id="profile-photo-input" accept="image/*" class="hidden">
-                                                <button type="button" onclick="document.getElementById('profile-photo-input').click()"
-                                                    class="px-4 py-2 text-xs font-bold bg-primary text-white rounded-xl hover:bg-primary-dark transition-all">
+                                                <input type="file" id="profile-photo-input" name="profilePhoto" accept="image/*" class="hidden">
+                                                <button type="button" id="choose-photo-btn"
+                                                    class="px-4 py-2 text-xs font-bold bg-primary text-white rounded-xl hover:bg-primary-dark transition-all cursor-pointer">
                                                     Escolher Imagem
                                                 </button>
-                                                <p class="text-[9px] text-gray-550 dark:text-gray-400">Formatos: JPG, PNG. Máx 2MB.</p>
+                                                <p class="text-[10px] text-gray-500 dark:text-gray-400">Formatos: JPG, PNG. Máx 2MB.</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label for="name" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nome Completo</label>
-                                        <div class="relative group">
-                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                                <i class="fas fa-user text-sm"></i>
-                                            </div>
-                                            <input type="text" id="name" required
-                                                class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
-                                                placeholder="Ex: João Silva">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label for="email" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">E-mail Corporativo</label>
-                                        <div class="relative group">
-                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                                <i class="fas fa-envelope text-sm"></i>
-                                            </div>
-                                            <input type="email" id="email" required
-                                                class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
-                                                placeholder="Ex: joao@kihap.com.br">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label for="password" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Senha de Acesso</label>
-                                        <div class="relative group">
-                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                                <i class="fas fa-lock text-sm"></i>
-                                            </div>
-                                            <input type="password" id="password"
-                                                class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
-                                                placeholder="No mínimo 6 caracteres">
-                                        </div>
-                                        <p class="text-[10px] text-gray-500 mt-2 italic ml-1 opacity-70">Deixe vazio para manter a senha atual durante a edição.</p>
-                                    </div>
-                                    <div>
-                                        <label for="user-unit" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Unidade Vinculada</label>
-                                        <div class="relative group">
-                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                                <i class="fas fa-map-marker-alt text-sm"></i>
-                                            </div>
-                                            <select id="user-unit"
-                                                class="w-full pl-11 pr-10 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer">
-                                                <option value="">Carregando unidades...</option>
-                                            </select>
-                                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
-                                                <i class="fas fa-chevron-down text-xs"></i>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div>
+                                            <label for="name" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nome Completo <span aria-hidden="true">*</span></label>
+                                            <div class="relative group">
+                                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                    <i class="fas fa-user text-sm" aria-hidden="true"></i>
+                                                </div>
+                                                <input type="text" id="name" name="name" autocomplete="name" required
+                                                    class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
+                                                    placeholder="Ex: João Silva">
                                             </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <label for="user-belt" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Graduação / Faixa</label>
-                                        <div class="relative group">
-                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                                <i class="fas fa-medal text-sm"></i>
+                                        <div>
+                                            <label for="email" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">E-mail Corporativo <span aria-hidden="true">*</span></label>
+                                            <div class="relative group">
+                                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                    <i class="fas fa-envelope text-sm" aria-hidden="true"></i>
+                                                </div>
+                                                <input type="email" id="email" name="email" autocomplete="email" autocorrect="off" autocapitalize="none" spellcheck="false" required
+                                                    class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
+                                                    placeholder="Ex: joao@kihap.com.br">
                                             </div>
-                                            <select id="user-belt"
-                                                class="w-full pl-11 pr-10 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer">
-                                                <option value="">Não informada / Nenhuma</option>
-                                                <optgroup label="🥋 Faixas Pretas (Dans)">
-                                                    <option value="Preta 1º Dan">Preta 1º Dan</option>
-                                                    <option value="Preta 2º Dan">Preta 2º Dan</option>
-                                                    <option value="Preta 3º Dan">Preta 3º Dan</option>
-                                                    <option value="Preta 4º Dan">Preta 4º Dan</option>
-                                                    <option value="Preta 5º Dan">Preta 5º Dan</option>
-                                                    <option value="Preta 6º Dan">Preta 6º Dan</option>
-                                                    <option value="Preta 7º Dan">Preta 7º Dan</option>
-                                                    <option value="Preta 8º Dan">Preta 8º Dan</option>
-                                                    <option value="Preta 9º Dan">Preta 9º Dan</option>
-                                                    <option value="Preta">Preta</option>
-                                                </optgroup>
-                                                <optgroup label="🥋 Faixas Coloridas (Tradicional)">
-                                                    <option value="Vermelha e Preta">Vermelha e Preta</option>
-                                                    <option value="Vermelha Decidida">Vermelha Decidida</option>
-                                                    <option value="Vermelha Recomendada">Vermelha Recomendada</option>
-                                                    <option value="Marrom Decidida">Marrom Decidida</option>
-                                                    <option value="Marrom Recomendada">Marrom Recomendada</option>
-                                                    <option value="Azul Decidida">Azul Decidida</option>
-                                                    <option value="Azul Recomendada">Azul Recomendada</option>
-                                                    <option value="Roxa Decidida">Roxa Decidida</option>
-                                                    <option value="Roxa Recomendada">Roxa Recomendada</option>
-                                                    <option value="Verde Decidida">Verde Decidida</option>
-                                                    <option value="Verde Recomendada">Verde Recomendada</option>
-                                                    <option value="Camuflada Decidida">Camuflada Decidida</option>
-                                                    <option value="Camuflada Recomendada">Camuflada Recomendada</option>
-                                                    <option value="Amarela Decidida">Amarela Decidida</option>
-                                                    <option value="Amarela Recomendada">Amarela Recomendada</option>
-                                                    <option value="Laranja Decidida">Laranja Decidida</option>
-                                                    <option value="Laranja Recomendada">Laranja Recomendada</option>
-                                                    <option value="Branca Decidida">Branca Decidida</option>
-                                                    <option value="Branca Recomendada">Branca Recomendada</option>
-                                                    <option value="Faixa Branca">Faixa Branca</option>
-                                                    <option value="Branca">Branca</option>
-                                                </optgroup>
-                                                <optgroup label="🦁 Programa Littles">
-                                                    <option value="Littles Branca">Littles Branca</option>
-                                                    <option value="Panda">Panda</option>
-                                                    <option value="Leão">Leão</option>
-                                                    <option value="Girafa">Girafa</option>
-                                                    <option value="Borboleta">Borboleta</option>
-                                                    <option value="Jacaré">Jacaré</option>
-                                                    <option value="Coruja">Coruja</option>
-                                                    <option value="Arara">Arara</option>
-                                                    <option value="Macaco">Macaco</option>
-                                                    <option value="Fênix">Fênix</option>
-                                                </optgroup>
-                                            </select>
-                                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
-                                                <i class="fas fa-chevron-down text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <label for="password" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Senha de Acesso</label>
+                                            <div class="relative group">
+                                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                    <i class="fas fa-lock text-sm" aria-hidden="true"></i>
+                                                </div>
+                                                <input type="password" id="password" name="password" autocomplete="new-password" aria-describedby="password-help"
+                                                    class="w-full pl-11 pr-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
+                                                    placeholder="No mínimo 6 caracteres">
+                                            </div>
+                                            <p id="password-help" class="text-[10px] text-gray-500 mt-1.5 italic ml-1 opacity-80">Durante a edição, use o botão Alterar Senha no rodapé do modal.</p>
+                                        </div>
+                                        <div>
+                                            <label for="user-unit" class="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Unidade Vinculada</label>
+                                            <div class="relative group">
+                                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                    <i class="fas fa-map-marker-alt text-sm" aria-hidden="true"></i>
+                                                </div>
+                                                <select id="user-unit" name="unitId"
+                                                    class="w-full pl-11 pr-10 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer">
+                                                    <option value="">Carregando unidades...</option>
+                                                </select>
+                                                <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                                                    <i class="fas fa-chevron-down text-xs" aria-hidden="true"></i>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Roles Section -->
-                            <div class="lg:col-span-8 space-y-5">
-                                <h3 class="text-xs font-black text-primary uppercase tracking-[0.2em] border-b border-primary/10 pb-3">Atribuições & Permissões</h3>
-                                <div class="space-y-5">
+                            <!-- Tab 2: Atribuições & Permissões -->
+                            <div id="modal-panel-permissoes" role="tabpanel" aria-labelledby="modal-tab-permissoes" hidden="until-found">
+                                <div class="p-5 sm:p-8 space-y-6">
                                     <!-- Atribuições Globais -->
                                     <div class="bg-gray-50/50 dark:bg-gray-900/30 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-800">
                                         <div class="flex items-center justify-between pb-3 mb-3.5 border-b border-gray-200/60 dark:border-gray-800">
                                             <span class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Perfis & Papéis Globais</span>
                                             <span class="text-[11px] text-gray-400">Permissões de sistema</span>
                                         </div>
-                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                             <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isAdmin" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
+                                                <input type="checkbox" id="isAdmin" name="isAdmin" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
                                                 <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">👑 Admin</span>
                                             </label>
                                             <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isInstructor" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
+                                                <input type="checkbox" id="isInstructor" name="isInstructor" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
                                                 <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">🥋 Instrutor</span>
                                             </label>
                                             <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isColarinhoPreto" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
-                                                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">🥋 Colarinho Preto</span>
-                                            </label>
-                                            <label class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700/70 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer group">
-                                                <input type="checkbox" id="isFinanceiro" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
+                                                <input type="checkbox" id="isFinanceiro" name="isFinanceiro" class="peer h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary cursor-pointer shrink-0">
                                                 <span class="text-xs font-bold text-gray-700 dark:text-gray-300 group-hover:text-primary transition-colors whitespace-nowrap">💼 Financeiro</span>
                                             </label>
                                         </div>
+                                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-3 flex items-center gap-1.5">
+                                            <i class="fas fa-info-circle text-primary text-xs" aria-hidden="true"></i>
+                                            <span>O colarinho (Vermelho, Vermelho e Preto ou Preto) agora é definido na aba <strong class="text-gray-700 dark:text-gray-200">Graduação</strong>. Selecionar <strong class="text-gray-700 dark:text-gray-200">Preto</strong> ativa o acesso de Colarinho Preto.</span>
+                                        </p>
                                     </div>
 
                                     <!-- Permissões Granulares por Módulo & Página -->
@@ -752,7 +792,7 @@
                                                         <i class="fas fa-share-alt text-primary text-xs"></i>
                                                         <span class="text-xs font-bold text-gray-800 dark:text-gray-200">Social</span>
                                                     </div>
-                                                    <span id="badge-perm-social" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">0/3</span>
+                                                    <span id="badge-perm-social" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">0/4</span>
                                                 </label>
                                                 <div class="flex items-center gap-2.5">
                                                     <button type="button" data-check-all="social" class="btn-check-all text-[11px] font-bold text-primary hover:underline cursor-pointer">Todas</button>
@@ -775,6 +815,10 @@
                                                 <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
                                                     <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="social" value="gerenciar-emblemas.html">
                                                     <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-award text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Emblemas</span></span>
+                                                </label>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/40 dark:bg-gray-800/20 hover:bg-gray-100/70 dark:hover:bg-gray-800/60 has-[:checked]:border-primary/40 has-[:checked]:bg-primary/5 cursor-pointer transition-all">
+                                                    <input type="checkbox" class="page-perm-checkbox h-4 w-4 rounded text-primary focus:ring-primary border-gray-300 dark:border-gray-600 cursor-pointer shrink-0" data-module="social" value="engajamento.html">
+                                                    <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 min-w-0"><i class="fas fa-fire text-gray-400 text-[11px] w-3.5 text-center shrink-0"></i><span class="truncate">Engajamento & Coins</span></span>
                                                 </label>
                                             </div>
                                         </div>
@@ -825,49 +869,226 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Tab 3: Graduação, Colarinho & Parciais -->
+                            <div id="modal-panel-graduacao" role="tabpanel" aria-labelledby="modal-tab-graduacao" hidden="until-found">
+                                <div class="p-5 sm:p-8 space-y-6">
+                                    <!-- Faixa do Instrutor / Colaborador -->
+                                    <div class="bg-gray-50/50 dark:bg-gray-900/30 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
+                                        <div>
+                                            <label for="user-belt" class="block text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Faixa do Instrutor / Graduação Atual</label>
+                                            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Faixa principal exibida no perfil do instrutor e nos crachás da intranet.</p>
+                                        </div>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+                                                <i class="fas fa-medal text-sm" aria-hidden="true"></i>
+                                            </div>
+                                            <select id="user-belt" name="belt"
+                                                class="w-full pl-11 pr-10 py-3.5 text-sm bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all appearance-none cursor-pointer">
+                                                <option value="">Não informada / Nenhuma</option>
+                                                <optgroup label="🥋 Faixas Pretas (Dans)">
+                                                    <option value="Preta 1º Dan">Preta 1º Dan</option>
+                                                    <option value="Preta 2º Dan">Preta 2º Dan</option>
+                                                    <option value="Preta 3º Dan">Preta 3º Dan</option>
+                                                    <option value="Preta 4º Dan">Preta 4º Dan</option>
+                                                    <option value="Preta 5º Dan">Preta 5º Dan</option>
+                                                    <option value="Preta 6º Dan">Preta 6º Dan</option>
+                                                    <option value="Preta 7º Dan">Preta 7º Dan</option>
+                                                    <option value="Preta 8º Dan">Preta 8º Dan</option>
+                                                    <option value="Preta 9º Dan">Preta 9º Dan</option>
+                                                    <option value="Preta">Preta</option>
+                                                </optgroup>
+                                                <optgroup label="🥋 Faixas Coloridas (Tradicional)">
+                                                    <option value="Vermelha e Preta">Vermelha e Preta</option>
+                                                    <option value="Vermelha Decidida">Vermelha Decidida</option>
+                                                    <option value="Vermelha Recomendada">Vermelha Recomendada</option>
+                                                    <option value="Marrom Decidida">Marrom Decidida</option>
+                                                    <option value="Marrom Recomendada">Marrom Recomendada</option>
+                                                    <option value="Azul Decidida">Azul Decidida</option>
+                                                    <option value="Azul Recomendada">Azul Recomendada</option>
+                                                    <option value="Roxa Decidida">Roxa Decidida</option>
+                                                    <option value="Roxa Recomendada">Roxa Recomendada</option>
+                                                    <option value="Verde Decidida">Verde Decidida</option>
+                                                    <option value="Verde Recomendada">Verde Recomendada</option>
+                                                    <option value="Camuflada Decidida">Camuflada Decidida</option>
+                                                    <option value="Camuflada Recomendada">Camuflada Recomendada</option>
+                                                    <option value="Amarela Decidida">Amarela Decidida</option>
+                                                    <option value="Amarela Recomendada">Amarela Recomendada</option>
+                                                    <option value="Laranja Decidida">Laranja Decidida</option>
+                                                    <option value="Laranja Recomendada">Laranja Recomendada</option>
+                                                    <option value="Branca Decidida">Branca Decidida</option>
+                                                    <option value="Branca Recomendada">Branca Recomendada</option>
+                                                    <option value="Faixa Branca">Faixa Branca</option>
+                                                    <option value="Branca">Branca</option>
+                                                </optgroup>
+                                                <optgroup label="🦁 Programa Littles">
+                                                    <option value="Littles Branca">Littles Branca</option>
+                                                    <option value="Panda">Panda</option>
+                                                    <option value="Leão">Leão</option>
+                                                    <option value="Girafa">Girafa</option>
+                                                    <option value="Borboleta">Borboleta</option>
+                                                    <option value="Jacaré">Jacaré</option>
+                                                    <option value="Coruja">Coruja</option>
+                                                    <option value="Arara">Arara</option>
+                                                    <option value="Macaco">Macaco</option>
+                                                    <option value="Fênix">Fênix</option>
+                                                </optgroup>
+                                            </select>
+                                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                                                <i class="fas fa-chevron-down text-xs" aria-hidden="true"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Colarinho (Radio Group) -->
+                                    <fieldset class="bg-gray-50/50 dark:bg-gray-900/30 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3.5">
+                                        <legend class="px-2 text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Colarinho de Instrutor</legend>
+                                        <p class="text-[11px] text-gray-400 dark:text-gray-500">Defina qual colarinho o instrutor utiliza atualmente.</p>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                            <label class="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer">
+                                                <input type="radio" id="colarinho-nenhum" name="colarinho" value="" checked
+                                                    class="h-4 w-4 text-primary border-gray-300 dark:border-gray-600 focus:ring-primary cursor-pointer shrink-0">
+                                                <span class="w-5 h-5 rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 shrink-0" aria-hidden="true"></span>
+                                                <span class="flex flex-col min-w-0">
+                                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200">Nenhum</span>
+                                                    <span class="text-[10px] text-gray-400">Sem colarinho</span>
+                                                </span>
+                                            </label>
+
+                                            <label class="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 hover:border-red-500/40 has-[:checked]:border-red-500 has-[:checked]:bg-red-500/5 transition-all cursor-pointer">
+                                                <input type="radio" id="colarinho-vermelho" name="colarinho" value="Vermelho"
+                                                    class="h-4 w-4 text-red-600 border-gray-300 dark:border-gray-600 focus:ring-red-500 cursor-pointer shrink-0">
+                                                <span class="w-5 h-5 rounded-md bg-red-600 border border-red-700 shrink-0" aria-hidden="true"></span>
+                                                <span class="flex flex-col min-w-0">
+                                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200">Vermelho</span>
+                                                    <span class="text-[10px] text-gray-400">Colarinho inicial</span>
+                                                </span>
+                                            </label>
+
+                                            <label class="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 hover:border-red-500/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all cursor-pointer">
+                                                <input type="radio" id="colarinho-vermelho-preto" name="colarinho" value="Vermelho e Preto"
+                                                    class="h-4 w-4 text-primary border-gray-300 dark:border-gray-600 focus:ring-primary cursor-pointer shrink-0">
+                                                <span class="w-5 h-5 rounded-md border border-zinc-700 shrink-0" style="background: linear-gradient(135deg, #dc2626 50%, #111827 50%);" aria-hidden="true"></span>
+                                                <span class="flex flex-col min-w-0">
+                                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200">Vermelho e Preto</span>
+                                                    <span class="text-[10px] text-gray-400">Intermediário</span>
+                                                </span>
+                                            </label>
+
+                                            <label class="flex items-center gap-3 p-3.5 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700 hover:border-zinc-900/40 has-[:checked]:border-zinc-900 dark:has-[:checked]:border-white has-[:checked]:bg-zinc-900/5 dark:has-[:checked]:bg-white/10 transition-all cursor-pointer">
+                                                <input type="radio" id="colarinho-preto" name="colarinho" value="Preto"
+                                                    class="h-4 w-4 text-zinc-900 border-gray-300 dark:border-gray-600 focus:ring-zinc-900 cursor-pointer shrink-0">
+                                                <span class="w-5 h-5 rounded-md bg-zinc-900 border border-zinc-700 dark:border-zinc-400 shrink-0" aria-hidden="true"></span>
+                                                <span class="flex flex-col min-w-0">
+                                                    <span class="text-xs font-bold text-gray-800 dark:text-gray-200">Preto</span>
+                                                    <span class="text-[10px] text-gray-400">Colarinho Preto</span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </fieldset>
+
+                                    <!-- Exames Parciais: Quantidade + Datas -->
+                                    <fieldset class="bg-gray-50/50 dark:bg-gray-900/30 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-4">
+                                        <legend class="px-2 text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Exames Parciais</legend>
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div>
+                                                <label for="parciais-count" class="block text-xs font-bold text-gray-800 dark:text-gray-200">Quantos parciais já fez</label>
+                                                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Registre a quantidade de parciais realizados e suas respectivas datas.</p>
+                                            </div>
+                                            <div class="flex items-center gap-2.5 shrink-0">
+                                                <div class="inline-flex items-center rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 overflow-hidden">
+                                                    <button type="button" id="parciais-dec-btn" aria-label="Diminuir quantidade de parciais"
+                                                        class="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                                                        <i class="fas fa-minus text-xs" aria-hidden="true"></i>
+                                                    </button>
+                                                    <input type="number" id="parciais-count" name="parciaisCount" min="0" max="50" value="0" inputmode="numeric"
+                                                        class="w-14 h-10 text-center font-black text-gray-900 dark:text-white bg-transparent border-x border-gray-200 dark:border-gray-700 outline-none">
+                                                    <button type="button" id="parciais-inc-btn" aria-label="Aumentar quantidade de parciais"
+                                                        class="w-10 h-10 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                                                        <i class="fas fa-plus text-xs" aria-hidden="true"></i>
+                                                    </button>
+                                                </div>
+                                                <span id="parciais-summary-badge" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 whitespace-nowrap">0 parciais</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="pt-3 border-t border-gray-200/70 dark:border-gray-800 space-y-3">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Datas dos Parciais</span>
+                                                <button type="button" id="add-parcial-date-btn"
+                                                    class="px-3.5 py-2 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all flex items-center gap-1.5 cursor-pointer">
+                                                    <i class="fas fa-calendar-plus" aria-hidden="true"></i>
+                                                    <span>Adicionar Data</span>
+                                                </button>
+                                            </div>
+
+                                            <p id="parciais-dates-hint" class="hidden text-[11px] text-amber-600 dark:text-amber-400 font-medium"></p>
+
+                                            <div id="parciais-dates-list" class="space-y-2.5">
+                                                <!-- Linhas dinâmicas de datas -->
+                                            </div>
+                                        </div>
+                                    </fieldset>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="flex justify-end gap-4 pt-6 border-t border-gray-100 dark:border-gray-800">
-                            <button type="button" id="cancel-edit"
-                                class="px-8 py-3.5 font-bold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">
-                                Cancelar
-                            </button>
-                            <button type="submit"
-                                class="px-10 py-3.5 font-black text-white bg-primary rounded-2xl hover:bg-primary-dark transition-all shadow-xl hover:shadow-primary/40">
-                                Salvar Alterações
-                            </button>
+                        <!-- Sticky Modal Footer -->
+                        <div class="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 sm:px-8 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40">
+                            <div id="modal-edit-only-actions" class="hidden items-center gap-2.5 flex-wrap">
+                                <button type="button" id="modal-change-password-btn"
+                                    class="px-4 py-2.5 rounded-xl text-xs font-bold bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border border-yellow-500/25 hover:bg-yellow-500 hover:text-white transition-all flex items-center gap-2 cursor-pointer">
+                                    <i class="fas fa-key" aria-hidden="true"></i>
+                                    <span>Alterar Senha</span>
+                                </button>
+                                <button type="button" id="modal-delete-user-btn"
+                                    class="px-4 py-2.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/25 hover:bg-red-600 hover:text-white transition-all flex items-center gap-2 cursor-pointer">
+                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                    <span>Excluir</span>
+                                </button>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3 ml-auto">
+                                <button type="button" id="cancel-edit"
+                                    class="px-6 py-3 font-bold text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer">
+                                    Cancelar
+                                </button>
+                                <button type="submit"
+                                    class="px-8 py-3 font-black text-sm text-white bg-primary rounded-2xl hover:bg-primary-dark transition-all shadow-xl hover:shadow-primary/40 cursor-pointer">
+                                    Salvar Alterações
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
-            </div>
+            </dialog>
 
             <!-- Change Password Modal -->
-            <div id="change-password-modal"
-                class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-md">
-                <div class="glass-card p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full max-w-md">
+            <dialog id="change-password-modal" aria-labelledby="change-password-title" closedby="any" class="kihap-modal w-full max-w-md">
+                <div class="bg-white dark:bg-[#1a1a1a] p-6 sm:p-8 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl w-full">
                     <div class="flex items-center gap-3 mb-6">
                         <div class="w-10 h-10 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-500">
-                            <i class="fas fa-key text-lg"></i>
+                            <i class="fas fa-key text-lg" aria-hidden="true"></i>
                         </div>
-                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Alterar Senha</h2>
+                        <h2 id="change-password-title" class="text-xl font-bold text-gray-900 dark:text-white">Alterar Senha</h2>
                     </div>
                     <form id="change-password-form">
-                        <input type="hidden" id="change-password-user-id">
+                        <input type="hidden" id="change-password-user-id" name="userId">
                         <div>
-                            <label for="new-password" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Nova Senha</label>
-                            <input type="password" id="new-password" required
+                            <label for="new-password" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Nova Senha <span aria-hidden="true">*</span></label>
+                            <input type="password" id="new-password" name="newPassword" autocomplete="new-password" minlength="6" required
                                 class="w-full px-4 py-3.5 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all"
-                                placeholder="Digite a nova senha">
+                                placeholder="Mínimo 6 caracteres">
                         </div>
                         <div class="mt-8 flex gap-3">
                             <button type="button" id="cancel-change-password"
-                                class="flex-1 px-4 py-3 font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">Cancelar</button>
+                                class="flex-1 px-4 py-3 font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all cursor-pointer">Cancelar</button>
                             <button type="submit"
-                                class="flex-1 px-4 py-3 font-bold text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30">Salvar Senha</button>
+                                class="flex-1 px-4 py-3 font-bold text-white bg-primary rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/30 cursor-pointer">Salvar Senha</button>
                         </div>
                     </form>
                 </div>
-            </div>
+            </dialog>
 
             <!-- Add/Edit Motivation Recipient Modal -->
             <div id="motivation-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden backdrop-blur-md p-4">

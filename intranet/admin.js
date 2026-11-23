@@ -24,6 +24,53 @@ const normalizeDanBelt = (b) => {
     return trimmed;
 };
 
+const escapeHtml = (str = '') =>
+    String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+const resolveUserColarinho = (user) => {
+    const raw = (user?.colarinho || '').trim();
+    if (raw === 'Vermelho' || raw === 'Vermelho e Preto' || raw === 'Preto') {
+        return raw;
+    }
+    if (user?.isColarinhoPreto || user?.isBlackCollar || user?.colarinhoPreto) {
+        return 'Preto';
+    }
+    return '';
+};
+
+const formatDateBRShort = (isoDate) => {
+    if (!isoDate || typeof isoDate !== 'string') return '';
+    const parts = isoDate.slice(0, 10).split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return isoDate;
+};
+
+function openDialog(dialogEl) {
+    if (!dialogEl) return;
+    if (typeof dialogEl.showModal === 'function') {
+        if (!dialogEl.open) dialogEl.showModal();
+    } else {
+        dialogEl.classList.remove('hidden');
+    }
+}
+
+function closeDialog(dialogEl) {
+    if (!dialogEl) return;
+    if (typeof dialogEl.close === 'function') {
+        if (dialogEl.open) dialogEl.close();
+        dialogEl.returnValue = '';
+    } else {
+        dialogEl.classList.add('hidden');
+    }
+}
+
 function continueSetup() {
     console.log('[AdminCheck] Inicializando painel administrativo...');
     
@@ -38,7 +85,6 @@ function continueSetup() {
     const passwordInput = document.getElementById('password');
     const isAdminInput = document.getElementById('isAdmin');
     const isInstructorInput = document.getElementById('isInstructor');
-    const isColarinhoPretoInput = document.getElementById('isColarinhoPreto');
     const isRHInput = document.getElementById('isRH');
     const isMarketingInput = document.getElementById('isMarketing');
     const isFinanceiroInput = document.getElementById('isFinanceiro');
@@ -55,8 +101,22 @@ function continueSetup() {
     const userUnitSelect = document.getElementById('user-unit');
     const userBeltSelect = document.getElementById('user-belt');
     const profilePhotoInput = document.getElementById('profile-photo-input');
+    const choosePhotoBtn = document.getElementById('choose-photo-btn');
+    const passwordHelpEl = document.getElementById('password-help');
 
     const hiddenEmailInput = document.getElementById('user-email-hidden');
+    const modalUserSubtitle = document.getElementById('modal-user-subtitle');
+    const modalEditOnlyActions = document.getElementById('modal-edit-only-actions');
+    const modalChangePasswordBtn = document.getElementById('modal-change-password-btn');
+    const modalDeleteUserBtn = document.getElementById('modal-delete-user-btn');
+    const modalTablist = document.getElementById('user-modal-tablist');
+    const parciaisCountInput = document.getElementById('parciais-count');
+    const parciaisDecBtn = document.getElementById('parciais-dec-btn');
+    const parciaisIncBtn = document.getElementById('parciais-inc-btn');
+    const parciaisSummaryBadge = document.getElementById('parciais-summary-badge');
+    const parciaisDatesHint = document.getElementById('parciais-dates-hint');
+    const parciaisDatesList = document.getElementById('parciais-dates-list');
+    const addParcialDateBtn = document.getElementById('add-parcial-date-btn');
     const cancelEditBtn = document.getElementById('cancel-edit');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const addUserBtn = document.getElementById('add-user-btn');
@@ -66,6 +126,278 @@ function continueSetup() {
     const cancelChangePasswordBtn = document.getElementById('cancel-change-password');
     const changePasswordUserIdInput = document.getElementById('change-password-user-id');
     const newPasswordInput = document.getElementById('new-password');
+
+    // Fallback para light dismiss em dialog[closedby="any"] (browsers sem suporte nativo)
+    if (typeof HTMLDialogElement !== 'undefined' && !('closedBy' in HTMLDialogElement.prototype)) {
+        const isOutsideDialog = (e, dialog) => {
+            const r = dialog.getBoundingClientRect();
+            return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+        };
+        document.querySelectorAll('dialog[closedby="any"]').forEach((dialogEl) => {
+            let pressedOutside = false;
+            dialogEl.addEventListener('pointerdown', (e) => {
+                pressedOutside = isOutsideDialog(e, dialogEl);
+            });
+            dialogEl.addEventListener('pointerup', (e) => {
+                if (pressedOutside && isOutsideDialog(e, dialogEl)) {
+                    closeDialog(dialogEl);
+                }
+                pressedOutside = false;
+            });
+        });
+    }
+
+    // 3-Tab Controller inside Add/Edit User Modal
+    const MODAL_TABS = ['acesso', 'permissoes', 'graduacao'];
+
+    function selectModalTab(tabKey, { focus = false } = {}) {
+        if (!MODAL_TABS.includes(tabKey)) tabKey = 'acesso';
+
+        const tabButtons = modalTablist ? Array.from(modalTablist.querySelectorAll('[data-modal-tab]')) : [];
+        tabButtons.forEach((btn) => {
+            const isSelected = btn.dataset.modalTab === tabKey;
+            btn.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+            btn.toggleAttribute('focusgroupstart', isSelected);
+            btn.setAttribute('tabindex', isSelected ? '0' : '-1');
+            if (isSelected) {
+                btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                if (focus) btn.focus();
+            }
+        });
+
+        MODAL_TABS.forEach((key) => {
+            const panel = document.getElementById(`modal-panel-${key}`);
+            if (!panel) return;
+            panel.hidden = key === tabKey ? false : 'until-found';
+        });
+    }
+
+    if (modalTablist) {
+        const tabs = Array.from(modalTablist.querySelectorAll('[data-modal-tab]'));
+        tabs.forEach((tabBtn) => {
+            tabBtn.addEventListener('click', () => {
+                selectModalTab(tabBtn.dataset.modalTab);
+            });
+        });
+
+        // Selection follows focus when focusgroup moves focus on arrow keys
+        modalTablist.addEventListener('focusin', (e) => {
+            const tabBtn = e.target.closest('[data-modal-tab]');
+            if (tabBtn && tabBtn.getAttribute('aria-selected') !== 'true') {
+                selectModalTab(tabBtn.dataset.modalTab);
+            }
+        });
+
+        // Arrow-key navigation fallback when native focusgroup is unsupported
+        modalTablist.addEventListener('keydown', (e) => {
+            if (Object.hasOwn(HTMLElement.prototype, 'focusGroup')) return;
+            const currentTab = e.target.closest('[data-modal-tab]');
+            if (!currentTab) return;
+            const idx = tabs.indexOf(currentTab);
+            if (idx === -1) return;
+
+            let nextIdx = null;
+            if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
+            else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
+            else if (e.key === 'Home') nextIdx = 0;
+            else if (e.key === 'End') nextIdx = tabs.length - 1;
+
+            if (nextIdx !== null) {
+                e.preventDefault();
+                selectModalTab(tabs[nextIdx].dataset.modalTab, { focus: true });
+            }
+        });
+    }
+
+    // Reveal hidden tab panels on browser find-in-page match
+    MODAL_TABS.forEach((key) => {
+        const panel = document.getElementById(`modal-panel-${key}`);
+        if (panel) {
+            panel.addEventListener('beforematch', () => selectModalTab(key));
+        }
+    });
+
+    // If a required field in another tab fails validation, switch to that tab before native browser validation runs
+    if (userForm) {
+        const revealInvalidTab = () => {
+            const firstInvalid = userForm.querySelector(':invalid');
+            const panel = firstInvalid?.closest('[role="tabpanel"]');
+            if (panel && panel.hidden && panel.id?.startsWith('modal-panel-')) {
+                selectModalTab(panel.id.replace('modal-panel-', ''));
+            }
+        };
+
+        const submitBtn = userForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', revealInvalidTab);
+        }
+
+        userForm.addEventListener('invalid', (e) => {
+            const panel = e.target.closest('[role="tabpanel"]');
+            if (panel && panel.id?.startsWith('modal-panel-')) {
+                selectModalTab(panel.id.replace('modal-panel-', ''));
+            }
+        }, true);
+    }
+
+    // Colarinho & Parciais helpers
+    function getSelectedColarinho() {
+        const checked = document.querySelector('input[name="colarinho"]:checked');
+        return checked ? checked.value : '';
+    }
+
+    function setSelectedColarinho(value = '') {
+        const target = value === 'Vermelho' || value === 'Vermelho e Preto' || value === 'Preto' ? value : '';
+        document.querySelectorAll('input[name="colarinho"]').forEach((radio) => {
+            radio.checked = radio.value === target;
+        });
+    }
+
+    function collectParciaisDates() {
+        if (!parciaisDatesList) return [];
+        return Array.from(parciaisDatesList.querySelectorAll('.parcial-date-input'))
+            .map((inp) => inp.value.trim())
+            .filter(Boolean);
+    }
+
+    function syncParciaisUI() {
+        const countVal = Math.max(0, Math.min(50, parseInt(parciaisCountInput?.value || '0', 10) || 0));
+        if (parciaisCountInput && String(countVal) !== parciaisCountInput.value && parciaisCountInput.value !== '') {
+            parciaisCountInput.value = String(countVal);
+        }
+
+        const rows = parciaisDatesList ? Array.from(parciaisDatesList.querySelectorAll('.parcial-date-row')) : [];
+        rows.forEach((row, index) => {
+            const labelEl = row.querySelector('.parcial-row-index');
+            const inputEl = row.querySelector('.parcial-date-input');
+            const removeBtn = row.querySelector('.remove-parcial-date-btn');
+            const num = index + 1;
+            if (labelEl) labelEl.textContent = `${num}º Parcial`;
+            if (inputEl) inputEl.setAttribute('aria-label', `Data do ${num}º parcial`);
+            if (removeBtn) removeBtn.setAttribute('aria-label', `Remover data do ${num}º parcial`);
+        });
+
+        const filledCount = rows.filter((row) => Boolean(row.querySelector('.parcial-date-input')?.value?.trim())).length;
+
+        const emptyPlaceholder = parciaisDatesList?.querySelector('.parciais-empty-msg');
+        if (rows.length === 0) {
+            if (parciaisDatesList && !emptyPlaceholder) {
+                const p = document.createElement('p');
+                p.className = 'parciais-empty-msg text-xs text-gray-400 dark:text-gray-500 italic py-3 px-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-center';
+                p.textContent = 'Nenhuma data de parcial registrada ainda. Clique em "Adicionar Data".';
+                parciaisDatesList.appendChild(p);
+            }
+        } else if (emptyPlaceholder) {
+            emptyPlaceholder.remove();
+        }
+
+        if (parciaisSummaryBadge) {
+            const countLabel = `${countVal} ${countVal === 1 ? 'parcial' : 'parciais'}`;
+            const datesLabel = filledCount > 0 ? ` • ${filledCount} ${filledCount === 1 ? 'data' : 'datas'}` : '';
+            parciaisSummaryBadge.textContent = `${countLabel}${datesLabel}`;
+        }
+
+        if (parciaisDatesHint) {
+            if (countVal > filledCount) {
+                const diff = countVal - filledCount;
+                parciaisDatesHint.textContent = `Você informou ${countVal} ${countVal === 1 ? 'parcial' : 'parciais'} (${diff} sem data registrada).`;
+                parciaisDatesHint.classList.remove('hidden');
+            } else {
+                parciaisDatesHint.classList.add('hidden');
+                parciaisDatesHint.textContent = '';
+            }
+        }
+    }
+
+    function appendParcialDateRow(initialValue = '', { focusInput = false } = {}) {
+        if (!parciaisDatesList) return null;
+        const emptyPlaceholder = parciaisDatesList.querySelector('.parciais-empty-msg');
+        if (emptyPlaceholder) emptyPlaceholder.remove();
+
+        const row = document.createElement('div');
+        row.className = 'parcial-date-row flex items-center gap-2.5 p-2.5 rounded-xl bg-white dark:bg-gray-800/40 border border-gray-200/80 dark:border-gray-700';
+
+        const badge = document.createElement('span');
+        badge.className = 'parcial-row-index px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-[11px] font-extrabold uppercase tracking-wider shrink-0';
+
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.name = 'parciaisDates[]';
+        input.value = initialValue || '';
+        input.className = 'parcial-date-input flex-1 min-w-0 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-800 dark:text-gray-100';
+        input.addEventListener('change', syncParciaisUI);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-parcial-date-btn w-9 h-9 rounded-xl flex items-center justify-center bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-all shrink-0 cursor-pointer';
+        removeBtn.innerHTML = '<i class="fas fa-trash text-xs" aria-hidden="true"></i>';
+        removeBtn.addEventListener('click', () => {
+            const prevRowCount = parciaisDatesList.querySelectorAll('.parcial-date-row').length;
+            const currentCount = parseInt(parciaisCountInput?.value || '0', 10) || 0;
+            row.remove();
+            if (parciaisCountInput && currentCount === prevRowCount && prevRowCount > 0) {
+                parciaisCountInput.value = String(prevRowCount - 1);
+            }
+            syncParciaisUI();
+        });
+
+        row.appendChild(badge);
+        row.appendChild(input);
+        row.appendChild(removeBtn);
+        parciaisDatesList.appendChild(row);
+        syncParciaisUI();
+
+        if (focusInput) input.focus();
+        return row;
+    }
+
+    function renderParciaisDates(dates = []) {
+        if (!parciaisDatesList) return;
+        parciaisDatesList.innerHTML = '';
+        dates.forEach((d) => {
+            if (typeof d === 'string' && d.trim()) {
+                appendParcialDateRow(d.trim().slice(0, 10));
+            }
+        });
+        syncParciaisUI();
+    }
+
+    if (addParcialDateBtn) {
+        addParcialDateBtn.addEventListener('click', () => {
+            appendParcialDateRow('', { focusInput: true });
+            const rowCount = parciaisDatesList?.querySelectorAll('.parcial-date-row').length || 0;
+            const currentCount = parseInt(parciaisCountInput?.value || '0', 10) || 0;
+            if (parciaisCountInput && rowCount > currentCount) {
+                parciaisCountInput.value = String(rowCount);
+            }
+            syncParciaisUI();
+        });
+    }
+
+    if (parciaisDecBtn && parciaisCountInput) {
+        parciaisDecBtn.addEventListener('click', () => {
+            const cur = parseInt(parciaisCountInput.value || '0', 10) || 0;
+            parciaisCountInput.value = String(Math.max(0, cur - 1));
+            syncParciaisUI();
+        });
+    }
+
+    if (parciaisIncBtn && parciaisCountInput) {
+        parciaisIncBtn.addEventListener('click', () => {
+            const cur = parseInt(parciaisCountInput.value || '0', 10) || 0;
+            parciaisCountInput.value = String(Math.min(50, cur + 1));
+            syncParciaisUI();
+        });
+    }
+
+    if (parciaisCountInput) {
+        parciaisCountInput.addEventListener('input', syncParciaisUI);
+        parciaisCountInput.addEventListener('change', syncParciaisUI);
+    }
+
+    if (choosePhotoBtn && profilePhotoInput) {
+        choosePhotoBtn.addEventListener('click', () => profilePhotoInput.click());
+    }
 
     // Quotes Elements
     const quotesTableBody = document.getElementById('quotes-table-body');
@@ -78,9 +410,26 @@ function continueSetup() {
 
     if (addUserBtn) {
         addUserBtn.addEventListener('click', () => {
-            resetForm();
-            userModal.classList.remove('hidden');
+            resetFormState();
             formTitle.textContent = 'Adicionar Novo Usuário';
+            if (modalUserSubtitle) {
+                modalUserSubtitle.textContent = '';
+                modalUserSubtitle.classList.add('hidden');
+            }
+            if (modalEditOnlyActions) {
+                modalEditOnlyActions.classList.add('hidden');
+                modalEditOnlyActions.classList.remove('flex');
+            }
+            if (passwordInput) {
+                passwordInput.disabled = false;
+                passwordInput.placeholder = 'No mínimo 6 caracteres';
+            }
+            if (passwordHelpEl) {
+                passwordHelpEl.textContent = 'Defina uma senha inicial com no mínimo 6 caracteres.';
+            }
+            selectModalTab('acesso');
+            openDialog(userModal);
+            nameInput?.focus();
         });
     }
 
@@ -228,10 +577,26 @@ function continueSetup() {
         filteredUsers.forEach(user => {
             const roles = [];
             const userBelt = normalizeDanBelt(user.belt || user.graduacao || '');
-            if (userBelt) roles.push(`<span class="badge-soft bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold border border-yellow-500/25"><i class="fas fa-medal mr-1"></i>${userBelt}</span>`);
+            const userColarinho = resolveUserColarinho(user);
+            const parciaisDates = Array.isArray(user.parciaisDates) ? user.parciaisDates.filter(Boolean) : [];
+            const parciaisCount = Math.max(parseInt(user.parciaisCount, 10) || 0, parciaisDates.length);
+
+            if (userBelt) roles.push(`<span class="badge-soft bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold border border-yellow-500/25"><i class="fas fa-medal mr-1" aria-hidden="true"></i>${escapeHtml(userBelt)}</span>`);
+            if (userColarinho === 'Preto') {
+                roles.push('<span class="badge-soft bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-extrabold">🥋 Colarinho Preto</span>');
+            } else if (userColarinho === 'Vermelho e Preto') {
+                roles.push('<span class="badge-soft bg-red-900/15 text-red-700 dark:text-red-300 border border-red-500/25 font-bold">🥋 Colarinho Vermelho e Preto</span>');
+            } else if (userColarinho === 'Vermelho') {
+                roles.push('<span class="badge-soft bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/25 font-bold">🥋 Colarinho Vermelho</span>');
+            }
+            if (parciaisCount > 0) {
+                const tooltip = parciaisDates.length > 0
+                    ? `Datas: ${parciaisDates.map(formatDateBRShort).join(', ')}`
+                    : 'Exames parciais registrados';
+                roles.push(`<span class="badge-soft bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-bold" title="${escapeHtml(tooltip)}">${parciaisCount} ${parciaisCount === 1 ? 'parcial' : 'parciais'}</span>`);
+            }
             if (user.isAdmin) roles.push('<span class="badge-soft bg-red-500/10 text-red-600 dark:text-red-400">Admin</span>');
             if (user.isInstructor) roles.push('<span class="badge-soft bg-blue-500/10 text-blue-600 dark:text-blue-400">Instrutor</span>');
-            if (user.isColarinhoPreto || user.isBlackCollar || user.colarinhoPreto) roles.push('<span class="badge-soft bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 font-extrabold">🥋 Colarinho Preto</span>');
             if (user.isRH) roles.push('<span class="badge-soft bg-purple-500/10 text-purple-600 dark:text-purple-400">RH</span>');
             if (user.isFinanceiro) roles.push('<span class="badge-soft bg-green-500/10 text-green-600 dark:text-green-400">Financeiro</span>');
             if (user.isAdministrativo) roles.push('<span class="badge-soft bg-gray-500/10 text-gray-600 dark:text-gray-400">Admin.</span>');
@@ -253,12 +618,15 @@ function continueSetup() {
             if (user.isJuridico) roles.push('<span class="badge-soft bg-teal-500/10 text-teal-600 dark:text-teal-400">Jurídico</span>');
             if (user.isSuporte) roles.push('<span class="badge-soft bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">Suporte</span>');
 
-            const initials = (user.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const safeName = escapeHtml(user.name || 'N/A');
+            const safeEmail = escapeHtml(user.email || 'N/A');
+            const safeId = escapeHtml(user.id || '');
+            const initials = escapeHtml((user.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2));
             
             // Suporte para imagem de perfil se existir (vários campos possíveis no Firestore)
             const userPhoto = user.photoURL || user.photoUrl || user.profilePic || user.profilePicture || user.avatarUrl;
             const profileDisplay = userPhoto 
-                ? `<img src="${userPhoto}" class="absolute inset-0 w-full h-full object-cover z-10" onerror="this.style.display='none'">`
+                ? `<img src="${escapeHtml(userPhoto)}" alt="" class="absolute inset-0 w-full h-full object-cover z-10" onerror="this.style.display='none'">`
                 : '';
 
             // Desktop Row
@@ -272,8 +640,8 @@ function continueSetup() {
                             <span class="relative z-0">${initials}</span>
                         </div>
                         <div class="flex flex-col">
-                            <span class="font-bold text-gray-900 dark:text-white">${user.name || 'N/A'}</span>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">${user.email || 'N/A'}</span>
+                            <span class="font-bold text-gray-900 dark:text-white">${safeName}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">${safeEmail}</span>
                         </div>
                     </div>
                 </td>
@@ -283,15 +651,9 @@ function continueSetup() {
                     </div>
                 </td>
                 <td class="py-4 px-6 text-right">
-                    <div class="flex items-center justify-end gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all edit-btn" data-id="${user.id}" title="Editar">
-                            <i class="fas fa-edit text-xs"></i>
-                        </button>
-                        <button class="w-8 h-8 rounded-lg flex items-center justify-center bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500 hover:text-white transition-all change-password-btn" data-id="${user.id}" title="Senha">
-                            <i class="fas fa-key text-xs"></i>
-                        </button>
-                        <button class="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white transition-all delete-btn" data-id="${user.id}" title="Excluir">
-                            <i class="fas fa-trash text-xs"></i>
+                    <div class="flex items-center justify-end gap-2 md:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button type="button" class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all edit-btn cursor-pointer" data-id="${safeId}" title="Editar" aria-label="Editar ${safeName}">
+                            <i class="fas fa-edit text-xs" aria-hidden="true"></i>
                         </button>
                     </div>
                 </td>
@@ -309,16 +671,13 @@ function continueSetup() {
                              <span class="relative z-0">${initials}</span>
                         </div>
                         <div class="min-w-0">
-                            <h3 class="font-bold text-gray-900 dark:text-white truncate text-base">${user.name || 'N/A'}</h3>
-                            <p class="text-gray-500 dark:text-gray-400 text-xs truncate">${user.email || 'N/A'}</p>
+                            <h3 class="font-bold text-gray-900 dark:text-white truncate text-base">${safeName}</h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-xs truncate">${safeEmail}</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                         <button class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10 text-primary edit-btn" data-id="${user.id}">
-                            <i class="fas fa-edit text-xs"></i>
-                        </button>
-                        <button class="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-600 delete-btn" data-id="${user.id}">
-                            <i class="fas fa-trash text-xs"></i>
+                         <button type="button" class="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10 text-primary edit-btn cursor-pointer" data-id="${safeId}" aria-label="Editar ${safeName}">
+                            <i class="fas fa-edit text-xs" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
@@ -358,12 +717,22 @@ function continueSetup() {
             const pageCheckboxes = document.querySelectorAll('.page-perm-checkbox:checked');
             const allowedPages = Array.from(pageCheckboxes).map(cb => cb.value);
             const hasModule = (mod) => document.querySelectorAll(`.page-perm-checkbox[data-module="${mod}"]:checked`).length > 0;
+            const colarinho = getSelectedColarinho();
+            const isColarinhoPreto = colarinho === 'Preto';
+            const cleanedDates = collectParciaisDates().sort();
+            const rawParciaisCount = Math.max(0, parseInt(parciaisCountInput?.value || '0', 10) || 0);
+            const parciaisCount = Math.max(rawParciaisCount, cleanedDates.length);
 
             const userData = {
                 name: nameInput.value,
                 isAdmin: isAdminInput.checked,
                 isInstructor: isInstructorInput.checked,
-                isColarinhoPreto: isColarinhoPretoInput ? isColarinhoPretoInput.checked : false,
+                colarinho: colarinho,
+                isColarinhoPreto: isColarinhoPreto,
+                isBlackCollar: isColarinhoPreto,
+                colarinhoPreto: isColarinhoPreto,
+                parciaisCount: parciaisCount,
+                parciaisDates: cleanedDates,
                 isFinanceiro: isFinanceiroInput ? isFinanceiroInput.checked : false,
                 allowedPages: allowedPages,
                 isRH: hasModule('rh'),
@@ -394,7 +763,9 @@ function continueSetup() {
                 await updateUser(userId, userData);
             } else {
                 if (!passwordInput.value) {
+                    selectModalTab('acesso');
                     alert('A senha é obrigatória para novos usuários.');
+                    passwordInput.focus();
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
                     return;
@@ -417,8 +788,16 @@ function continueSetup() {
         }
     }
 
-    function resetForm() {
+    function resetFormState() {
         if (formTitle) formTitle.textContent = 'Adicionar Novo Usuário';
+        if (modalUserSubtitle) {
+            modalUserSubtitle.textContent = '';
+            modalUserSubtitle.classList.add('hidden');
+        }
+        if (modalEditOnlyActions) {
+            modalEditOnlyActions.classList.add('hidden');
+            modalEditOnlyActions.classList.remove('flex');
+        }
         if (userForm) userForm.reset();
         if (userUnitSelect) userUnitSelect.value = '';
         if (userBeltSelect) userBeltSelect.value = '';
@@ -426,13 +805,22 @@ function continueSetup() {
         if (emailInput) emailInput.disabled = false;
         if (passwordInput) {
             passwordInput.disabled = false;
-            passwordInput.placeholder = "";
+            passwordInput.placeholder = "No mínimo 6 caracteres";
         }
+        if (passwordHelpEl) {
+            passwordHelpEl.textContent = 'Durante a edição, use o botão Alterar Senha no rodapé do modal.';
+        }
+
+        // Reset graduação, colarinho & parciais
+        setSelectedColarinho('');
+        if (parciaisCountInput) parciaisCountInput.value = '0';
+        renderParciaisDates([]);
         
         // Reset permissões de páginas e módulos
         document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = false; });
         document.querySelectorAll('.module-toggle-checkbox').forEach(cb => { cb.checked = false; });
         updateAllModuleBadges();
+        selectModalTab('acesso');
         
         // Reset profile preview
         const previewImg = document.getElementById('profile-preview-img');
@@ -446,152 +834,206 @@ function continueSetup() {
             previewInitials.textContent = 'U';
         }
         if (profilePhotoInput) profilePhotoInput.value = '';
-        
-        if (userModal) userModal.classList.add('hidden');
+    }
+
+    function resetForm() {
+        resetFormState();
+        closeDialog(userModal);
+    }
+
+    if (userModal) {
+        userModal.addEventListener('close', () => {
+            userModal.returnValue = '';
+            resetFormState();
+        });
     }
 
     async function handleUserActions(e) {
         const editBtn = e.target.closest('.edit-btn');
-        const deleteBtn = e.target.closest('.delete-btn');
-        const changePasswordBtn = e.target.closest('.change-password-btn');
+        if (!editBtn) return;
 
-        if (changePasswordBtn) {
-            changePasswordUserIdInput.value = changePasswordBtn.dataset.id;
-            changePasswordModal.classList.remove('hidden');
+        const userId = editBtn.dataset.id;
+        const users = await getAllUsers();
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+
+        resetFormState();
+        formTitle.textContent = 'Editar Usuário';
+        if (modalUserSubtitle) {
+            modalUserSubtitle.textContent = user.email || '';
+            modalUserSubtitle.classList.toggle('hidden', !user.email);
+        }
+        if (modalEditOnlyActions) {
+            modalEditOnlyActions.classList.remove('hidden');
+            modalEditOnlyActions.classList.add('flex');
         }
 
-        if (editBtn) {
-            const userId = editBtn.dataset.id;
-            const users = await getAllUsers();
-            const user = users.find(u => u.id === userId);
-            if (user) {
-                userModal.classList.remove('hidden');
-                formTitle.textContent = 'Editar Usuário';
-                nameInput.value = user.name || '';
-                emailInput.value = user.email || '';
-                emailInput.disabled = true;
-                isAdminInput.checked = user.isAdmin || false;
-                isInstructorInput.checked = user.isInstructor || false;
-                if (isColarinhoPretoInput) isColarinhoPretoInput.checked = user.isColarinhoPreto || user.isBlackCollar || user.colarinhoPreto || false;
-                if (isFinanceiroInput) isFinanceiroInput.checked = user.isFinanceiro || false;
+        nameInput.value = user.name || '';
+        emailInput.value = user.email || '';
+        emailInput.disabled = true;
+        isAdminInput.checked = user.isAdmin || false;
+        isInstructorInput.checked = user.isInstructor || false;
+        if (isFinanceiroInput) isFinanceiroInput.checked = user.isFinanceiro || false;
 
-                // Reset all granular checkboxes first
-                document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = false; });
-                document.querySelectorAll('.module-toggle-checkbox').forEach(cb => { cb.checked = false; });
+        // Reset all granular checkboxes first
+        document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = false; });
+        document.querySelectorAll('.module-toggle-checkbox').forEach(cb => { cb.checked = false; });
 
-                if (Array.isArray(user.allowedPages)) {
-                    user.allowedPages.forEach(page => {
-                        const cb = document.querySelector(`.page-perm-checkbox[value="${page}"]`);
+        if (Array.isArray(user.allowedPages)) {
+            user.allowedPages.forEach(page => {
+                const cb = document.querySelector(`.page-perm-checkbox[value="${page}"]`);
+                if (cb) cb.checked = true;
+            });
+        } else {
+            // Fallback para usuários legados
+            if (user.isAdmin) {
+                document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = true; });
+            } else {
+                if (user.isMarketing) {
+                    document.querySelectorAll('.page-perm-checkbox[data-module="marketing"]').forEach(cb => { cb.checked = true; });
+                }
+                if (user.isAdministrativo) {
+                    document.querySelectorAll('.page-perm-checkbox[data-module="administrativo"]').forEach(cb => { cb.checked = true; });
+                }
+                if (user.isStore) {
+                    const storePerms = typeof getStorePermissions === 'function' ? getStorePermissions(user) : { loja: true, pedidos: true, assinaturas: true, estoque: true };
+                    if (storePerms.loja) {
+                        const cb = document.querySelector('.page-perm-checkbox[value="store.html"]');
                         if (cb) cb.checked = true;
-                    });
-                } else {
-                    // Fallback para usuários legados
-                    if (user.isAdmin) {
-                        document.querySelectorAll('.page-perm-checkbox').forEach(cb => { cb.checked = true; });
-                    } else {
-                        if (user.isMarketing) {
-                            document.querySelectorAll('.page-perm-checkbox[data-module="marketing"]').forEach(cb => { cb.checked = true; });
-                        }
-                        if (user.isAdministrativo) {
-                            document.querySelectorAll('.page-perm-checkbox[data-module="administrativo"]').forEach(cb => { cb.checked = true; });
-                        }
-                        if (user.isStore) {
-                            const storePerms = typeof getStorePermissions === 'function' ? getStorePermissions(user) : { loja: true, pedidos: true, assinaturas: true, estoque: true };
-                            if (storePerms.loja) {
-                                const cb = document.querySelector('.page-perm-checkbox[value="store.html"]');
-                                if (cb) cb.checked = true;
-                            }
-                            if (storePerms.pedidos) {
-                                const cb = document.querySelector('.page-perm-checkbox[value="pedidos.html"]');
-                                if (cb) cb.checked = true;
-                            }
-                            if (storePerms.assinaturas) {
-                                const cb = document.querySelector('.page-perm-checkbox[value="assinaturas.html"]');
-                                if (cb) cb.checked = true;
-                            }
-                            if (storePerms.estoque) {
-                                const cb = document.querySelector('.page-perm-checkbox[value="estoque.html"]');
-                                if (cb) cb.checked = true;
-                            }
-                        }
-                        if (user.isRH) {
-                            document.querySelectorAll('.page-perm-checkbox[data-module="rh"]').forEach(cb => { cb.checked = true; });
-                        }
-                        if (user.isJuridico) {
-                            document.querySelectorAll('.page-perm-checkbox[data-module="juridico"]').forEach(cb => { cb.checked = true; });
-                        }
-                        if (user.isInstructor || user.isColarinhoPreto || user.isAdministrativo) {
-                            document.querySelectorAll('.page-perm-checkbox[data-module="tatame"]').forEach(cb => { cb.checked = true; });
-                        }
-                        ['alunos.html', 'cursos.html', 'suporte.html', 'chat.html', 'feed.html'].forEach(p => {
-                            const cb = document.querySelector(`.page-perm-checkbox[value="${p}"]`);
-                            if (cb) cb.checked = true;
-                        });
-                        if (user.isSuporte) {
-                            const cb = document.querySelector('.page-perm-checkbox[value="gestao-suporte"]');
-                            if (cb) cb.checked = true;
-                        }
+                    }
+                    if (storePerms.pedidos) {
+                        const cb = document.querySelector('.page-perm-checkbox[value="pedidos.html"]');
+                        if (cb) cb.checked = true;
+                    }
+                    if (storePerms.assinaturas) {
+                        const cb = document.querySelector('.page-perm-checkbox[value="assinaturas.html"]');
+                        if (cb) cb.checked = true;
+                    }
+                    if (storePerms.estoque) {
+                        const cb = document.querySelector('.page-perm-checkbox[value="estoque.html"]');
+                        if (cb) cb.checked = true;
                     }
                 }
-
-                updateAllModuleBadges();
-                if (userUnitSelect) userUnitSelect.value = user.unitId || '';
-
-                if (userBeltSelect) {
-                    const currentBelt = normalizeDanBelt(user.belt || user.graduacao || '');
-                    userBeltSelect.value = currentBelt;
-                    if (currentBelt && userBeltSelect.value !== currentBelt) {
-                        const customOpt = document.createElement('option');
-                        customOpt.value = currentBelt;
-                        customOpt.textContent = currentBelt;
-                        userBeltSelect.appendChild(customOpt);
-                        userBeltSelect.value = currentBelt;
-                    }
+                if (user.isRH) {
+                    document.querySelectorAll('.page-perm-checkbox[data-module="rh"]').forEach(cb => { cb.checked = true; });
                 }
-
-                hiddenEmailInput.value = user.id;
-                passwordInput.placeholder = "Não editável aqui";
-                passwordInput.disabled = true;
-
-                // Carrega foto de perfil atual
-                const userPhoto = user.photoURL || user.photoUrl || user.profilePic || user.profilePicture || user.avatarUrl;
-                const initials = (user.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                const previewImg = document.getElementById('profile-preview-img');
-                const previewInitials = document.getElementById('profile-preview-initials');
-                if (userPhoto) {
-                    if (previewImg) {
-                        previewImg.src = userPhoto;
-                        previewImg.classList.remove('hidden');
-                    }
-                    if (previewInitials) previewInitials.classList.add('hidden');
-                } else {
-                    if (previewImg) {
-                        previewImg.src = '';
-                        previewImg.classList.add('hidden');
-                    }
-                    if (previewInitials) {
-                        previewInitials.classList.remove('hidden');
-                        previewInitials.textContent = initials;
-                    }
+                if (user.isJuridico) {
+                    document.querySelectorAll('.page-perm-checkbox[data-module="juridico"]').forEach(cb => { cb.checked = true; });
+                }
+                if (user.isInstructor || user.isColarinhoPreto || user.isAdministrativo) {
+                    document.querySelectorAll('.page-perm-checkbox[data-module="tatame"]').forEach(cb => { cb.checked = true; });
+                }
+                ['alunos.html', 'cursos.html', 'suporte.html', 'chat.html', 'feed.html'].forEach(p => {
+                    const cb = document.querySelector(`.page-perm-checkbox[value="${p}"]`);
+                    if (cb) cb.checked = true;
+                });
+                if (user.isSuporte) {
+                    const cb = document.querySelector('.page-perm-checkbox[value="gestao-suporte"]');
+                    if (cb) cb.checked = true;
                 }
             }
         }
 
-        if (deleteBtn) {
-            if (confirm('Tem certeza que deseja excluir este usuário?')) {
-                await deleteUser(deleteBtn.dataset.id);
-                renderUsers('', true); // Força atualização do cache
+        updateAllModuleBadges();
+        if (userUnitSelect) userUnitSelect.value = user.unitId || '';
+
+        if (userBeltSelect) {
+            const currentBelt = normalizeDanBelt(user.belt || user.graduacao || '');
+            userBeltSelect.value = currentBelt;
+            if (currentBelt && userBeltSelect.value !== currentBelt) {
+                const customOpt = document.createElement('option');
+                customOpt.value = currentBelt;
+                customOpt.textContent = currentBelt;
+                userBeltSelect.appendChild(customOpt);
+                userBeltSelect.value = currentBelt;
             }
         }
+
+        // Graduação: colarinho + parciais
+        setSelectedColarinho(resolveUserColarinho(user));
+        const dates = Array.isArray(user.parciaisDates)
+            ? user.parciaisDates.filter(Boolean).map((d) => String(d).slice(0, 10))
+            : [];
+        const pCount = Math.max(parseInt(user.parciaisCount, 10) || 0, dates.length);
+        if (parciaisCountInput) parciaisCountInput.value = String(pCount);
+        renderParciaisDates(dates);
+
+        hiddenEmailInput.value = user.id;
+        passwordInput.placeholder = "Use o botão Alterar Senha abaixo";
+        passwordInput.disabled = true;
+        if (passwordHelpEl) {
+            passwordHelpEl.textContent = 'Para trocar a senha deste colaborador, clique em Alterar Senha no rodapé.';
+        }
+
+        // Carrega foto de perfil atual
+        const userPhoto = user.photoURL || user.photoUrl || user.profilePic || user.profilePicture || user.avatarUrl;
+        const initials = (user.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        const previewImg = document.getElementById('profile-preview-img');
+        const previewInitials = document.getElementById('profile-preview-initials');
+        if (userPhoto) {
+            if (previewImg) {
+                previewImg.src = userPhoto;
+                previewImg.classList.remove('hidden');
+            }
+            if (previewInitials) previewInitials.classList.add('hidden');
+        } else {
+            if (previewImg) {
+                previewImg.src = '';
+                previewImg.classList.add('hidden');
+            }
+            if (previewInitials) {
+                previewInitials.classList.remove('hidden');
+                previewInitials.textContent = initials;
+            }
+        }
+
+        selectModalTab('acesso');
+        openDialog(userModal);
+        nameInput?.focus();
     }
 
     if (userTableBody) userTableBody.addEventListener('click', handleUserActions);
     if (userMobileList) userMobileList.addEventListener('click', handleUserActions);
 
+    if (modalChangePasswordBtn) {
+        modalChangePasswordBtn.addEventListener('click', () => {
+            const userId = hiddenEmailInput?.value;
+            if (!userId) return;
+            changePasswordUserIdInput.value = userId;
+            if (newPasswordInput) newPasswordInput.value = '';
+            openDialog(changePasswordModal);
+            newPasswordInput?.focus();
+        });
+    }
+
+    if (modalDeleteUserBtn) {
+        modalDeleteUserBtn.addEventListener('click', async () => {
+            const userId = hiddenEmailInput?.value;
+            if (!userId) return;
+            const targetName = nameInput?.value?.trim() || 'este usuário';
+            if (!confirm(`Tem certeza que deseja excluir ${targetName}?`)) return;
+            modalDeleteUserBtn.disabled = true;
+            try {
+                await deleteUser(userId);
+                resetForm();
+                renderUsers('', true);
+            } finally {
+                modalDeleteUserBtn.disabled = false;
+            }
+        });
+    }
+
     if (cancelChangePasswordBtn) {
         cancelChangePasswordBtn.addEventListener('click', () => {
-            changePasswordModal.classList.add('hidden');
+            closeDialog(changePasswordModal);
             changePasswordForm.reset();
+        });
+    }
+
+    if (changePasswordModal) {
+        changePasswordModal.addEventListener('close', () => {
+            changePasswordModal.returnValue = '';
+            changePasswordForm?.reset();
         });
     }
 
@@ -601,7 +1043,7 @@ function continueSetup() {
             try {
                 await updateUserPassword(changePasswordUserIdInput.value, newPasswordInput.value);
                 alert('Senha atualizada!');
-                changePasswordModal.classList.add('hidden');
+                closeDialog(changePasswordModal);
                 changePasswordForm.reset();
             } catch (error) {
                 alert('Erro ao atualizar senha.');

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image, useWindowDimensions, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, User, Calendar, BookOpen, Video, ExternalLink } from 'lucide-react-native';
+import { ArrowLeft, User, Calendar, BookOpen, Video, ExternalLink, CheckCircle2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../../src/services/firebase';
+import { useAuth } from '../../../src/context/AuthContext';
+import { recordTatameStudyProgress } from '../../../src/utils/engagement';
 import RenderHtml from 'react-native-render-html';
 import { WebView } from 'react-native-webview';
 
@@ -37,9 +39,11 @@ export default function TatameDetailScreen() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { width } = useWindowDimensions();
+  const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
   const [article, setArticle] = useState<any>(null);
+  const [missionRecorded, setMissionRecorded] = useState(false);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -48,6 +52,10 @@ export default function TatameDetailScreen() {
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           setArticle({ id: snap.id, ...snap.data() });
+          if (user?.uid) {
+            await recordTatameStudyProgress(user.uid, snap.id);
+            setMissionRecorded(true);
+          }
         }
       } catch (error) {
         console.error("Error fetching article:", error);
@@ -56,7 +64,7 @@ export default function TatameDetailScreen() {
       }
     };
     fetchArticle();
-  }, [id]);
+  }, [id, user?.uid]);
 
   const tagsStyles = {
     body: {
@@ -178,6 +186,15 @@ export default function TatameDetailScreen() {
               </Text>
             </View>
           </View>
+
+          {missionRecorded && (
+            <View className="mt-3 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl flex-row items-center">
+              <CheckCircle2 size={14} color="#10b981" />
+              <Text className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 ml-2">
+                Leitura registrada para a Missão Semanal!
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Hero Banner Image */}

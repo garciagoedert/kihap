@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   View,
   Text,
   TouchableOpacity,
@@ -10,7 +12,7 @@ import {
   Dimensions,
   Image as RNImage,
 } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Image as ExpoImage } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import {
@@ -18,12 +20,28 @@ import {
   X,
   ChevronRight,
   BookOpen,
+  CheckCircle2,
+  Circle,
   Heart,
   ShieldCheck,
+  Sparkles,
+  Share2,
   Zap,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../src/services/firebase';
+import Emoji from '../src/components/Emoji';
+import { useAuth } from '../src/context/AuthContext';
+import ShareableCardModal from '../src/components/ShareableCardModal';
+import {
+  getCurrentWeekKey,
+  LITTLES_HOME_MISSIONS,
+  normalizeUnitDisplay,
+  publishAchievementIfPublic,
+} from '../src/utils/engagement';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -262,8 +280,123 @@ const LITTLES_DATA: LittleCharacter[] = [
 export default function LittlesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user, userData } = useAuth();
+  const weekKey = getCurrentWeekKey();
+
+  const [activeTab, setActiveTab] = useState<'mascotes' | 'missao'>('mascotes');
+  const [selectedMissionCharId, setSelectedMissionCharId] = useState<string>('miles');
+  const [weekMissionsDoc, setWeekMissionsDoc] = useState<any>({});
+  const [claimingReward, setClaimingReward] = useState(false);
+  const [shareCardVisible, setShareCardVisible] = useState(false);
 
   const [activeModalChar, setActiveModalChar] = useState<LittleCharacter | null>(null);
+
+  useEffect(() => {
+    const beltLower = String(userData?.belt || userData?.graduacao || '').toLowerCase();
+    const matched = LITTLES_DATA.find((c) => beltLower.includes(c.beltShort.toLowerCase()));
+    if (matched) {
+      setSelectedMissionCharId(matched.id);
+    }
+  }, [userData?.belt, userData?.graduacao]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const ref = doc(db, 'users', user.uid, 'littles_missions', weekKey);
+    const unsub = onSnapshot(ref, (snap) => {
+      setWeekMissionsDoc(snap.exists() ? snap.data() : {});
+    });
+    return () => unsub();
+  }, [user?.uid, weekKey]);
+
+  const unlockedStickers: string[] = Array.isArray(userData?.unlockedLittlesStickers)
+    ? userData.unlockedLittlesStickers
+    : [];
+
+  const activeMissionChar =
+    LITTLES_DATA.find((c) => c.id === selectedMissionCharId) || LITTLES_DATA[0];
+  const charMissions = LITTLES_HOME_MISSIONS[activeMissionChar.id] || [];
+  const charProgress = weekMissionsDoc?.progress?.[activeMissionChar.id] || {};
+  const completedIds: string[] = Array.isArray(charProgress.completedIds)
+    ? charProgress.completedIds
+    : [];
+  const isWeekClaimed = Boolean(charProgress.claimed);
+
+  const handleToggleMission = async (missionId: string) => {
+    if (!user?.uid || isWeekClaimed) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    const exists = completedIds.includes(missionId);
+    const nextIds = exists
+      ? completedIds.filter((id) => id !== missionId)
+      : [...completedIds, missionId];
+    try {
+      await setDoc(
+        doc(db, 'users', user.uid, 'littles_missions', weekKey),
+        {
+          userId: user.uid,
+          weekKey,
+          progress: {
+            [activeMissionChar.id]: {
+              completedIds: nextIds,
+              claimed: isWeekClaimed,
+            },
+          },
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível salvar a missão agora.');
+    }
+  };
+
+  const handleClaimLittlesReward = async () => {
+    if (!user?.uid || claimingReward || completedIds.length < charMissions.length) return;
+    setClaimingReward(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    try {
+      const claimFn = httpsCallable(functions, 'claimMissionReward');
+      const res: any = await claimFn({
+        claimType: 'littles_week',
+        periodKey: weekKey,
+        itemId: activeMissionChar.id,
+      });
+      await setDoc(
+        doc(db, 'users', user.uid, 'littles_missions', weekKey),
+        {
+          userId: user.uid,
+          weekKey,
+          progress: {
+            [activeMissionChar.id]: {
+              completedIds,
+              claimed: true,
+            },
+          },
+        },
+        { merge: true }
+      );
+
+      await publishAchievementIfPublic(user, userData, {
+        type: 'littles_mission',
+        title: `Missão ${activeMissionChar.name} Concluída!`,
+        subtitle: `Completou a Missão das Virtudes em Casa (${activeMissionChar.virtue}).`,
+        icon: activeMissionChar.animalEmoji,
+        metricValue: '3/3',
+        dedupeKey: `littles_${weekKey}_${activeMissionChar.id}`,
+      });
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      const coins = res?.data?.coinsAwarded || 15;
+      Alert.alert(
+        `Figurinha do ${activeMissionChar.name} desbloqueada! ${activeMissionChar.animalEmoji}`,
+        coins > 0
+          ? `Parabéns à família! Vocês ganharam +${coins} Kihapcoins esta semana.`
+          : 'Figurinha garantida no álbum!'
+      );
+    } catch (err: any) {
+      Alert.alert('Erro', err?.message || 'Não foi possível resgatar a recompensa.');
+    } finally {
+      setClaimingReward(false);
+    }
+  };
 
   const handleOpenModal = (char: LittleCharacter) => {
     try {
@@ -275,7 +408,6 @@ export default function LittlesScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <Stack.Screen options={{ headerShown: false }} />
 
       {/* HEADER LIMPO DA KIHAP */}
       <View
@@ -295,8 +427,8 @@ export default function LittlesScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerTitleBox}>
-            <Text style={styles.headerTitle}>Mascotes Littles</Text>
-            <Text style={styles.headerSubtitle}>Programa Infantil Kihap</Text>
+            <Text style={styles.headerTitle}>Universo Littles</Text>
+            <Text style={styles.headerSubtitle}>Programa Infantil & Família</Text>
           </View>
 
           <View style={styles.headerLogoBox}>
@@ -307,9 +439,48 @@ export default function LittlesScreen() {
             />
           </View>
         </View>
+
+        {/* Sub-abas: Mascotes & Guia vs Missão em Casa */}
+        <View style={styles.subTabsBar}>
+          <TouchableOpacity
+            onPress={() => setActiveTab('mascotes')}
+            style={[
+              styles.subTabBtn,
+              activeTab === 'mascotes' ? styles.subTabBtnActive : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.subTabText,
+                activeTab === 'mascotes' ? styles.subTabTextMascotesActive : undefined,
+              ]}
+            >
+              Mascotes & Guia
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveTab('missao')}
+            style={[
+              styles.subTabBtnRow,
+              activeTab === 'missao' ? styles.subTabBtnActive : undefined,
+            ]}
+          >
+            <Text
+              style={[
+                styles.subTabText,
+                activeTab === 'missao' ? styles.subTabTextMissaoActive : undefined,
+              ]}
+            >
+              Missão em Casa
+            </Text>
+            <Emoji symbol="🏠" size={12} />
+          </TouchableOpacity>
+        </View>
       </View>
 
+      {activeTab === 'mascotes' ? (
       <ScrollView
+        key="mascotes-scroll"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: 16,
@@ -419,6 +590,176 @@ export default function LittlesScreen() {
             })}
         </View>
       </ScrollView>
+      ) : (
+        /* TAB: MISSÃO EM CASA (PAI + FILHO) */
+        <ScrollView
+          key="missao-scroll"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            padding: 16,
+            paddingBottom: insets.bottom + 40,
+          }}
+        >
+          {/* Álbum de Figurinhas */}
+          <View style={styles.albumCard}>
+            <View style={styles.albumHeader}>
+              <Text style={styles.albumTitle}>
+                Álbum de Figurinhas Littles
+              </Text>
+              <View style={styles.albumCountPill}>
+                <Text style={styles.albumCountText}>
+                  {unlockedStickers.length}/{LITTLES_DATA.length} Colecionadas
+                </Text>
+              </View>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {LITTLES_DATA.map((c) => {
+                const isUnlocked = unlockedStickers.includes(c.id);
+                const isSelected = selectedMissionCharId === c.id;
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    onPress={() => setSelectedMissionCharId(c.id)}
+                    style={[
+                      styles.stickerItem,
+                      isSelected ? styles.stickerItemSelected : undefined,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.stickerCircle,
+                        isUnlocked ? styles.stickerCircleUnlocked : styles.stickerCircleLocked,
+                      ]}
+                    >
+                      <ExpoImage source={c.image} style={{ width: 34, height: 34 }} contentFit="contain" />
+                    </View>
+                    <Text style={styles.stickerName} numberOfLines={1}>
+                      {c.name} {isUnlocked ? '✓' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* Card do Personagem Selecionado + Missões da Semana */}
+          <View
+            style={[
+              styles.missionCard,
+              { backgroundColor: activeMissionChar.softBg, borderColor: activeMissionChar.beltBorder },
+            ]}
+          >
+            <View style={styles.missionCardHeader}>
+              <ExpoImage
+                source={activeMissionChar.image}
+                style={{ width: 64, height: 64 }}
+                contentFit="contain"
+              />
+              <View style={styles.missionCardMeta}>
+                <Text style={styles.missionBeltWeek}>
+                  {activeMissionChar.belt} • {weekKey}
+                </Text>
+                <Text style={styles.missionCharTitle}>
+                  Missão do {activeMissionChar.name}
+                </Text>
+                <Text style={styles.missionVirtue}>
+                  Virtude: {activeMissionChar.virtue}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.missionInstructions}>
+              Pais e responsáveis: marquem junto com a criança conforme praticarem as atitudes desta semana em casa!
+            </Text>
+
+            {charMissions.map((m) => {
+              const checked = completedIds.includes(m.id);
+              return (
+                <TouchableOpacity
+                  key={m.id}
+                  onPress={() => handleToggleMission(m.id)}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.missionRow,
+                    checked ? styles.missionRowChecked : undefined,
+                  ]}
+                >
+                  <View style={styles.missionCheckboxWrap}>
+                    {checked ? (
+                      <CheckCircle2 size={20} color="#10b981" />
+                    ) : (
+                      <Circle size={20} color="#94a3b8" />
+                    )}
+                  </View>
+                  <View style={styles.missionContent}>
+                    <Text
+                      style={[
+                        styles.missionTitle,
+                        checked ? styles.missionTitleChecked : undefined,
+                      ]}
+                    >
+                      {m.title}
+                    </Text>
+                    <View style={styles.missionTipRow}>
+                      <Emoji symbol="💡" size={12} style={{ marginTop: 1 }} />
+                      <Text style={styles.missionTipText}>
+                        {m.tip}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {isWeekClaimed ? (
+              <View style={styles.claimedContainer}>
+                <View style={styles.claimedBanner}>
+                  <Text style={styles.claimedBannerText}>
+                    ✓ Missão da Semana Resgatada (+15
+                  </Text>
+                  <Emoji symbol="⚡" size={12} />
+                  <Text style={styles.claimedBannerText}>
+                    )
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShareCardVisible(true)}
+                  style={styles.shareFamilyBtn}
+                >
+                  <Share2 size={16} color="#eab308" style={{ marginRight: 8 }} />
+                  <Text style={styles.shareFamilyBtnText}>
+                    Compartilhar Conquista da Família
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                disabled={completedIds.length < charMissions.length || claimingReward}
+                onPress={handleClaimLittlesReward}
+                style={[
+                  styles.claimBtn,
+                  completedIds.length >= charMissions.length
+                    ? styles.claimBtnReady
+                    : styles.claimBtnDisabled,
+                ]}
+              >
+                {claimingReward ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <>
+                    <Sparkles size={16} color="#000" style={{ marginRight: 6 }} />
+                    <Text style={styles.claimBtnText}>
+                      {completedIds.length >= charMissions.length
+                        ? 'Resgatar Figurinha + 15 Coins'
+                        : `Complete ${completedIds.length}/${charMissions.length} missões`}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+      )}
 
       {/* MODAL LIMPO COM DETALHES DO PERSONAGEM */}
       <Modal
@@ -526,6 +867,29 @@ export default function LittlesScreen() {
           )}
         </View>
       </Modal>
+
+      <ShareableCardModal
+        visible={shareCardVisible}
+        onClose={() => setShareCardVisible(false)}
+        cardData={{
+          mode: 'littles',
+          studentName: userData?.name || userData?.nome || 'Aluno Littles',
+          belt: userData?.belt || activeMissionChar.belt,
+          unit: normalizeUnitDisplay(userData?.unidade || userData?.unit || userData?.unitId),
+          title: `Missão ${activeMissionChar.name}`,
+          metricValue: '3/3',
+          metricLabel: 'Virtudes em Casa',
+          subtitle: `${activeMissionChar.virtue} — Kihap em Família!`,
+          avatarUrl:
+            userData?.photoURL || userData?.profilePicture || userData?.photoUrl || userData?.avatar,
+          roleLabel: 'Família Littles',
+          stats: [
+            { label: 'Mascote', value: activeMissionChar.name },
+            { label: 'Virtude', value: activeMissionChar.virtue },
+            { label: 'Bônus', value: '+15 Coins' },
+          ],
+        }}
+      />
     </View>
   );
 }
@@ -999,5 +1363,252 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000000',
     letterSpacing: 0.5,
+  },
+  subTabsBar: {
+    flexDirection: 'row',
+    backgroundColor: '#f3f4f6',
+    padding: 4,
+    borderRadius: 16,
+    marginTop: 12,
+  },
+  subTabBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subTabBtnRow: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  subTabBtnActive: {
+    backgroundColor: '#000000',
+  },
+  subTabText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    color: '#6b7280',
+  },
+  subTabTextMascotesActive: {
+    color: '#ffffff',
+  },
+  subTabTextMissaoActive: {
+    color: '#facc15',
+  },
+  albumCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  albumHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  albumTitle: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    color: '#111827',
+  },
+  albumCountPill: {
+    backgroundColor: 'rgba(234, 179, 8, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.3)',
+  },
+  albumCountText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#a16207',
+  },
+  stickerItem: {
+    alignItems: 'center',
+    marginRight: 12,
+    padding: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+    width: 72,
+  },
+  stickerItemSelected: {
+    backgroundColor: '#fefce8',
+    borderColor: '#eab308',
+  },
+  stickerCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  stickerCircleUnlocked: {
+    backgroundColor: 'rgba(250, 204, 21, 0.25)',
+    borderWidth: 2,
+    borderColor: '#eab308',
+  },
+  stickerCircleLocked: {
+    backgroundColor: 'rgba(229, 231, 235, 0.7)',
+    opacity: 0.5,
+  },
+  stickerName: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  missionCard: {
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  missionCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  missionCardMeta: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  missionBeltWeek: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    color: '#6b7280',
+  },
+  missionCharTitle: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    fontSize: 20,
+    color: '#111827',
+  },
+  missionVirtue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  missionInstructions: {
+    fontSize: 12,
+    color: '#4b5563',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  missionRow: {
+    backgroundColor: '#ffffff',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  missionRowChecked: {
+    borderColor: '#10b981',
+    backgroundColor: 'rgba(236, 253, 245, 0.4)',
+  },
+  missionCheckboxWrap: {
+    marginTop: 2,
+    marginRight: 12,
+  },
+  missionContent: {
+    flex: 1,
+  },
+  missionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  missionTitleChecked: {
+    color: '#064e3b',
+    textDecorationLine: 'line-through',
+  },
+  missionTipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 4,
+    gap: 6,
+  },
+  missionTipText: {
+    fontSize: 11,
+    color: '#6b7280',
+    flex: 1,
+    lineHeight: 15,
+  },
+  claimedContainer: {
+    marginTop: 8,
+    gap: 10,
+  },
+  claimedBanner: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    paddingVertical: 12,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  claimedBannerText: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#047857',
+    textTransform: 'uppercase',
+  },
+  shareFamilyBtn: {
+    backgroundColor: '#000000',
+    paddingVertical: 14,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareFamilyBtnText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    color: '#facc15',
+    fontSize: 12,
+    textTransform: 'uppercase',
+  },
+  claimBtn: {
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  claimBtnReady: {
+    backgroundColor: '#eab308',
+  },
+  claimBtnDisabled: {
+    backgroundColor: '#e5e7eb',
+    opacity: 0.7,
+  },
+  claimBtnText: {
+    fontFamily: 'NeueMachina-Ultrabold',
+    color: '#000000',
+    fontSize: 12,
+    textTransform: 'uppercase',
   },
 });

@@ -7,13 +7,10 @@ import { useAuth } from '../../src/context/AuthContext';
 import { useColorScheme } from 'nativewind';
 import { Search, Edit3, MessageCircle, Award, CreditCard, Bell, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import StoriesBar from '../../src/components/StoriesBar';
-import { getUserUnitSlugs, isTargetForUser } from './index';
 
 export default function ChatScreen() {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
   const [chats, setChats] = useState<any[]>([]);
-  const [stories, setStories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -148,89 +145,6 @@ export default function ChatScreen() {
 
     return () => unsubscribe();
   }, [user]);
-
-  // Fetch active stories (real-time)
-  useEffect(() => {
-    if (!user) {
-      setStories([]);
-      return;
-    }
-
-    const userUnitSlugs = getUserUnitSlugs(userData);
-    const now = new Date();
-    const storiesQ = query(
-      collection(db, 'stories'),
-      where('expiresAt', '>=', now),
-      orderBy('expiresAt', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(
-      storiesQ,
-      (storiesSnap) => {
-        const storyBatchUnitsMap = new Map<string, Set<string>>();
-        const rawStories: any[] = [];
-        const currentMs = Date.now();
-
-        storiesSnap.forEach((docSnap) => {
-          const story: any = { id: docSnap.id, ...docSnap.data() };
-          const expMs = story.expiresAt?.toMillis
-            ? story.expiresAt.toMillis()
-            : story.expiresAt?.seconds
-              ? story.expiresAt.seconds * 1000
-              : new Date(story.expiresAt || 0).getTime();
-          if (expMs && expMs < currentMs) return;
-
-          rawStories.push(story);
-          if (story.batchId && story.targetUnit) {
-            if (!storyBatchUnitsMap.has(story.batchId)) {
-              storyBatchUnitsMap.set(story.batchId, new Set<string>());
-            }
-            storyBatchUnitsMap.get(story.batchId)!.add(story.targetUnit);
-          }
-        });
-
-        const allStories: any[] = [];
-        const seenStoryBatches = new Set<string>();
-        rawStories.forEach((story) => {
-          if (story.batchId && storyBatchUnitsMap.has(story.batchId)) {
-            const batchUnits = Array.from(storyBatchUnitsMap.get(story.batchId)!);
-            if (!story.targetUnits || story.targetUnits.length === 0) {
-              story.targetUnits = batchUnits;
-            }
-          }
-
-          if (story.batchId) {
-            if (seenStoryBatches.has(story.batchId)) return;
-            seenStoryBatches.add(story.batchId);
-          }
-
-          const isAuthor = story.authorId === user.uid;
-          const isTargeted = isTargetForUser(story, user.uid, userUnitSlugs);
-          if (isAuthor || isTargeted) allStories.push(story);
-        });
-
-        const groupedStories = allStories.reduce((acc, story) => {
-          if (!acc[story.authorId]) {
-            acc[story.authorId] = {
-              authorId: story.authorId,
-              authorName: story.authorName,
-              authorPhotoURL: story.authorPhotoURL,
-              stories: [],
-            };
-          }
-          acc[story.authorId].stories.push(story);
-          return acc;
-        }, {} as Record<string, any>);
-
-        setStories(Object.values(groupedStories));
-      },
-      (err) => {
-        console.error('Chat: Stories snapshot error:', err);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [user, userData]);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -397,13 +311,6 @@ export default function ChatScreen() {
               className="flex-1 ml-2 text-gray-950 dark:text-white font-medium text-[15px] p-0"
             />
           </View>
-        </View>
-      )}
-
-      {/* Stories */}
-      {stories.length > 0 && (
-        <View className="mb-4">
-          <StoriesBar groups={stories} contentPadding={24} />
         </View>
       )}
 

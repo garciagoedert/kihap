@@ -184,6 +184,57 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Campos Exclusivos para Stories (Destaque, Enquete e Botão CTA) -->
+                            <div id="story-extra-fields" class="hidden space-y-5 mb-6 p-5 bg-orange-50/70 dark:bg-[#221c14] border border-orange-200 dark:border-orange-500/20 rounded-2xl">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                                        <i class="fas fa-bolt"></i> Recursos Interativos do Story (Aba Descobrir)
+                                    </span>
+                                </div>
+
+                                <!-- Destaque (Highlight) -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                                    <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                        <input type="checkbox" id="story-is-highlight" class="w-4 h-4 rounded text-primary focus:ring-primary">
+                                        <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Fixar como Destaque (não expira em 24h)</span>
+                                    </label>
+                                    <div>
+                                        <input type="text" id="story-highlight-title" class="w-full bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="Título do Destaque (ex: Exames, Dicas, Littles)">
+                                    </div>
+                                </div>
+
+                                <!-- Enquete Interativa -->
+                                <div class="pt-3 border-t border-orange-200/70 dark:border-white/10">
+                                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">
+                                        Enquete Rápida (Opcional)
+                                    </label>
+                                    <input type="text" id="story-poll-question" class="w-full mb-2.5 bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="Pergunta da enquete (ex: Qual chute vamos focar sábado?)">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <input type="text" id="story-poll-opt-1" class="w-full bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="Opção 1">
+                                        <input type="text" id="story-poll-opt-2" class="w-full bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="Opção 2">
+                                        <input type="text" id="story-poll-opt-3" class="w-full bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="Opção 3 (opcional)">
+                                        <input type="text" id="story-poll-opt-4" class="w-full bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="Opção 4 (opcional)">
+                                    </div>
+                                </div>
+
+                                <!-- Botão de Ação (CTA) -->
+                                <div class="pt-3 border-t border-orange-200/70 dark:border-white/10">
+                                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">
+                                        Botão de Ação / Link no Story (Opcional)
+                                    </label>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                                        <input type="text" id="story-cta-text" class="w-full bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="Texto do botão (ex: Ir para Loja)">
+                                        <input type="text" id="story-cta-url" class="w-full bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 dark:text-white outline-none focus:border-primary" placeholder="/(tabs)/store ou https://...">
+                                    </div>
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <span class="text-[10px] font-bold text-gray-400 uppercase mr-1">Atalhos:</span>
+                                        <button type="button" class="story-quick-link px-2 py-1 rounded bg-white dark:bg-[#333] text-[11px] font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700" data-text="Ver Loja" data-route="/(tabs)/store">Loja</button>
+                                        <button type="button" class="story-quick-link px-2 py-1 rounded bg-white dark:bg-[#333] text-[11px] font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700" data-text="Ver Calendário" data-route="/calendario">Calendário</button>
+                                        <button type="button" class="story-quick-link px-2 py-1 rounded bg-white dark:bg-[#333] text-[11px] font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700" data-text="Fazer Missões" data-route="/missoes">Missões</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Campos Exclusivos para Banner em Destaque -->

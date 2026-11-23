@@ -25,6 +25,8 @@ import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import ShareableCardModal from '../../src/components/ShareableCardModal';
+import Emoji from '../../src/components/Emoji';
 import {
   ArrowLeft,
   Award,
@@ -147,6 +149,7 @@ export default function EmblemDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedPreviewImage, setSelectedPreviewImage] = useState<string | null>(null);
+  const [shareCardVisible, setShareCardVisible] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -699,9 +702,12 @@ export default function EmblemDetailScreen() {
                     colors={['transparent', 'rgba(0,0,0,0.75)']}
                     className="absolute bottom-0 left-0 right-0 p-3 flex-row items-center justify-between"
                   >
-                    <Text className="text-white text-[11px] font-semibold drop-shadow">
-                      🥋 {isGraduation ? 'Registro Oficial da Graduação' : 'Registro da Conquista'}
-                    </Text>
+                    <View className="flex-row items-center gap-1.5 flex-1 mr-2">
+                      <Emoji symbol="🥋" size={12} />
+                      <Text className="text-white text-[11px] font-semibold drop-shadow flex-1" numberOfLines={1}>
+                        {isGraduation ? 'Registro Oficial da Graduação' : 'Registro da Conquista'}
+                      </Text>
+                    </View>
                     <View className="flex-row items-center gap-1 bg-black/60 px-2 py-0.5 rounded-full border border-white/20">
                       <Maximize2 size={10} color="#ffffff" />
                       <Text className="text-white text-[9px] font-medium">Ampliar</Text>
@@ -813,18 +819,32 @@ export default function EmblemDetailScreen() {
         {/* Bottom CTA / Action */}
         <View className="px-5">
           {isEarned ? (
-            <TouchableOpacity
-              onPress={handleShare}
-              className="bg-yellow-500 p-4 rounded-2xl flex-row items-center justify-center gap-2 shadow-lg shadow-yellow-500/30 active:opacity-90"
-            >
-              <Share2 size={18} color="#000000" />
-              <Text
-                style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                className="text-black text-xs uppercase tracking-wider font-black"
+            <View className="gap-3">
+              <TouchableOpacity
+                onPress={() => setShareCardVisible(true)}
+                className="bg-yellow-500 p-4 rounded-2xl flex-row items-center justify-center gap-2 shadow-lg shadow-yellow-500/30 active:opacity-90"
               >
-                Compartilhar Conquista
-              </Text>
-            </TouchableOpacity>
+                <Sparkles size={18} color="#000000" />
+                <Text
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-black text-xs uppercase tracking-wider font-black"
+                >
+                  Card para Stories
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleShare}
+                className="bg-white dark:bg-[#1a1a1a] p-3.5 rounded-2xl border border-gray-200 dark:border-white/10 flex-row items-center justify-center gap-2 active:opacity-90"
+              >
+                <Share2 size={16} color={isDark ? '#ffffff' : '#111827'} />
+                <Text
+                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                  className="text-gray-900 dark:text-white text-xs uppercase tracking-wider"
+                >
+                  Compartilhar Texto
+                </Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity
               onPress={() => router.back()}
@@ -867,6 +887,39 @@ export default function EmblemDetailScreen() {
           ) : null}
         </View>
       </Modal>
+
+      <ShareableCardModal
+        visible={shareCardVisible}
+        onClose={() => setShareCardVisible(false)}
+        cardData={{
+          mode: 'badge',
+          studentName: userData?.name || userData?.nome || 'Aluno Kihap',
+          belt: userData?.belt || userData?.graduacao || 'Aluno Kihap',
+          unit: userData?.unidade || userData?.unit || 'Kihap',
+          title: badge.name || 'Conquista Kihap',
+          metricValue: '100%',
+          metricLabel: 'Emblema Conquistado',
+          subtitle: badge.description || 'Dedicação e honra no tatame da Kihap.',
+          avatarUrl:
+            userData?.photoURL || userData?.profilePicture || userData?.photoUrl || userData?.avatar,
+          roleLabel: userData?.isInstructor
+            ? 'Instrutor Kihap'
+            : userData?.isAdmin
+              ? 'Equipe Kihap'
+              : 'Atleta Kihap',
+          stats: [
+            {
+              label: 'Faixa',
+              value: String(userData?.belt || userData?.graduacao || 'Aluno').split(' ')[0],
+            },
+            { label: 'Conquista', value: 'Oficial' },
+            {
+              label: 'Unidade',
+              value: String(userData?.unidade || userData?.unit || 'Kihap'),
+            },
+          ],
+        }}
+      />
     </View>
   );
 }

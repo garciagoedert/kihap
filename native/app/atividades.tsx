@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from 'nativewind';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../src/context/AuthContext';
+import Emoji from '../src/components/Emoji';
 import { db } from '../src/services/firebase';
 import { collection, query, where, doc, getDoc, updateDoc, setDoc, arrayUnion, onSnapshot, getDocs } from 'firebase/firestore';
 
@@ -244,7 +245,8 @@ export default function AtividadesScreen() {
           
           {userData?.currentStreak > 0 && (
             <View className="flex-row items-center bg-orange-500/10 px-3 py-1.5 rounded-full border border-orange-500/20 animate-pulse">
-              <Text className="text-orange-550 text-sm font-extrabold mr-1">🔥 {userData.currentStreak}</Text>
+              <Emoji symbol="🔥" size={14} style={{ marginRight: 3 }} />
+              <Text className="text-orange-550 text-sm font-extrabold mr-1">{userData.currentStreak}</Text>
               <Text className="text-orange-500 text-[9px] font-black uppercase tracking-wider">Ofensiva</Text>
             </View>
           )}

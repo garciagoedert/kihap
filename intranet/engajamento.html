@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <script>
+        (function() {
+            const theme = localStorage.getItem("theme") || "light";
+            if (theme === "dark") {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+        })();
+        window.tailwind = { config: { darkMode: "class" } };
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor://localhost http://localhost ws: wss: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; img-src 'self' data: blob: https:; frame-src 'self' https:; connect-src 'self' capacitor://localhost http://localhost ws: wss: https:;">
+    <title>Kihap - Engajamento &amp; Kihapcoins</title>
+    <link rel="icon" href="/assets/favicon.jpg" type="image/jpeg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="log.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-[#111111] text-gray-900 dark:text-gray-200 transition-colors duration-300">
+    <div class="flex h-screen">
+        <div id="sidebar-container"></div>
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden"></div>
+
+        <main id="main-content" class="flex-1 flex flex-col h-screen transition-all duration-300 ease-in-out">
+            <div id="header-container"></div>
+
+            <div class="flex-grow p-4 md:p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+                <div class="max-w-6xl w-full mx-auto">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+                                <i class="fas fa-fire text-yellow-500"></i> Central de Engajamento &amp; Coins
+                            </h1>
+                            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Gerencie quizzes semanais, recompensas e vouchers do Clube de Coins, Copa das Unidades, termômetro pós-treino e políticas sociais.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Abas de Navegação -->
+                    <div class="flex flex-wrap gap-2 bg-white dark:bg-[#1a1a1a] p-2 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+                        <button type="button" data-eng-tab="quiz" class="eng-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all bg-black text-white dark:bg-yellow-500 dark:text-black flex items-center gap-2">
+                            <i class="fas fa-question-circle"></i> Quiz Semanal
+                        </button>
+                        <button type="button" data-eng-tab="coins" class="eng-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2">
+                            <i class="fas fa-gift"></i> Clube de Coins &amp; Resgates
+                        </button>
+                        <button type="button" data-eng-tab="copa" class="eng-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2">
+                            <i class="fas fa-trophy"></i> Copa das Unidades
+                        </button>
+                        <button type="button" data-eng-tab="termometro" class="eng-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2">
+                            <i class="fas fa-heartbeat"></i> Termômetro de Treinos
+                        </button>
+                        <button type="button" data-eng-tab="config" class="eng-tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2">
+                            <i class="fas fa-shield-alt"></i> Stories &amp; Segurança Social
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: QUIZ SEMANAL -->
+                    <section id="tab-quiz" class="eng-tab-panel space-y-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h2 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Adicionar Nova Pergunta do Quiz do Tatame</h2>
+                            <form id="quiz-form" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Pergunta *</label>
+                                    <input type="text" id="quiz-question" required class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:border-yellow-500" placeholder="Ex: O que significa Kihap na nossa escola?">
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Opção 1 *</label>
+                                        <input type="text" id="quiz-opt-0" required class="w-full px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Opção 2 *</label>
+                                        <input type="text" id="quiz-opt-1" required class="w-full px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Opção 3</label>
+                                        <input type="text" id="quiz-opt-2" class="w-full px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Opção 4</label>
+                                        <input type="text" id="quiz-opt-3" class="w-full px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Resposta Correta *</label>
+                                        <select id="quiz-correct-index" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                            <option value="0">Opção 1</option>
+                                            <option value="1">Opção 2</option>
+                                            <option value="2">Opção 3</option>
+                                            <option value="3">Opção 4</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Recompensa (Coins)</label>
+                                        <input type="number" id="quiz-reward" min="5" max="50" value="15" class="w-full px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Explicação Educativa</label>
+                                        <input type="text" id="quiz-explanation" class="w-full px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-sm" placeholder="Mostrada após responder">
+                                    </div>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" class="px-6 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs uppercase rounded-xl shadow-sm transition-all">
+                                        Salvar Pergunta
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h3 class="text-base font-bold mb-4">Perguntas Cadastradas</h3>
+                            <div id="quizzes-list" class="space-y-3 text-sm text-gray-500">Carregando perguntas...</div>
+                        </div>
+                    </section>
+
+                    <!-- TAB 2: CLUBE DE COINS & RESGATES -->
+                    <section id="tab-coins" class="eng-tab-panel hidden space-y-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Fila de Resgates &amp; Vouchers</h2>
+                                <select id="redemptions-filter" class="px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold">
+                                    <option value="pending">Pendentes na Secretaria</option>
+                                    <option value="delivered">Entregues / Ativos</option>
+                                    <option value="all">Todos</option>
+                                </select>
+                            </div>
+                            <div id="redemptions-list" class="space-y-3 text-sm text-gray-500">Carregando resgates...</div>
+                        </div>
+
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Catálogo de Recompensas (Kihapcoins)</h2>
+                                <button type="button" id="seed-rewards-btn" class="px-3.5 py-2 bg-gray-100 dark:bg-[#252525] hover:bg-yellow-500/20 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700">
+                                    Popular Catálogo Padrão
+                                </button>
+                            </div>
+                            <form id="reward-form" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 p-4 bg-gray-50 dark:bg-[#222] rounded-2xl border border-gray-200 dark:border-gray-800">
+                                <input type="text" id="reward-title" required placeholder="Título da recompensa *" class="px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                <input type="number" id="reward-cost" required min="1" placeholder="Custo em Coins *" class="px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                <select id="reward-type" class="px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                    <option value="physical">Brinde Físico (Secretaria)</option>
+                                    <option value="experience">Experiência / Passe VIP</option>
+                                    <option value="coupon">Cupom Desconto Store</option>
+                                    <option value="streak_shield">Escudo de Chama</option>
+                                    <option value="avatar_frame">Moldura de Avatar</option>
+                                    <option value="littles_pack">Figurinha Littles</option>
+                                </select>
+                                <input type="text" id="reward-description" placeholder="Descrição curta" class="md:col-span-2 px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                <div class="flex gap-2">
+                                    <input type="text" id="reward-icon" value="🎁" maxlength="4" class="w-16 text-center px-2 py-2 bg-white dark:bg-[#2a2a2a] border border-gray-200 dark:border-gray-700 rounded-xl text-sm">
+                                    <button type="submit" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs uppercase rounded-xl px-4 py-2">
+                                        Adicionar
+                                    </button>
+                                </div>
+                            </form>
+                            <div id="rewards-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-500">Carregando catálogo...</div>
+                        </div>
+                    </section>
+
+                    <!-- TAB 3: COPA DAS UNIDADES -->
+                    <section id="tab-copa" class="eng-tab-panel hidden space-y-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h2 class="text-lg font-bold text-gray-900 dark:text-white">Copa das Unidades (Placar Mensal)</h2>
+                                    <p class="text-xs text-gray-500">Classificação normalizada pelo número de alunos ativos da unidade.</p>
+                                </div>
+                                <button type="button" id="refresh-copa-btn" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold uppercase rounded-xl flex items-center gap-2">
+                                    <i class="fas fa-sync-alt"></i> Recalcular Agora
+                                </button>
+                            </div>
+                            <div id="copa-standings-list" class="space-y-3 text-sm text-gray-500">Clique em Recalcular Agora para carregar o placar...</div>
+                        </div>
+                    </section>
+
+                    <!-- TAB 4: TERMÔMETRO DE TREINOS -->
+                    <section id="tab-termometro" class="eng-tab-panel hidden space-y-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Termômetro Pós-Treino</h2>
+                                <select id="feedback-unit-filter" class="px-3 py-2 bg-gray-50 dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold">
+                                    <option value="all">Todas as Unidades</option>
+                                    <option value="centro">Centro</option>
+                                    <option value="coqueiros">Coqueiros</option>
+                                    <option value="santa-monica">Santa Mônica</option>
+                                    <option value="asa-sul">Asa Sul</option>
+                                    <option value="sudoeste">Sudoeste</option>
+                                    <option value="lago-sul">Lago Sul</option>
+                                    <option value="jardim-botanico">Jardim Botânico</option>
+                                    <option value="noroeste">Noroeste</option>
+                                    <option value="dourados">Dourados</option>
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                                <div class="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-center">
+                                    <div class="text-2xl font-extrabold text-orange-500" id="stat-incrivel">0%</div>
+                                    <div class="text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mt-1">🔥 Incrível</div>
+                                </div>
+                                <div class="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-center">
+                                    <div class="text-2xl font-extrabold text-blue-500" id="stat-desafiador">0%</div>
+                                    <div class="text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mt-1">💪 Desafiador</div>
+                                </div>
+                                <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                                    <div class="text-2xl font-extrabold text-emerald-500" id="stat-tranquilo">0%</div>
+                                    <div class="text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mt-1">😊 Tranquilo</div>
+                                </div>
+                            </div>
+
+                            <div id="feedback-list" class="space-y-2.5 text-sm text-gray-500">Carregando avaliações...</div>
+                        </div>
+                    </section>
+
+                    <!-- TAB 5: STORIES & SEGURANÇA SOCIAL -->
+                    <section id="tab-config" class="eng-tab-panel hidden space-y-6">
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Políticas de Stories &amp; Segurança Infantil</h2>
+                            <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 dark:text-amber-300 mb-5">
+                                <strong>Política atual:</strong> Apenas a equipe, professores e unidades publicam Stories na aba <strong>Descobrir</strong>. A infraestrutura já suporta habilitar envio por alunos no futuro com fila de aprovação obrigatória.
+                            </div>
+
+                            <form id="social-settings-form" class="space-y-4">
+                                <label class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-800 cursor-pointer">
+                                    <div>
+                                        <div class="text-sm font-bold text-gray-900 dark:text-white">Permitir envio de Stories por alunos (Futuro)</div>
+                                        <div class="text-xs text-gray-500">Mantido desativado hoje: apenas equipe/unidades publicam Stories.</div>
+                                    </div>
+                                    <input type="checkbox" id="cfg-allow-student-stories" class="w-5 h-5 text-yellow-500 rounded">
+                                </label>
+
+                                <label class="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-[#222] border border-gray-200 dark:border-gray-800 cursor-pointer">
+                                    <div>
+                                        <div class="text-sm font-bold text-gray-900 dark:text-white">Exigir moderação prévia para Stories de alunos</div>
+                                        <div class="text-xs text-gray-500">Recomendado manter sempre ativado para proteção de menores e famílias.</div>
+                                    </div>
+                                    <input type="checkbox" id="cfg-require-moderation" checked class="w-5 h-5 text-yellow-500 rounded">
+                                </label>
+
+                                <div class="flex justify-end">
+                                    <button type="submit" class="px-6 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs uppercase rounded-xl">
+                                        Salvar Configurações
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="bg-white dark:bg-[#1a1a1a] p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                            <h3 class="text-base font-bold mb-3">Fila de Moderação de Stories</h3>
+                            <div id="pending-stories-list" class="space-y-3 text-sm text-gray-500">Carregando fila...</div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="auth.js"></script>
+    <script type="module">
+        import { loadComponents } from './common-ui.js';
+        import { setupEngajamentoPage } from './engajamento.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComponents(() => {
+                setupEngajamentoPage();
+            });
+        });
+    </script>
+</body>
+</html>

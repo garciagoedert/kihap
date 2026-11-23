@@ -40,14 +40,29 @@ import {
   Users,
   ExternalLink,
   Sparkles,
-  Lock
+  Lock,
+  Share2,
+  Target,
+  Gift
 } from 'lucide-react-native';
+import ShareableCardModal from '../../src/components/ShareableCardModal';
+import {
+  AVATAR_FRAMES,
+  getEffectiveKihapcoins,
+  normalizeUnitDisplay,
+} from '../../src/utils/engagement';
+import {
+  getPhysicalTestScore,
+  subscribeUserPhysicalTests,
+} from '../../src/utils/physicalTests';
 import { auth, db, functions, storage } from '../../src/services/firebase';
 import { updatePassword } from 'firebase/auth';
 import { doc, updateDoc, collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
+
+const SHOW_PLAN_AND_SUBSCRIPTION = false;
 
 const ALL_STAFF_BELTS = [
   'Preta 1º Dan', 'Preta 2º Dan', 'Preta 3º Dan', 'Preta 4º Dan', 'Preta 5º Dan',
@@ -84,9 +99,27 @@ export default function ProfileScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [showBeltSelector, setShowBeltSelector] = useState(false);
 
-  // Badges & physical test states
+  // Badges, physical test & connections states
   const [allBadges, setAllBadges] = useState<any[]>([]);
   const [latestPhysical, setLatestPhysical] = useState<any>(null);
+  const [sharePassportVisible, setSharePassportVisible] = useState(false);
+  const [followerIds, setFollowerIds] = useState<string[]>([]);
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+
+  const effectiveCoins = getEffectiveKihapcoins(userData);
+  const avatarFrameMeta = AVATAR_FRAMES[userData?.avatarFrame || 'none'] || AVATAR_FRAMES.none;
+  const isSocialPublic = userData?.socialPrivacy !== 'private';
+
+  const handleToggleSocialPrivacy = async (nextPublic: boolean) => {
+    if (!user?.uid) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        socialPrivacy: nextPublic ? 'public' : 'private',
+      });
+    } catch (err) {
+      Alert.alert('Erro', 'Não foi possível atualizar a configuração de privacidade.');
+    }
+  };
 
   // Sync state with userData once it loads
   useEffect(() => {
@@ -129,26 +162,75 @@ export default function ProfileScreen() {
 
   // Listen to latest physical test
   useEffect(() => {
-    const evoId = userData?.evoMemberId;
-    if (!evoId) return;
+    const evoId = userData?.evoMemberId ?? userData?.matricula ?? null;
+    if (!user?.uid && !evoId) {
+      setLatestPhysical(null);
+      return;
+    }
 
-    const testsQ = query(
-      collection(db, 'physicalTests'),
-      where('evoMemberId', '==', evoId),
-      orderBy('date', 'desc'),
-      limit(1)
-    );
-    const unsub = onSnapshot(testsQ, (snap) => {
-      if (!snap.empty) {
-        setLatestPhysical(snap.docs[0].data());
-      } else {
-        setLatestPhysical(null);
+    return subscribeUserPhysicalTests(
+      {
+        uid: user?.uid,
+        evoMemberId: evoId,
+        includeUserSubcollection: true,
+      },
+      (tests) => {
+        setLatestPhysical(tests.length > 0 ? tests[0] : null);
       }
-    }, (err) => console.log('Physical test error:', err));
-    return () => unsub();
-  }, [userData?.evoMemberId]);
+    );
+  }, [user?.uid, userData?.evoMemberId, userData?.matricula]);
+
+  // Listen to followers / following for real-time Conexões strip
+  useEffect(() => {
+    if (!user?.uid) {
+      setFollowerIds([]);
+      setFollowingIds([]);
+      return;
+    }
+
+    const followersQ = query(collection(db, 'follows'), where('followingId', '==', user.uid));
+    const unsubFollowers = onSnapshot(
+      followersQ,
+      (snap) => {
+        const ids = Array.from(
+          new Set(
+            snap.docs
+              .map((d) => d.data()?.followerId)
+              .filter((id): id is string => typeof id === 'string' && id.length > 0)
+          )
+        );
+        setFollowerIds(ids);
+      },
+      (err) => console.log('Followers error:', err)
+    );
+
+    const followingQ = query(collection(db, 'follows'), where('followerId', '==', user.uid));
+    const unsubFollowing = onSnapshot(
+      followingQ,
+      (snap) => {
+        const ids = Array.from(
+          new Set(
+            snap.docs
+              .map((d) => d.data()?.followingId)
+              .filter((id): id is string => typeof id === 'string' && id.length > 0)
+          )
+        );
+        setFollowingIds(ids);
+      },
+      (err) => console.log('Following error:', err)
+    );
+
+    return () => {
+      unsubFollowers();
+      unsubFollowing();
+    };
+  }, [user?.uid]);
 
   const earnedBadgesList = allBadges.filter(b => (userData?.earnedBadges || []).includes(b.id));
+  const followerIdSet = new Set(followerIds);
+  const friendsCount = followingIds.filter((id) => followerIdSet.has(id)).length;
+  const followersCount = followerIds.length;
+  const followingCount = followingIds.length;
 
   // Unit WhatsApp router
   const getUnitWhatsApp = (unidadeStr?: string) => {
@@ -450,7 +532,12 @@ export default function ProfileScreen() {
                     className={`w-22 h-22 rounded-full overflow-hidden border-3 shadow-lg ${
                       isDark ? 'border-yellow-500/40 bg-gray-800' : 'border-black bg-white'
                     }`}
-                    style={{ width: 88, height: 88 }}
+                    style={[
+                      { width: 88, height: 88 },
+                      avatarFrameMeta.id !== 'none'
+                        ? { borderColor: avatarFrameMeta.ringColor, borderWidth: 4 }
+                        : undefined,
+                    ]}
                   >
                     <Image 
                       source={displayPhoto} 
@@ -537,25 +624,154 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
-              {/* Edit info action button */}
-              <TouchableOpacity
-                onPress={() => setEditModalVisible(true)}
-                className={`mt-5 w-full py-3 rounded-2xl items-center justify-center flex-row active:scale-[0.99] shadow-md ${
-                  isDark 
-                    ? 'bg-yellow-500/15 border border-yellow-500/30' 
-                    : 'bg-black border border-black'
-                }`}
+              {/* Real-time Conexões Strip: Amigos | Seguidores | Seguindo */}
+              <View
+                style={{
+                  marginTop: 16,
+                  borderRadius: 16,
+                  paddingVertical: 10,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)',
+                  borderWidth: 1,
+                  borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.10)',
+                }}
               >
-                <Edit3 size={13} color={isDark ? '#eab308' : '#ffffff'} style={{ marginRight: 6 }} />
-                <Text 
-                  style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                  className={`text-[11px] uppercase tracking-wider ${
-                    isDark ? 'text-yellow-400' : 'text-white'
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: '/conexoes', params: { tab: 'amigos' } })}
+                  activeOpacity={0.7}
+                  style={{ flex: 1, alignItems: 'center' }}
+                  accessibilityLabel="Ver amigos mútuos"
+                >
+                  <Text
+                    style={{
+                      fontFamily: 'NeueMachina-Ultrabold',
+                      fontSize: 16,
+                      color: isDark ? '#ffffff' : '#000000',
+                    }}
+                  >
+                    {friendsCount}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: 'NeueMachina-Ultrabold',
+                      fontSize: 9,
+                      letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                      marginTop: 2,
+                      color: isDark ? '#9ca3af' : 'rgba(0,0,0,0.72)',
+                    }}
+                  >
+                    Amigos
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: '/conexoes', params: { tab: 'seguidores' } })}
+                  activeOpacity={0.7}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    borderLeftWidth: 1,
+                    borderRightWidth: 1,
+                    borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.12)',
+                  }}
+                  accessibilityLabel="Ver seguidores"
+                >
+                  <Text
+                    style={{
+                      fontFamily: 'NeueMachina-Ultrabold',
+                      fontSize: 16,
+                      color: isDark ? '#ffffff' : '#000000',
+                    }}
+                  >
+                    {followersCount}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: 'NeueMachina-Ultrabold',
+                      fontSize: 9,
+                      letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                      marginTop: 2,
+                      color: isDark ? '#9ca3af' : 'rgba(0,0,0,0.72)',
+                    }}
+                  >
+                    Seguidores
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: '/conexoes', params: { tab: 'seguindo' } })}
+                  activeOpacity={0.7}
+                  style={{ flex: 1, alignItems: 'center' }}
+                  accessibilityLabel="Ver quem você segue"
+                >
+                  <Text
+                    style={{
+                      fontFamily: 'NeueMachina-Ultrabold',
+                      fontSize: 16,
+                      color: isDark ? '#ffffff' : '#000000',
+                    }}
+                  >
+                    {followingCount}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: 'NeueMachina-Ultrabold',
+                      fontSize: 9,
+                      letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                      marginTop: 2,
+                      color: isDark ? '#9ca3af' : 'rgba(0,0,0,0.72)',
+                    }}
+                  >
+                    Seguindo
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Edit info + Share passport action buttons */}
+              <View className="flex-row gap-2.5 mt-3.5">
+                <TouchableOpacity
+                  onPress={() => setEditModalVisible(true)}
+                  className={`flex-1 py-3 rounded-2xl items-center justify-center flex-row active:scale-[0.99] shadow-md ${
+                    isDark 
+                      ? 'bg-yellow-500/15 border border-yellow-500/30' 
+                      : 'bg-black border border-black'
                   }`}
                 >
-                  EDITAR DADOS & SENHA
-                </Text>
-              </TouchableOpacity>
+                  <Edit3 size={13} color={isDark ? '#eab308' : '#ffffff'} style={{ marginRight: 6 }} />
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className={`text-[10px] uppercase tracking-wider ${
+                      isDark ? 'text-yellow-400' : 'text-white'
+                    }`}
+                  >
+                    EDITAR DADOS
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setSharePassportVisible(true)}
+                  className={`px-4 py-3 rounded-2xl items-center justify-center flex-row active:scale-[0.99] shadow-md ${
+                    isDark
+                      ? 'bg-[#eab308] border border-yellow-400'
+                      : 'bg-black/90 border border-black'
+                  }`}
+                  accessibilityLabel="Compartilhar passaporte"
+                >
+                  <Share2 size={14} color={isDark ? '#000' : '#eab308'} style={{ marginRight: 5 }} />
+                  <Text
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className={`text-[10px] uppercase tracking-wider ${
+                      isDark ? 'text-black' : 'text-yellow-400'
+                    }`}
+                  >
+                    Card
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -601,7 +817,17 @@ export default function ProfileScreen() {
               </View>
 
               {/* Último Teste Físico */}
-              <View className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm items-center">
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/notificacoes',
+                    params: { subTab: 'teste-fisico' },
+                  })
+                }
+                activeOpacity={0.8}
+                className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm items-center"
+                accessibilityLabel="Ver histórico de teste físico"
+              >
                 <View className="w-8 h-8 rounded-xl bg-red-500/10 items-center justify-center mb-1.5">
                   <Trophy size={16} color="#ef4444" />
                 </View>
@@ -609,7 +835,7 @@ export default function ProfileScreen() {
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                   className="text-lg text-gray-900 dark:text-white leading-tight"
                 >
-                  {latestPhysical?.score !== undefined ? latestPhysical.score : '--'}
+                  {getPhysicalTestScore(latestPhysical) ?? '--'}
                 </Text>
                 <Text 
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
@@ -617,10 +843,14 @@ export default function ProfileScreen() {
                 >
                   Teste Fís.
                 </Text>
-              </View>
+              </TouchableOpacity>
 
               {/* Kihapcoins */}
-              <View className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-gray-200/80 dark:border-white/5 shadow-sm items-center">
+              <TouchableOpacity
+                onPress={() => router.push('/clube-coins')}
+                activeOpacity={0.8}
+                className="w-[23%] bg-white dark:bg-[#141414] p-3 rounded-2xl border border-yellow-500/30 shadow-sm items-center"
+              >
                 <View className="w-8 h-8 rounded-xl bg-amber-500/10 items-center justify-center mb-1.5">
                   <Sparkles size={16} color="#f59e0b" />
                 </View>
@@ -628,7 +858,7 @@ export default function ProfileScreen() {
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
                   className="text-lg text-[#eab308] leading-tight"
                 >
-                  {userData?.totalFitCoins || userData?.kihapcoins || userData?.fitCoins || 0}
+                  {effectiveCoins}
                 </Text>
                 <Text 
                   style={{ fontFamily: 'NeueMachina-Ultrabold' }}
@@ -636,7 +866,7 @@ export default function ProfileScreen() {
                 >
                   Coins
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -707,32 +937,34 @@ export default function ProfileScreen() {
             </Text>
             
             <View className="bg-white dark:bg-[#141414] rounded-3xl border border-gray-200/80 dark:border-white/5 shadow-sm overflow-hidden">
-              {/* Plano & Assinatura */}
-              <TouchableOpacity 
-                onPress={() => router.push('/assinatura')}
-                className="flex-row items-center p-4 border-b border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5"
-              >
-                <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
-                  <CreditCard size={18} color="#eab308" />
-                </View>
-                <View className="flex-1">
-                  <Text 
-                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
-                    className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
-                  >
-                    Plano & Assinatura
-                  </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {userData?.planName || userData?.plano || 'Consultar plano ativo e mensalidades'}
-                  </Text>
-                </View>
-                <ChevronRight size={18} color={isDark ? '#666' : '#bbb'} />
-              </TouchableOpacity>
+              {/* Plano & Assinatura (oculto temporariamente via SHOW_PLAN_AND_SUBSCRIPTION) */}
+              {SHOW_PLAN_AND_SUBSCRIPTION && (
+                <TouchableOpacity 
+                  onPress={() => router.push('/assinatura')}
+                  className="flex-row items-center p-4 border-b border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5"
+                >
+                  <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
+                    <CreditCard size={18} color="#eab308" />
+                  </View>
+                  <View className="flex-1">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                    >
+                      Plano & Assinatura
+                    </Text>
+                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {userData?.planName || userData?.plano || 'Consultar plano ativo e mensalidades'}
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color={isDark ? '#666' : '#bbb'} />
+                </TouchableOpacity>
+              )}
 
               {/* Meus Pedidos & Eventos */}
               <TouchableOpacity 
                 onPress={() => router.push('/pedidos')}
-                className="flex-row items-center p-4 active:bg-gray-50 dark:active:bg-white/5"
+                className="flex-row items-center p-4 border-b border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5"
               >
                 <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
                   <ShoppingBag size={18} color="#eab308" />
@@ -746,6 +978,50 @@ export default function ProfileScreen() {
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     Histórico de compras e inscrições em exames
+                  </Text>
+                </View>
+                <ChevronRight size={18} color={isDark ? '#666' : '#bbb'} />
+              </TouchableOpacity>
+
+              {/* Missões & Quiz Semanal */}
+              <TouchableOpacity 
+                onPress={() => router.push('/missoes')}
+                className="flex-row items-center p-4 border-b border-gray-100 dark:border-white/5 active:bg-gray-50 dark:active:bg-white/5"
+              >
+                <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
+                  <Target size={18} color="#eab308" />
+                </View>
+                <View className="flex-1">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                  >
+                    Missões & Quiz Semanal
+                  </Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Complete objetivos semanais e ganhe Kihapcoins
+                  </Text>
+                </View>
+                <ChevronRight size={18} color={isDark ? '#666' : '#bbb'} />
+              </TouchableOpacity>
+
+              {/* Clube de Kihapcoins */}
+              <TouchableOpacity 
+                onPress={() => router.push('/clube-coins')}
+                className="flex-row items-center p-4 active:bg-gray-50 dark:active:bg-white/5"
+              >
+                <View className="w-10 h-10 rounded-2xl bg-amber-500/10 items-center justify-center mr-3.5">
+                  <Gift size={18} color="#f59e0b" />
+                </View>
+                <View className="flex-1">
+                  <Text 
+                    style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                    className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                  >
+                    Clube de Kihapcoins
+                  </Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Troque por Escudos de Chama, molduras e cupons
                   </Text>
                 </View>
                 <ChevronRight size={18} color={isDark ? '#666' : '#bbb'} />
@@ -848,6 +1124,34 @@ export default function ProfileScreen() {
                   }}
                   trackColor={{ false: '#e2e8f0', true: '#000000' }}
                   thumbColor={isDark ? '#eab308' : '#ffffff'}
+                />
+              </View>
+
+              {/* Privacidade no Ranking e Mural da Comunidade */}
+              <View className="flex-row items-center justify-between p-4 border-b border-gray-100 dark:border-white/5">
+                <View className="flex-row items-center flex-1 mr-3">
+                  <View className="w-10 h-10 rounded-2xl bg-yellow-500/10 items-center justify-center mr-3.5">
+                    <Eye size={18} color="#eab308" />
+                  </View>
+                  <View className="flex-1">
+                    <Text 
+                      style={{ fontFamily: 'NeueMachina-Ultrabold' }}
+                      className="text-sm text-gray-900 dark:text-white uppercase tracking-tight"
+                    >
+                      Aparecer no Ranking e Comunidade
+                    </Text>
+                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {isSocialPublic
+                        ? 'Visível no Ranking, Mural e Busca (controle individual por perfil)'
+                        : 'Perfil privado: oculto do Ranking e Mural da Comunidade'}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={isSocialPublic}
+                  onValueChange={handleToggleSocialPrivacy}
+                  trackColor={{ false: '#e2e8f0', true: '#000000' }}
+                  thumbColor={isSocialPublic ? '#eab308' : '#ffffff'}
                 />
               </View>
 
@@ -1092,6 +1396,46 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <ShareableCardModal
+        visible={sharePassportVisible}
+        onClose={() => setSharePassportVisible(false)}
+        cardData={{
+          mode: 'passport',
+          studentName: displayName,
+          belt: studentBelt,
+          unit: normalizeUnitDisplay(studentUnit),
+          title: 'Passaporte Marcial',
+          metricValue: String(userData?.currentStreak || 0),
+          metricLabel: (userData?.currentStreak || 0) === 1 ? 'Dia de Ofensiva' : 'Dias de Ofensiva',
+          subtitle: 'Disciplina, foco e evolução contínua no tatame.',
+          avatarUrl:
+            rawPhoto &&
+            !rawPhoto.includes('default-profile.svg') &&
+            !rawPhoto.includes('default-profile.png')
+              ? rawPhoto
+              : undefined,
+          roleLabel: userData?.isInstructor
+            ? 'Instrutor Kihap'
+            : userData?.isAdmin
+              ? 'Equipe Kihap'
+              : 'Atleta Kihap',
+          stats: [
+            {
+              label: 'Aulas',
+              value: String(
+                userData?.totalAulas ||
+                  userData?.totalAttendances ||
+                  userData?.attendancesCount ||
+                  userData?.currentStreak ||
+                  0
+              ),
+            },
+            { label: 'Emblemas', value: String(earnedBadgesList.length) },
+            { label: 'Coins', value: String(effectiveCoins) },
+          ],
+        }}
+      />
     </View>
   );
 }

@@ -255,10 +255,20 @@ export const initFeedPage = () => {
     const formHeaderText = document.getElementById('form-header-text');
     const postFields = document.getElementById('post-fields');
     const bannerFields = document.getElementById('banner-fields');
+    const storyExtraFields = document.getElementById('story-extra-fields');
     const editorWrapper = document.getElementById('editor-wrapper');
     const ctaContainer = document.getElementById('toggle-cta')?.parentElement;
     const submitBtnText = document.getElementById('submit-btn-text');
     const submitBtnIcon = document.getElementById('submit-btn-icon');
+
+    document.querySelectorAll('.story-quick-link').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const sText = document.getElementById('story-cta-text');
+            const sUrl = document.getElementById('story-cta-url');
+            if (sText && !sText.value.trim()) sText.value = btn.getAttribute('data-text') || '';
+            if (sUrl) sUrl.value = btn.getAttribute('data-route') || '';
+        });
+    });
 
     const setFeedMode = (mode) => {
         currentFeedMode = mode;
@@ -276,6 +286,7 @@ export const initFeedPage = () => {
             postFields?.classList.remove('hidden');
             editorWrapper?.classList.remove('hidden');
             ctaContainer?.classList.remove('hidden');
+            storyExtraFields?.classList.add('hidden');
             bannerFields?.classList.add('hidden');
             if (submitBtnText) submitBtnText.textContent = 'Publicar Post';
             if (submitBtnIcon) submitBtnIcon.className = 'fas fa-paper-plane mr-2';
@@ -283,10 +294,11 @@ export const initFeedPage = () => {
             modeStoryBtn?.classList.add('bg-white', 'dark:bg-[#333]', 'text-gray-900', 'dark:text-white', 'shadow-sm');
             modeStoryBtn?.classList.remove('text-gray-500');
             if (formHeaderIcon) formHeaderIcon.className = 'fas fa-circle-notch mr-3 text-orange-500';
-            if (formHeaderText) formHeaderText.textContent = 'Criar Story (24 Horas)';
+            if (formHeaderText) formHeaderText.textContent = 'Criar Story (Aba Descobrir)';
             postFields?.classList.remove('hidden');
             editorWrapper?.classList.add('hidden');
             ctaContainer?.classList.add('hidden');
+            storyExtraFields?.classList.remove('hidden');
             bannerFields?.classList.add('hidden');
             if (submitBtnText) submitBtnText.textContent = 'Publicar Story';
             if (submitBtnIcon) submitBtnIcon.className = 'fas fa-bolt mr-2';
@@ -296,6 +308,7 @@ export const initFeedPage = () => {
             if (formHeaderIcon) formHeaderIcon.className = 'fas fa-image mr-3 text-yellow-500';
             if (formHeaderText) formHeaderText.textContent = 'Adicionar Banner em Destaque (Topo do Feed)';
             postFields?.classList.add('hidden');
+            storyExtraFields?.classList.add('hidden');
             bannerFields?.classList.remove('hidden');
             if (submitBtnText) submitBtnText.textContent = 'Publicar Banner';
             if (submitBtnIcon) submitBtnIcon.className = 'fas fa-check-circle mr-2';
@@ -851,12 +864,37 @@ export const initFeedPage = () => {
 
                 for (const unit of targetList) {
                     if (isStoryMode) {
+                        const isHighlight = Boolean(document.getElementById('story-is-highlight')?.checked);
+                        const highlightTitle = (document.getElementById('story-highlight-title')?.value || '').trim();
+                        const pollQuestion = (document.getElementById('story-poll-question')?.value || '').trim();
+                        const rawPollOpts = ['story-poll-opt-1', 'story-poll-opt-2', 'story-poll-opt-3', 'story-poll-opt-4']
+                            .map((id) => (document.getElementById(id)?.value || '').trim())
+                            .filter(Boolean);
+                        const storyPoll = (pollQuestion && rawPollOpts.length >= 2)
+                            ? {
+                                question: pollQuestion,
+                                options: rawPollOpts.map((text, idx) => ({ id: `opt_${idx}`, text }))
+                              }
+                            : null;
+                        const storyCtaText = (document.getElementById('story-cta-text')?.value || '').trim();
+                        const storyCtaUrl = (document.getElementById('story-cta-url')?.value || '').trim();
+                        const storyCtaButton = (storyCtaText && storyCtaUrl) ? { text: storyCtaText, url: storyCtaUrl } : null;
+
                         const storyData = {
                             authorId: user.uid,
+                            authorRole: 'staff',
+                            moderationStatus: 'approved',
                             authorName: uData.name || user.displayName || 'Usuário',
                             authorPhotoURL: uData.profilePicture || user.photoURL || '',
                             mediaUrl,
                             mediaType: mediaType.startsWith('video') ? 'VIDEO' : 'IMAGE',
+                            isHighlight,
+                            highlightTitle: isHighlight ? (highlightTitle || 'Destaques Kihap') : '',
+                            poll: storyPoll,
+                            ctaButton: storyCtaButton,
+                            reactions: {},
+                            pollVotes: {},
+                            viewers: [],
                             targetUnit: unit,
                             targetUnits: targetType === 'unit' ? targetUnits : (targetType === 'staff' ? ['staff'] : []),
                             targetStudents: targetType === 'students' ? targetStudentsIds : [],
@@ -891,6 +929,13 @@ export const initFeedPage = () => {
             }
 
             postForm.reset();
+            const storyHighlightChk = document.getElementById('story-is-highlight');
+            if (storyHighlightChk) storyHighlightChk.checked = false;
+            ['story-highlight-title', 'story-poll-question', 'story-poll-opt-1', 'story-poll-opt-2', 'story-poll-opt-3', 'story-poll-opt-4', 'story-cta-text', 'story-cta-url']
+                .forEach((fId) => {
+                    const el = document.getElementById(fId);
+                    if (el) el.value = '';
+                });
             // Reset schedule toggle fields in UI
             document.getElementById('schedule-fields').classList.add('hidden');
             const schedIcon = document.getElementById('toggle-schedule')?.querySelector('i');
@@ -1343,10 +1388,12 @@ export const initFeedPage = () => {
                     expiresDate = new Date(story.expiresAt);
                 }
 
-                const isExpired = expiresDate ? expiresDate < now : false;
+                const isExpired = story.isHighlight ? false : (expiresDate ? expiresDate < now : false);
 
-                let expiresText = 'Expirado';
-                if (!isExpired && expiresDate) {
+                let expiresText = story.isHighlight ? '★ Destaque' : 'Expirado';
+                if (story.isHighlight) {
+                    expiresText = story.highlightTitle || '★ Destaque';
+                } else if (!isExpired && expiresDate) {
                     const diffMs = expiresDate - now;
                     const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
                     const minsLeft = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -1384,6 +1431,14 @@ export const initFeedPage = () => {
                     (story.mediaType && story.mediaType.toLowerCase().includes('video')) ||
                     (story.mediaUrl && (story.mediaUrl.includes('.mp4') || story.mediaUrl.includes('.mov') || story.mediaUrl.includes('.webm')));
 
+                const viewersCount = Array.isArray(story.viewers) ? story.viewers.length : 0;
+                const reactionsCount = story.reactions && typeof story.reactions === 'object'
+                    ? Object.values(story.reactions).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0)
+                    : 0;
+                const pollVotesCount = story.pollVotes && typeof story.pollVotes === 'object'
+                    ? Object.keys(story.pollVotes).length
+                    : 0;
+
                 const card = document.createElement('div');
                 card.className = `relative rounded-2xl overflow-hidden aspect-[9/16] bg-black shadow-md border transition-all flex flex-col justify-between p-3 group ${isExpired ? 'opacity-65 border-gray-200/50 dark:border-gray-800' : 'border-gray-200 dark:border-gray-700/80 hover:border-amber-500/50 hover:shadow-lg'}`;
 
@@ -1414,14 +1469,19 @@ export const initFeedPage = () => {
                                     <i class="fas fa-play"></i>
                                 </span>
                             ` : ''}
-                            <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${!isExpired ? 'bg-emerald-500 text-white shadow-sm flex items-center gap-1' : 'bg-gray-600 text-gray-200'}">
-                                ${!isExpired ? '<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Ativo' : 'Expirado'}
+                            <span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${story.isHighlight ? 'bg-yellow-500 text-black shadow-sm' : (!isExpired ? 'bg-emerald-500 text-white shadow-sm flex items-center gap-1' : 'bg-gray-600 text-gray-200')}">
+                                ${story.isHighlight ? '★ Destaque' : (!isExpired ? '<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Ativo' : 'Expirado')}
                             </span>
                         </div>
                     </div>
 
-                    <!-- Bottom info: Unit/Target, Time remaining / Date, Excluir button -->
+                    <!-- Bottom info: Unit/Target, Metrics, Time remaining / Date, Excluir button -->
                     <div class="relative z-10 flex flex-col gap-1.5 w-full mt-auto">
+                        <div class="flex items-center gap-1.5 text-[9px] text-white/90 font-bold">
+                            <span class="bg-black/60 px-1.5 py-0.5 rounded" title="Visualizações">👁 ${viewersCount}</span>
+                            <span class="bg-black/60 px-1.5 py-0.5 rounded" title="Reações">🥋 ${reactionsCount}</span>
+                            ${story.poll ? `<span class="bg-black/60 px-1.5 py-0.5 rounded" title="Votos na Enquete">📊 ${pollVotesCount}</span>` : ''}
+                        </div>
                         <div class="text-white text-[10px] space-y-1">
                             <div class="flex items-center justify-between text-[10px] text-gray-200">
                                 <span class="truncate max-w-[70%] flex items-center gap-1 bg-black/60 backdrop-blur-xs px-1.5 py-0.5 rounded text-[10px]" title="${unitLabel}">
