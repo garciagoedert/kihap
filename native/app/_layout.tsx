@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -20,7 +21,7 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import * as Updates from 'expo-updates';
-import { registerForPushNotificationsAsync } from '../src/services/notifications';
+import { registerForPushNotificationsAsync, clearNotificationBadgeAsync } from '../src/services/notifications';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -53,9 +54,21 @@ function RootLayoutNav() {
     }
   }, [user?.uid]);
 
+  // Limpa o badge de notificações ao abrir ou retornar o app para primeiro plano
+  useEffect(() => {
+    clearNotificationBadgeAsync();
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        clearNotificationBadgeAsync();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   // Listener para quando o usuário toca na notificação recebida
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      clearNotificationBadgeAsync();
       const data = response.notification.request.content.data;
       if (data?.url) {
         try {

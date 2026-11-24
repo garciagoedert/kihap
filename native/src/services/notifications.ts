@@ -52,7 +52,13 @@ export async function registerForPushNotificationsAsync(userId?: string): Promis
 
   // Se não concedida, solicita ao usuário
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+      },
+    });
     finalStatus = status;
   }
 
@@ -70,12 +76,14 @@ export async function registerForPushNotificationsAsync(userId?: string): Promis
     console.log('[Push] Expo Push Token obtido:', token);
 
     let devicePushToken: string | null = null;
-    try {
-      const deviceTokenObj = await Notifications.getDevicePushTokenAsync();
-      devicePushToken = deviceTokenObj.data;
-      console.log('[Push] Native Device Push Token (FCM/APNs):', devicePushToken);
-    } catch (e) {
-      console.warn('[Push] Erro ao obter token nativo FCM:', e);
+    if (Platform.OS === 'android') {
+      try {
+        const deviceTokenObj = await Notifications.getDevicePushTokenAsync();
+        devicePushToken = deviceTokenObj.data;
+        console.log('[Push] Native Device Push Token (FCM):', devicePushToken);
+      } catch (e) {
+        console.warn('[Push] Erro ao obter token nativo FCM:', e);
+      }
     }
 
     // Salva o token no Firestore para o usuário autenticado
@@ -87,6 +95,18 @@ export async function registerForPushNotificationsAsync(userId?: string): Promis
   }
 
   return token;
+}
+
+/**
+ * Zera o contador (badge) de notificações no ícone do app
+ */
+export async function clearNotificationBadgeAsync() {
+  if (Platform.OS === 'web') return;
+  try {
+    await Notifications.setBadgeCountAsync(0);
+  } catch (e) {
+    console.warn('[Push] Erro ao zerar badge:', e);
+  }
 }
 
 /**
@@ -105,7 +125,7 @@ export async function savePushTokenToFirestore(
       platform: Platform.OS,
     };
 
-    if (deviceToken) {
+    if (deviceToken && Platform.OS === 'android') {
       updates.fcmTokens = arrayUnion(deviceToken);
     }
 
