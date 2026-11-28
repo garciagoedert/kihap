@@ -177,6 +177,21 @@ document.addEventListener('DOMContentLoaded', () => {
             : [{ id: 'default', name: 'Sessão Principal', label: 'Sessão Principal' }];
     };
 
+    const getStudentSessionDisplayText = () => {
+        const sessLabel = selectedSession ? (selectedSession.label || selectedSession.name || 'Sessão') : '';
+        const locName = (productData && productData.hasLocations && selectedLocation && selectedLocation.name)
+            ? selectedLocation.name
+            : '';
+        if (!sessLabel && !locName) return '';
+        return [sessLabel, locName].filter(Boolean).join(' • ');
+    };
+
+    const updateStudentSessionDisplay = () => {
+        const el = document.getElementById('web-student-session-text');
+        if (!el) return;
+        el.textContent = getStudentSessionDisplayText();
+    };
+
     const getAllSelectedSeats = () => {
         const sessionsOrder = getActiveSessionsList();
         const orderedEntries = [];
@@ -626,6 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedSession = sessions[0];
         selectedSeatsBySession = {};
         updateSelectedSeatsUI();
+        updateStudentSessionDisplay();
         renderForms(1);
 
         if (sessions.length > 1 && webSessionsContainer && webSessionsList) {
@@ -837,6 +853,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedSession && selectedSession.id === sess.id) return;
                 selectedSession = sess;
                 if (webReplicateFeedback) webReplicateFeedback.classList.add('hidden');
+                updateStudentSessionDisplay();
                 renderWebSessionButtons(sessions, product);
                 renderWebSeatGrid();
                 renderReplicateButtons();
@@ -1422,9 +1439,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 formInstance.querySelector('.grid').prepend(companionNotice);
             } else if (isStudent) {
                 const studentNotice = document.createElement('div');
-                studentNotice.className = 'p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-400 flex items-center gap-2 mb-2';
-                studentNotice.innerHTML = `<i class="fas fa-info-circle text-base text-amber-400"></i><span>Participação na graduação no tatame. Cadeiras na plateia são exclusivas para familiares e acompanhantes.</span>`;
+                studentNotice.className = 'p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-400 space-y-1.5 mb-2';
+                studentNotice.innerHTML = `<div class="flex items-center gap-2"><i class="fas fa-info-circle text-base text-amber-400 shrink-0"></i><span>Participação na graduação no tatame. Cadeiras na plateia são exclusivas para familiares e acompanhantes.</span></div><div class="pt-1 border-t border-amber-500/20 flex items-center gap-1.5 text-[11px] text-amber-300"><i class="fas fa-calendar-day shrink-0"></i><span>Sessão do Aluno: <strong id="web-student-session-text" class="text-white"></strong></span></div>`;
                 formInstance.querySelector('.grid').prepend(studentNotice);
+                const studentSessionEl = studentNotice.querySelector('#web-student-session-text');
+                if (studentSessionEl) {
+                    studentSessionEl.textContent = getStudentSessionDisplayText();
+                }
             }
 
             const fields = ['price-variant-selector', 'size-selector'];
@@ -2073,6 +2094,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 formData.seatId = null;
                 formData.isMultiSessionFree = false;
+                if (productData && productData.hasSeatMap) {
+                    formData.sessionId = (selectedSession && selectedSession.id) ? selectedSession.id : 'default';
+                    formData.sessionName = (selectedSession && selectedSession.name) ? selectedSession.name : 'Sessão';
+                    formData.sessionDate = (selectedSession && selectedSession.date) ? selectedSession.date : null;
+                    formData.sessionTime = (selectedSession && selectedSession.time) ? selectedSession.time : null;
+                    formData.sessionLabel = (selectedSession && (selectedSession.label || selectedSession.name)) ? (selectedSession.label || selectedSession.name) : 'Sessão';
+                    if (selectedLocation) {
+                        formData.locationId = selectedLocation.id || null;
+                        formData.locationName = selectedLocation.name || null;
+                        formData.locationVenue = selectedLocation.venue || null;
+                        formData.locationAddress = selectedLocation.address || null;
+                    }
+                }
             }
 
             const hasHalfForThis = isExtraTicket
@@ -2240,11 +2274,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 locationAddress: (productData.hasLocations && selectedLocation) ? (selectedLocation.address || '') : null,
                 sessionId: (() => {
                     const all = getAllSelectedSeats();
+                    if (hasExtraTicketMode && currentPurchaseMode === 'full' && selectedSession && selectedSession.id) {
+                        return selectedSession.id;
+                    }
                     return all[0]?.sessionId || (selectedSession ? selectedSession.id : null);
                 })(),
                 sessionLabel: (() => {
                     const all = getAllSelectedSeats();
-                    const sessList = Array.from(new Set(all.map(s => s.sessionLabel).filter(Boolean)));
+                    const activeStudentSess = (hasExtraTicketMode && currentPurchaseMode === 'full' && selectedSession)
+                        ? (selectedSession.label || selectedSession.name)
+                        : null;
+                    const sessList = Array.from(new Set([
+                        ...(activeStudentSess ? [activeStudentSess] : []),
+                        ...all.map(s => s.sessionLabel).filter(Boolean)
+                    ]));
                     return sessList.join(' | ') || (selectedSession ? (selectedSession.label || selectedSession.name) : null);
                 })(),
                 seats: (() => {

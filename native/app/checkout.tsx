@@ -319,7 +319,9 @@ export default function CheckoutScreen() {
                     )}
                     {item.formDataList && item.formDataList.map((form: any, idx: number) => {
                       const variantStr = form.priceData?.variantName ? ` | Opção: ${form.priceData.variantName}` : '';
-                      const seatStr = form.seatId ? ` | Cadeira ${form.seatId}${form.sessionName ? ` (${form.sessionName})` : ''}` : '';
+                      const seatStr = form.seatId
+                        ? ` | Cadeira ${form.seatId}${form.sessionName ? ` (${form.sessionName})` : ''}`
+                        : ((form.sessionLabel || form.sessionName) ? ` | ${form.sessionLabel || form.sessionName}` : '');
                       const roleBadge = form.isExtraTicket ? ' [Acompanhante]' : (form.isMainParticipant ? ' [Graduando]' : '');
                       const kitLines = formatKitSelectionLines(form);
                       return (

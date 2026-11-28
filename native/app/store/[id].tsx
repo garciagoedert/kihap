@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
@@ -47,6 +47,8 @@ export default function ProductDetailScreen() {
   const [instructors, setInstructors] = useState<any[]>([]);
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const selectedLocationIdRef = useRef<string | null>(null);
+  const selectedSessionIdRef = useRef<string | null>(null);
   const [selectedSeatsBySession, setSelectedSeatsBySession] = useState<{
     [sessionKey: string]: {
       session: any;
@@ -54,6 +56,14 @@ export default function ProductDetailScreen() {
       seats: string[];
     }
   }>({});
+
+  useEffect(() => {
+    selectedLocationIdRef.current = selectedLocation?.id ?? null;
+  }, [selectedLocation]);
+
+  useEffect(() => {
+    selectedSessionIdRef.current = selectedSession?.id ?? null;
+  }, [selectedSession]);
   const [lockingSeats, setLockingSeats] = useState(false);
   const [replicatingSeats, setReplicatingSeats] = useState(false);
   const [expandedAltNamesBySlot, setExpandedAltNamesBySlot] = useState<Record<string, boolean>>({});
@@ -227,6 +237,12 @@ export default function ProductDetailScreen() {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    selectedLocationIdRef.current = null;
+    selectedSessionIdRef.current = null;
+    setSelectedLocation(null);
+    setSelectedSession(null);
+    setSelectedSeatsBySession({});
+
     const docRef = doc(db, 'products', id as string);
     const unsubscribeProduct = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -234,13 +250,32 @@ export default function ProductDetailScreen() {
         setProduct(data);
         
         if (data.hasLocations && data.locations && data.locations.length > 0) {
-          const initialLoc = data.locations[0];
-          setSelectedLocation(initialLoc);
-          if (initialLoc.sessions && initialLoc.sessions.length > 0) {
-            setSelectedSession(initialLoc.sessions[0]);
+          const matchedLoc = selectedLocationIdRef.current
+            ? data.locations.find((l: any) => l?.id === selectedLocationIdRef.current)
+            : null;
+          const targetLoc = matchedLoc || data.locations[0];
+          selectedLocationIdRef.current = targetLoc?.id ?? null;
+          setSelectedLocation(targetLoc);
+
+          const locSessions = Array.isArray(targetLoc?.sessions) ? targetLoc.sessions : [];
+          if (locSessions.length > 0) {
+            const matchedSess = selectedSessionIdRef.current
+              ? locSessions.find((s: any) => s?.id === selectedSessionIdRef.current)
+              : null;
+            const targetSess = matchedSess || locSessions[0];
+            selectedSessionIdRef.current = targetSess?.id ?? null;
+            setSelectedSession(targetSess);
+          } else {
+            selectedSessionIdRef.current = null;
+            setSelectedSession(null);
           }
-        } else if (data.sessions && data.sessions.length > 0 && !selectedSession) {
-          setSelectedSession(data.sessions[0]);
+        } else if (data.sessions && data.sessions.length > 0) {
+          const matchedSess = selectedSessionIdRef.current
+            ? data.sessions.find((s: any) => s?.id === selectedSessionIdRef.current)
+            : null;
+          const targetSess = matchedSess || data.sessions[0];
+          selectedSessionIdRef.current = targetSess?.id ?? null;
+          setSelectedSession(targetSess);
         }
 
         const defaultVariant = data.priceType === 'variable' && data.priceVariants && data.priceVariants.length > 0
@@ -514,6 +549,8 @@ export default function ProductDetailScreen() {
             multiSessionSlotKey: null,
             sessionId: selectedSession?.id || null,
             sessionName: selectedSession?.name || null,
+            sessionDate: selectedSession?.date || null,
+            sessionTime: selectedSession?.time || null,
             sessionLabel: selectedSession?.label || selectedSession?.name || null,
             locationId: selectedLocation?.id || null,
             locationName: selectedLocation?.name || null,
@@ -617,7 +654,7 @@ export default function ProductDetailScreen() {
         return newList;
       });
     }
-  }, [allSelectedSeats, product, quantity, purchaseMode]);
+  }, [allSelectedSeats, product, quantity, purchaseMode, selectedSession, selectedLocation]);
 
   const updateParticipant = (index: number, updates: { [key: string]: any }) => {
     setParticipants(prev => {
@@ -930,12 +967,24 @@ export default function ProductDetailScreen() {
           locationName: seatInfo.locationName || null,
           locationVenue: seatInfo.locationVenue || null,
           locationAddress: seatInfo.locationAddress || null,
+        } : (product.hasSeatMap ? {
+          sessionId: selectedSession?.id || null,
+          sessionName: selectedSession?.name || null,
+          sessionDate: selectedSession?.date || null,
+          sessionTime: selectedSession?.time || null,
+          sessionLabel: selectedSession?.label || selectedSession?.name || null,
+          ...(selectedLocation ? {
+            locationId: selectedLocation.id,
+            locationName: selectedLocation.name,
+            locationVenue: selectedLocation.venue,
+            locationAddress: selectedLocation.address
+          } : {})
         } : (selectedLocation ? {
           locationId: selectedLocation.id,
           locationName: selectedLocation.name,
           locationVenue: selectedLocation.venue,
           locationAddress: selectedLocation.address
-        } : {})),
+        } : {}))),
         priceData
       };
     });
@@ -947,7 +996,12 @@ export default function ProductDetailScreen() {
       : effective.price;
 
     const summarySeats = allSelectedSeats.map(s => s.seatId);
-    const summarySessions = Array.from(new Set(allSelectedSeats.map(s => s.sessionLabel).filter(Boolean)));
+    const activeSessionLabel = selectedSession?.label || selectedSession?.name || null;
+    const studentSessionLabel = (isGraduation && purchaseMode === 'full') ? activeSessionLabel : null;
+    const summarySessions = Array.from(new Set([
+      ...(studentSessionLabel ? [studentSessionLabel] : []),
+      ...allSelectedSeats.map(s => s.sessionLabel).filter(Boolean)
+    ]));
     const summaryLocations = Array.from(new Set(allSelectedSeats.map(s => s.locationName).filter(Boolean)));
 
     const isExtraOnlyMode = isGraduation && purchaseMode === 'extra_only';
@@ -969,8 +1023,8 @@ export default function ProductDetailScreen() {
       extraTicketPrice: effectiveExtraPrice,
       includedTicketsCount: isExtraOnlyMode ? 0 : ((product as any)?.includedTicketsCount ?? 1),
       selectedSeats: summarySeats,
-      sessionId: allSelectedSeats[0]?.sessionId || selectedSession?.id || 'default',
-      sessionLabel: summarySessions.join(' | ') || selectedSession?.label || null,
+      sessionId: (isGraduation && purchaseMode === 'full' && selectedSession?.id) ? selectedSession.id : (allSelectedSeats[0]?.sessionId || selectedSession?.id || 'default'),
+      sessionLabel: summarySessions.join(' | ') || activeSessionLabel,
       locationName: summaryLocations.join(' | ') || selectedLocation?.name || null,
       locationVenue: selectedLocation?.venue || null,
       locationAddress: selectedLocation?.address || null,
@@ -1303,12 +1357,13 @@ export default function ProductDetailScreen() {
                           key={loc.id}
                           activeOpacity={0.8}
                           onPress={() => {
+                            if ((selectedLocation?.id || product.locations[0]?.id) === loc.id) return;
+                            selectedLocationIdRef.current = loc.id ?? null;
                             setSelectedLocation(loc);
-                            if (loc.sessions && loc.sessions.length > 0) {
-                              setSelectedSession(loc.sessions[0]);
-                            } else {
-                              setSelectedSession(null);
-                            }
+                            setSelectedSeatsBySession({});
+                            const nextSess = (loc.sessions && loc.sessions.length > 0) ? loc.sessions[0] : null;
+                            selectedSessionIdRef.current = nextSess?.id ?? null;
+                            setSelectedSession(nextSess);
                           }}
                           style={{
                             marginRight: 12,
@@ -1392,6 +1447,7 @@ export default function ProductDetailScreen() {
                           key={sess.id}
                           activeOpacity={0.8}
                           onPress={() => {
+                            selectedSessionIdRef.current = sess?.id ?? null;
                             setSelectedSession(sess);
                           }}
                           style={{
@@ -1730,9 +1786,18 @@ export default function ProductDetailScreen() {
                         )}
                       </View>
                       {isStudent && (
-                        <Text className="text-[10px] text-gray-400 font-semibold mt-0.5">
-                          Participação na graduação no tatame (cadeira na plateia não inclusa)
-                        </Text>
+                        <View className="mt-1 space-y-1">
+                          <Text className="text-[10px] text-gray-400 font-semibold">
+                            Participação na graduação no tatame (cadeira na plateia não inclusa)
+                          </Text>
+                          {(selectedSession || selectedLocation) && (
+                            <View className="self-start px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30">
+                              <Text className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                📅 Sessão do Aluno: {selectedSession?.label || selectedSession?.name || 'Sessão'}{selectedLocation?.name ? ` • ${selectedLocation.name}` : ''}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                       )}
                       {!isGroupedMultiSession && seatInfoForCard && (
                         <Text className="text-[10px] text-gray-400 font-semibold mt-0.5" numberOfLines={2}>

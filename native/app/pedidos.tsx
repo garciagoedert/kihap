@@ -158,7 +158,9 @@ export default function PedidosScreen() {
               </View>
             </View>
             <View className="bg-amber-500/20 px-2.5 py-1 rounded-lg">
-              <Text className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">Marcado</Text>
+              <Text className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400">
+                {item.seatId ? 'Marcado' : 'Tatame'}
+              </Text>
             </View>
           </View>
         )}
